@@ -1,50 +1,50 @@
 /***************************************************************************
-*                      ZBOSS ZigBee Pro 2007 stack                         *
-*                                                                          *
-*          Copyright (c) 2012 DSR Corporation Denver CO, USA.              *
-*                       http://www.dsr-wireless.com                        *
-*                                                                          *
-*                            All rights reserved.                          *
-*          Copyright (c) 2011 ClarIDy Solutions, Inc., Taipei, Taiwan.     *
-*                       http://www.claridy.com/                            *
-*                                                                          *
-*          Copyright (c) 2011 Uniband Electronic Corporation (UBEC),       *
-*                             Hsinchu, Taiwan.                             *
-*                       http://www.ubec.com.tw/                            *
-*                                                                          *
-*          Copyright (c) 2011 DSR Corporation Denver CO, USA.              *
-*                       http://www.dsr-wireless.com                        *
-*                                                                          *
-*                            All rights reserved.                          *
-*                                                                          *
-*                                                                          *
-* ZigBee Pro 2007 stack, also known as ZBOSS (R) ZB stack is available     *
-* under either the terms of the Commercial License or the GNU General      *
-* Public License version 2.0.  As a recipient of ZigBee Pro 2007 stack, you*
-* may choose which license to receive this code under (except as noted in  *
-* per-module LICENSE files).                                               *
-*                                                                          *
-* ZBOSS is a registered trademark of DSR Corporation AKA Data Storage      *
-* Research LLC.                                                            *
-*                                                                          *
-* GNU General Public License Usage                                         *
-* This file may be used under the terms of the GNU General Public License  *
-* version 2.0 as published by the Free Software Foundation and appearing   *
-* in the file LICENSE.GPL included in the packaging of this file.  Please  *
-* review the following information to ensure the GNU General Public        *
-* License version 2.0 requirements will be met:                            *
-* http://www.gnu.org/licenses/old-licenses/gpl-2.0.html.                   *
-*                                                                          *
-* Commercial Usage                                                         *
-* Licensees holding valid ClarIDy/UBEC/DSR Commercial licenses may use     *
-* this file in accordance with the ClarIDy/UBEC/DSR Commercial License     *
-* Agreement provided with the Software or, alternatively, in accordance    *
-* with the terms contained in a written agreement between you and          *
-* ClarIDy/UBEC/DSR.                                                        *
-*                                                                          *
-****************************************************************************
-PURPOSE: MAC and trace transport API
-*/
+ *                      ZBOSS ZigBee Pro 2007 stack                         *
+ *                                                                          *
+ *          Copyright (c) 2012 DSR Corporation Denver CO, USA.              *
+ *                       http://www.dsr-wireless.com                        *
+ *                                                                          *
+ *                            All rights reserved.                          *
+ *          Copyright (c) 2011 ClarIDy Solutions, Inc., Taipei, Taiwan.     *
+ *                       http://www.claridy.com/                            *
+ *                                                                          *
+ *          Copyright (c) 2011 Uniband Electronic Corporation (UBEC),       *
+ *                             Hsinchu, Taiwan.                             *
+ *                       http://www.ubec.com.tw/                            *
+ *                                                                          *
+ *          Copyright (c) 2011 DSR Corporation Denver CO, USA.              *
+ *                       http://www.dsr-wireless.com                        *
+ *                                                                          *
+ *                            All rights reserved.                          *
+ *                                                                          *
+ *                                                                          *
+ * ZigBee Pro 2007 stack, also known as ZBOSS (R) ZB stack is available     *
+ * under either the terms of the Commercial License or the GNU General      *
+ * Public License version 2.0.  As a recipient of ZigBee Pro 2007 stack, you*
+ * may choose which license to receive this code under (except as noted in  *
+ * per-module LICENSE files).                                               *
+ *                                                                          *
+ * ZBOSS is a registered trademark of DSR Corporation AKA Data Storage      *
+ * Research LLC.                                                            *
+ *                                                                          *
+ * GNU General Public License Usage                                         *
+ * This file may be used under the terms of the GNU General Public License  *
+ * version 2.0 as published by the Free Software Foundation and appearing   *
+ * in the file LICENSE.GPL included in the packaging of this file.  Please  *
+ * review the following information to ensure the GNU General Public        *
+ * License version 2.0 requirements will be met:                            *
+ * http://www.gnu.org/licenses/old-licenses/gpl-2.0.html.                   *
+ *                                                                          *
+ * Commercial Usage                                                         *
+ * Licensees holding valid ClarIDy/UBEC/DSR Commercial licenses may use     *
+ * this file in accordance with the ClarIDy/UBEC/DSR Commercial License     *
+ * Agreement provided with the Software or, alternatively, in accordance    *
+ * with the terms contained in a written agreement between you and          *
+ * ClarIDy/UBEC/DSR.                                                        *
+ *                                                                          *
+ ****************************************************************************
+   PURPOSE: MAC and trace transport API
+ */
 
 #ifndef MAC_TRANSPORT_H
 #define MAC_TRANSPORT_H 1
@@ -62,20 +62,19 @@ PURPOSE: MAC and trace transport API
    This protocol used only under 8051 sim. Data, dump and trace goes throught
    one pipe. Each packet has a header. Header consists of a length byte and a
    type byte.
-*/
+ */
 
 /**
    Packet types.
 
    This enum describes possible packet types to be transfered throught pipes.
  */
-typedef enum zb_mac_transport_type_e
-{
-  ZB_MAC_TRANSPORT_TYPE_DATA  = 0x00, /*!< Data packet type */
-  ZB_MAC_TRANSPORT_TYPE_DUMP  = 0x01, /*!< Dump packet type */
-  ZB_MAC_TRANSPORT_TYPE_TRACE = 0x02, /*!< Trace packet type */
+typedef enum zb_mac_transport_type_e {
+    ZB_MAC_TRANSPORT_TYPE_DATA  = 0x00, /*!< Data packet type */
+    ZB_MAC_TRANSPORT_TYPE_DUMP  = 0x01, /*!< Dump packet type */
+    ZB_MAC_TRANSPORT_TYPE_TRACE = 0x02, /*!< Trace packet type */
 
-  ZB_MAC_TRANSPORT_TYPE_NUM
+    ZB_MAC_TRANSPORT_TYPE_NUM
 } ZB_PACKED_STRUCT
 zb_mac_transport_type_t;
 
@@ -91,11 +90,10 @@ zb_mac_transport_type_t;
    Note that packets received from ns-3 or pipe_data_router has only leading
    length and no type field.
  */
-typedef struct zb_mac_transport_hdr_s
-{
-  zb_uint8_t len;  /*!< Packet length, including hdr */
-  zb_uint8_t type; /*!< Packet type, @see zb_mac_transport_type_t */
-  zb_uint16_t time;             /* time label */
+typedef struct zb_mac_transport_hdr_s {
+    zb_uint8_t len;     /*!< Packet length, including hdr */
+    zb_uint8_t type;    /*!< Packet type, @see zb_mac_transport_type_t */
+    zb_uint16_t time;   /* time label */
 } ZB_PACKED_STRUCT
 zb_mac_transport_hdr_t;
 
@@ -124,7 +122,8 @@ zb_mac_transport_hdr_t;
    @return nothing.
  */
 #ifndef ZB_TRANSPORT_LINUX_SPIDEV
-void zb_mac_transport_init(zb_char_t *rpipe_path, zb_char_t *wpipe_path) ZB_SDCC_REENTRANT;
+void zb_mac_transport_init(zb_char_t *rpipe_path,
+                           zb_char_t *wpipe_path) ZB_SDCC_REENTRANT;
 #else
 void zb_mac_transport_init() ZB_SDCC_REENTRANT;
 #endif
@@ -162,8 +161,8 @@ void zb_mac_traffic_dump(zb_buf_t *buf, zb_bool_t is_w) ZB_SDCC_REENTRANT;
 #define ZB_DUMP_INCOMING_DATA(buf) zb_mac_traffic_dump((buf), ZB_FALSE)
 #define ZB_DUMP_OUTGOING_DATA(buf) zb_mac_traffic_dump((buf), ZB_TRUE)
 #else
-#define ZB_DUMP_INCOMING_DATA(buf) while(0) { ZVUNUSED(buf); }
-#define ZB_DUMP_OUTGOING_DATA(buf) while(0) { ZVUNUSED(buf); }
+#define ZB_DUMP_INCOMING_DATA(buf) while (0) { ZVUNUSED(buf); }
+#define ZB_DUMP_OUTGOING_DATA(buf) while (0) { ZVUNUSED(buf); }
 #endif
 
 

@@ -1,50 +1,50 @@
 /***************************************************************************
-*                      ZBOSS ZigBee Pro 2007 stack                         *
-*                                                                          *
-*          Copyright (c) 2012 DSR Corporation Denver CO, USA.              *
-*                       http://www.dsr-wireless.com                        *
-*                                                                          *
-*                            All rights reserved.                          *
-*          Copyright (c) 2011 ClarIDy Solutions, Inc., Taipei, Taiwan.     *
-*                       http://www.claridy.com/                            *
-*                                                                          *
-*          Copyright (c) 2011 Uniband Electronic Corporation (UBEC),       *
-*                             Hsinchu, Taiwan.                             *
-*                       http://www.ubec.com.tw/                            *
-*                                                                          *
-*          Copyright (c) 2011 DSR Corporation Denver CO, USA.              *
-*                       http://www.dsr-wireless.com                        *
-*                                                                          *
-*                            All rights reserved.                          *
-*                                                                          *
-*                                                                          *
-* ZigBee Pro 2007 stack, also known as ZBOSS (R) ZB stack is available     *
-* under either the terms of the Commercial License or the GNU General      *
-* Public License version 2.0.  As a recipient of ZigBee Pro 2007 stack, you*
-* may choose which license to receive this code under (except as noted in  *
-* per-module LICENSE files).                                               *
-*                                                                          *
-* ZBOSS is a registered trademark of DSR Corporation AKA Data Storage      *
-* Research LLC.                                                            *
-*                                                                          *
-* GNU General Public License Usage                                         *
-* This file may be used under the terms of the GNU General Public License  *
-* version 2.0 as published by the Free Software Foundation and appearing   *
-* in the file LICENSE.GPL included in the packaging of this file.  Please  *
-* review the following information to ensure the GNU General Public        *
-* License version 2.0 requirements will be met:                            *
-* http://www.gnu.org/licenses/old-licenses/gpl-2.0.html.                   *
-*                                                                          *
-* Commercial Usage                                                         *
-* Licensees holding valid ClarIDy/UBEC/DSR Commercial licenses may use     *
-* this file in accordance with the ClarIDy/UBEC/DSR Commercial License     *
-* Agreement provided with the Software or, alternatively, in accordance    *
-* with the terms contained in a written agreement between you and          *
-* ClarIDy/UBEC/DSR.                                                        *
-*                                                                          *
-****************************************************************************
-PURPOSE: Common definitions for time functionality
-*/
+ *                      ZBOSS ZigBee Pro 2007 stack                         *
+ *                                                                          *
+ *          Copyright (c) 2012 DSR Corporation Denver CO, USA.              *
+ *                       http://www.dsr-wireless.com                        *
+ *                                                                          *
+ *                            All rights reserved.                          *
+ *          Copyright (c) 2011 ClarIDy Solutions, Inc., Taipei, Taiwan.     *
+ *                       http://www.claridy.com/                            *
+ *                                                                          *
+ *          Copyright (c) 2011 Uniband Electronic Corporation (UBEC),       *
+ *                             Hsinchu, Taiwan.                             *
+ *                       http://www.ubec.com.tw/                            *
+ *                                                                          *
+ *          Copyright (c) 2011 DSR Corporation Denver CO, USA.              *
+ *                       http://www.dsr-wireless.com                        *
+ *                                                                          *
+ *                            All rights reserved.                          *
+ *                                                                          *
+ *                                                                          *
+ * ZigBee Pro 2007 stack, also known as ZBOSS (R) ZB stack is available     *
+ * under either the terms of the Commercial License or the GNU General      *
+ * Public License version 2.0.  As a recipient of ZigBee Pro 2007 stack, you*
+ * may choose which license to receive this code under (except as noted in  *
+ * per-module LICENSE files).                                               *
+ *                                                                          *
+ * ZBOSS is a registered trademark of DSR Corporation AKA Data Storage      *
+ * Research LLC.                                                            *
+ *                                                                          *
+ * GNU General Public License Usage                                         *
+ * This file may be used under the terms of the GNU General Public License  *
+ * version 2.0 as published by the Free Software Foundation and appearing   *
+ * in the file LICENSE.GPL included in the packaging of this file.  Please  *
+ * review the following information to ensure the GNU General Public        *
+ * License version 2.0 requirements will be met:                            *
+ * http://www.gnu.org/licenses/old-licenses/gpl-2.0.html.                   *
+ *                                                                          *
+ * Commercial Usage                                                         *
+ * Licensees holding valid ClarIDy/UBEC/DSR Commercial licenses may use     *
+ * this file in accordance with the ClarIDy/UBEC/DSR Commercial License     *
+ * Agreement provided with the Software or, alternatively, in accordance    *
+ * with the terms contained in a written agreement between you and          *
+ * ClarIDy/UBEC/DSR.                                                        *
+ *                                                                          *
+ ****************************************************************************
+   PURPOSE: Common definitions for time functionality
+ */
 
 #ifndef ZB_TIME_H
 #define ZB_TIME_H 1
@@ -102,7 +102,11 @@ typedef zb_uint16_t zb_time_t;
    @param b - time to subtract
    @return subtraction result
  */
-#define ZB_TIME_SUBTRACT(a, b) ((zb_time_t)((a) - (b)) < ZB_HALF_MAX_TIME_VAL ? (zb_time_t)((a) - (b)) : (zb_time_t)((b) - (a)))
+#define ZB_TIME_SUBTRACT(a, \
+                         b) ((zb_time_t)((a) - (b)) < \
+                             ZB_HALF_MAX_TIME_VAL ? (zb_time_t)((a) - \
+                                                                (b)) : ( \
+                                 zb_time_t)((b) - (a)))
 
 /**
    Time add: add 'a' to 'b'
@@ -138,26 +142,29 @@ typedef zb_uint16_t zb_time_t;
    aBaseSlotDuration = 60
    aNumSuperframeSlots = 16
    1 symbol = 16e-6 sec (mac spec 6.5.3.2 Symbol rate)
-*/
+ */
 #define ZB_BEACON_INTERVAL_USEC 15360 /* in microseconds */
 
 /**
- One second timeout
-*/
+   One second timeout
+ */
 #define ZB_TIME_ONE_SECOND ZB_MILLISECONDS_TO_BEACON_INTERVAL(1000)
 /**
-  Convert time from beacon intervals to millisecinds
+   Convert time from beacon intervals to millisecinds
 
-  Try to not cause overflow in 16-bit arithmetic (with some precision lost...)
-*/
-#define ZB_TIME_BEACON_INTERVAL_TO_MSEC(t) (ZB_BEACON_INTERVAL_USEC / 100 * (t) / 10)
+   Try to not cause overflow in 16-bit arithmetic (with some precision lost...)
+ */
+#define ZB_TIME_BEACON_INTERVAL_TO_MSEC(t) (ZB_BEACON_INTERVAL_USEC / 100 * \
+                                            (t) / 10)
 
 /**
-  Convert time from millisecinds to beacon intervals
+   Convert time from millisecinds to beacon intervals
 
-  Try to not cause overflow in 16-bit arithmetic (with some precision lost...)
-*/
-#define ZB_MILLISECONDS_TO_BEACON_INTERVAL(ms) (((10l * (ms) + 3) / (ZB_BEACON_INTERVAL_USEC / 100)))
+   Try to not cause overflow in 16-bit arithmetic (with some precision lost...)
+ */
+#define ZB_MILLISECONDS_TO_BEACON_INTERVAL(ms) (((10l * (ms) + 3) / \
+                                                 (ZB_BEACON_INTERVAL_USEC / \
+                                                  100)))
 
 
 /**
@@ -186,13 +193,12 @@ void zb_timer_stop_async();
    'timer' always ticks (if some timer is started), usually with overflow.
    Timer unit is beacon interval, for every system.
  */
-typedef struct zb_timer_s
-{
-  zb_time_t timer_stop; /* time to stop timer (disable timer interrupts etc) */
+typedef struct zb_timer_s {
+    zb_time_t timer_stop;   /* time to stop timer (disable timer interrupts etc) */
 
-  zb_time_t timer; /* current time, measured in beacon intervals */
+    zb_time_t timer;        /* current time, measured in beacon intervals */
 
-  zb_uint8_t  started;
+    zb_uint8_t started;
 }
 zb_timer_t;
 

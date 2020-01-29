@@ -1,50 +1,50 @@
 /***************************************************************************
-*                      ZBOSS ZigBee Pro 2007 stack                         *
-*                                                                          *
-*          Copyright (c) 2012 DSR Corporation Denver CO, USA.              *
-*                       http://www.dsr-wireless.com                        *
-*                                                                          *
-*                            All rights reserved.                          *
-*          Copyright (c) 2011 ClarIDy Solutions, Inc., Taipei, Taiwan.     *
-*                       http://www.claridy.com/                            *
-*                                                                          *
-*          Copyright (c) 2011 Uniband Electronic Corporation (UBEC),       *
-*                             Hsinchu, Taiwan.                             *
-*                       http://www.ubec.com.tw/                            *
-*                                                                          *
-*          Copyright (c) 2011 DSR Corporation Denver CO, USA.              *
-*                       http://www.dsr-wireless.com                        *
-*                                                                          *
-*                            All rights reserved.                          *
-*                                                                          *
-*                                                                          *
-* ZigBee Pro 2007 stack, also known as ZBOSS (R) ZB stack is available     *
-* under either the terms of the Commercial License or the GNU General      *
-* Public License version 2.0.  As a recipient of ZigBee Pro 2007 stack, you*
-* may choose which license to receive this code under (except as noted in  *
-* per-module LICENSE files).                                               *
-*                                                                          *
-* ZBOSS is a registered trademark of DSR Corporation AKA Data Storage      *
-* Research LLC.                                                            *
-*                                                                          *
-* GNU General Public License Usage                                         *
-* This file may be used under the terms of the GNU General Public License  *
-* version 2.0 as published by the Free Software Foundation and appearing   *
-* in the file LICENSE.GPL included in the packaging of this file.  Please  *
-* review the following information to ensure the GNU General Public        *
-* License version 2.0 requirements will be met:                            *
-* http://www.gnu.org/licenses/old-licenses/gpl-2.0.html.                   *
-*                                                                          *
-* Commercial Usage                                                         *
-* Licensees holding valid ClarIDy/UBEC/DSR Commercial licenses may use     *
-* this file in accordance with the ClarIDy/UBEC/DSR Commercial License     *
-* Agreement provided with the Software or, alternatively, in accordance    *
-* with the terms contained in a written agreement between you and          *
-* ClarIDy/UBEC/DSR.                                                        *
-*                                                                          *
-****************************************************************************
-PURPOSE: Declare ring buffer internals
-*/
+ *                      ZBOSS ZigBee Pro 2007 stack                         *
+ *                                                                          *
+ *          Copyright (c) 2012 DSR Corporation Denver CO, USA.              *
+ *                       http://www.dsr-wireless.com                        *
+ *                                                                          *
+ *                            All rights reserved.                          *
+ *          Copyright (c) 2011 ClarIDy Solutions, Inc., Taipei, Taiwan.     *
+ *                       http://www.claridy.com/                            *
+ *                                                                          *
+ *          Copyright (c) 2011 Uniband Electronic Corporation (UBEC),       *
+ *                             Hsinchu, Taiwan.                             *
+ *                       http://www.ubec.com.tw/                            *
+ *                                                                          *
+ *          Copyright (c) 2011 DSR Corporation Denver CO, USA.              *
+ *                       http://www.dsr-wireless.com                        *
+ *                                                                          *
+ *                            All rights reserved.                          *
+ *                                                                          *
+ *                                                                          *
+ * ZigBee Pro 2007 stack, also known as ZBOSS (R) ZB stack is available     *
+ * under either the terms of the Commercial License or the GNU General      *
+ * Public License version 2.0.  As a recipient of ZigBee Pro 2007 stack, you*
+ * may choose which license to receive this code under (except as noted in  *
+ * per-module LICENSE files).                                               *
+ *                                                                          *
+ * ZBOSS is a registered trademark of DSR Corporation AKA Data Storage      *
+ * Research LLC.                                                            *
+ *                                                                          *
+ * GNU General Public License Usage                                         *
+ * This file may be used under the terms of the GNU General Public License  *
+ * version 2.0 as published by the Free Software Foundation and appearing   *
+ * in the file LICENSE.GPL included in the packaging of this file.  Please  *
+ * review the following information to ensure the GNU General Public        *
+ * License version 2.0 requirements will be met:                            *
+ * http://www.gnu.org/licenses/old-licenses/gpl-2.0.html.                   *
+ *                                                                          *
+ * Commercial Usage                                                         *
+ * Licensees holding valid ClarIDy/UBEC/DSR Commercial licenses may use     *
+ * this file in accordance with the ClarIDy/UBEC/DSR Commercial License     *
+ * Agreement provided with the Software or, alternatively, in accordance    *
+ * with the terms contained in a written agreement between you and          *
+ * ClarIDy/UBEC/DSR.                                                        *
+ *                                                                          *
+ ****************************************************************************
+   PURPOSE: Declare ring buffer internals
+ */
 
 #ifndef ZB_RINGBUFFER_H
 #define ZB_RINGBUFFER_H 1
@@ -53,7 +53,7 @@ PURPOSE: Declare ring buffer internals
 /**
    @addtogroup ZB_BASE
    @{
-*/
+ */
 
 
 /**
@@ -69,33 +69,36 @@ PURPOSE: Declare ring buffer internals
    @param capacity - ring buffer capacity
  */
 #define ZB_RING_BUFFER_DECLARE(type_name_prefix, ent_type, capacity)  \
-typedef struct type_name_prefix ## _s                                 \
-{                                                                     \
-  ent_type       ring_buf[capacity];                                   \
-  zb_ushort_t    read_i;                                               \
-  zb_ushort_t    write_i;                                              \
-  zb_ushort_t    written;                                              \
-} type_name_prefix ## _t
+    typedef struct type_name_prefix ## _s                                 \
+    {                                                                     \
+        ent_type ring_buf[capacity];                                   \
+        zb_ushort_t read_i;                                               \
+        zb_ushort_t write_i;                                              \
+        zb_ushort_t written;                                              \
+    } type_name_prefix ## _t
 
 
 /**
  * Initialize ring buffer internals
  */
-#define ZB_RING_BUFFER_INIT(rb) ( (rb)->read_i = (rb)->write_i = (rb)->written = 0)
+#define ZB_RING_BUFFER_INIT(rb) ((rb)->read_i = (rb)->write_i = (rb)->written = \
+                                                                    0)
 
 /**
  * Return ring buffer capacity
  *
  * @param rb - ring buffer pointer.
  */
-#define ZB_RING_BUFFER_CAPACITY(rb) ((sizeof((rb)->ring_buf) / sizeof((rb)->ring_buf[0])))
+#define ZB_RING_BUFFER_CAPACITY(rb) ((sizeof((rb)->ring_buf) / \
+                                      sizeof((rb)->ring_buf[0])))
 
 /**
  * Return 1 if ring buffer is full
  *
  * @param rb - ring buffer pointer.
  */
-#define ZB_RING_BUFFER_IS_FULL(rb) ((zb_uint_t)(rb)->written >= ZB_RING_BUFFER_CAPACITY(rb))
+#define ZB_RING_BUFFER_IS_FULL(rb) ((zb_uint_t)(rb)->written >= \
+                                    ZB_RING_BUFFER_CAPACITY(rb))
 
 /**
  * Return 1 if ring buffer is empty
@@ -112,13 +115,13 @@ typedef struct type_name_prefix ## _s                                 \
  * @return Pointer to the ring buffer entry or NULL if ring buffer is full
  */
 #define ZB_RING_BUFFER_PUT_RESERVE(rb)          \
-(                                               \
-  ZB_RING_BUFFER_IS_FULL(rb) ? NULL             \
-  : (rb)->ring_buf + (rb)->write_i              \
-  )
+    (                                               \
+        ZB_RING_BUFFER_IS_FULL(rb) ? NULL             \
+                                   : (rb)->ring_buf + (rb)->write_i              \
+    )
 
- /* TODO: remove ZB_RING_BUFFER_PUT_RESERVE and ZB_RING_BUFFER_FLUSH_PUT here and in *.c files
- use ZB_RING_BUFFER_IS_FULL and ZB_RING_BUFFER_PUT instead of it */
+/* TODO: remove ZB_RING_BUFFER_PUT_RESERVE and ZB_RING_BUFFER_FLUSH_PUT here and in *.c files
+   use ZB_RING_BUFFER_IS_FULL and ZB_RING_BUFFER_PUT instead of it */
 
 /**
  * Put to the ring buffer.
@@ -128,10 +131,10 @@ typedef struct type_name_prefix ## _s                                 \
  * @return nothing
  */
 #define ZB_RING_BUFFER_FLUSH_PUT(rb)                                    \
-(                                                                       \
-  (rb)->written++,                                                      \
-  (rb)->write_i = ((rb)->write_i + 1) % ZB_RING_BUFFER_CAPACITY(rb)     \
-  )
+    (                                                                       \
+        (rb)->written++,                                                      \
+        (rb)->write_i = ((rb)->write_i + 1) % ZB_RING_BUFFER_CAPACITY(rb)     \
+    )
 
 /**
  * Put value to the ring buffer.
@@ -141,11 +144,11 @@ typedef struct type_name_prefix ## _s                                 \
  * @return nothing
  */
 #define ZB_RING_BUFFER_PUT(rb, value)                                   \
-(                                                                       \
-  (rb)->ring_buf[(rb)->write_i] = (value),                              \
-  (rb)->written++,                                                      \
-  (rb)->write_i = ((rb)->write_i + 1) % ZB_RING_BUFFER_CAPACITY(rb)     \
-  )
+    (                                                                       \
+        (rb)->ring_buf[(rb)->write_i] = (value),                              \
+        (rb)->written++,                                                      \
+        (rb)->write_i = ((rb)->write_i + 1) % ZB_RING_BUFFER_CAPACITY(rb)     \
+    )
 
 /**
  * Get entry from the ring buffer read pointer position
@@ -155,10 +158,10 @@ typedef struct type_name_prefix ## _s                                 \
  * @return pointer to the ring buffer entry or NULL if it is empty
  */
 #define ZB_RING_BUFFER_PEEK(rb)                 \
-(                                               \
-  ZB_RING_BUFFER_IS_EMPTY(rb) ? NULL            \
-  : (rb)->ring_buf + (rb)->read_i               \
-  )
+    (                                               \
+        ZB_RING_BUFFER_IS_EMPTY(rb) ? NULL            \
+                                    : (rb)->ring_buf + (rb)->read_i               \
+    )
 
 /**
  * Get entry from the ring buffer read pointer position
@@ -168,9 +171,9 @@ typedef struct type_name_prefix ## _s                                 \
  * @return pointer to the ring buffer entry
  */
 #define ZB_RING_BUFFER_GET(rb)                 \
-(                                               \
-  (rb)->ring_buf + (rb)->read_i               \
-  )
+    (                                               \
+        (rb)->ring_buf + (rb)->read_i               \
+    )
 
 /**
  * Move ring buffer read pointer.
@@ -182,10 +185,10 @@ typedef struct type_name_prefix ## _s                                 \
  * @return nothing
  */
 #define ZB_RING_BUFFER_FLUSH_GET(rb)                                    \
-(                                                                       \
-  (rb)->written--,                                                      \
-  ((rb)->read_i = ((rb)->read_i + 1) % ZB_RING_BUFFER_CAPACITY(rb))     \
-  )
+    (                                                                       \
+        (rb)->written--,                                                      \
+        ((rb)->read_i = ((rb)->read_i + 1) % ZB_RING_BUFFER_CAPACITY(rb))     \
+    )
 
 /*! @} */
 /*! \endcond */

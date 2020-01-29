@@ -1,50 +1,50 @@
 /***************************************************************************
-*                      ZBOSS ZigBee Pro 2007 stack                         *
-*                                                                          *
-*          Copyright (c) 2012 DSR Corporation Denver CO, USA.              *
-*                       http://www.dsr-wireless.com                        *
-*                                                                          *
-*                            All rights reserved.                          *
-*          Copyright (c) 2011 ClarIDy Solutions, Inc., Taipei, Taiwan.     *
-*                       http://www.claridy.com/                            *
-*                                                                          *
-*          Copyright (c) 2011 Uniband Electronic Corporation (UBEC),       *
-*                             Hsinchu, Taiwan.                             *
-*                       http://www.ubec.com.tw/                            *
-*                                                                          *
-*          Copyright (c) 2011 DSR Corporation Denver CO, USA.              *
-*                       http://www.dsr-wireless.com                        *
-*                                                                          *
-*                            All rights reserved.                          *
-*                                                                          *
-*                                                                          *
-* ZigBee Pro 2007 stack, also known as ZBOSS (R) ZB stack is available     *
-* under either the terms of the Commercial License or the GNU General      *
-* Public License version 2.0.  As a recipient of ZigBee Pro 2007 stack, you*
-* may choose which license to receive this code under (except as noted in  *
-* per-module LICENSE files).                                               *
-*                                                                          *
-* ZBOSS is a registered trademark of DSR Corporation AKA Data Storage      *
-* Research LLC.                                                            *
-*                                                                          *
-* GNU General Public License Usage                                         *
-* This file may be used under the terms of the GNU General Public License  *
-* version 2.0 as published by the Free Software Foundation and appearing   *
-* in the file LICENSE.GPL included in the packaging of this file.  Please  *
-* review the following information to ensure the GNU General Public        *
-* License version 2.0 requirements will be met:                            *
-* http://www.gnu.org/licenses/old-licenses/gpl-2.0.html.                   *
-*                                                                          *
-* Commercial Usage                                                         *
-* Licensees holding valid ClarIDy/UBEC/DSR Commercial licenses may use     *
-* this file in accordance with the ClarIDy/UBEC/DSR Commercial License     *
-* Agreement provided with the Software or, alternatively, in accordance    *
-* with the terms contained in a written agreement between you and          *
-* ClarIDy/UBEC/DSR.                                                        *
-*                                                                          *
-****************************************************************************
-PURPOSE: 8051-specific platform depenednt stuff
-*/
+ *                      ZBOSS ZigBee Pro 2007 stack                         *
+ *                                                                          *
+ *          Copyright (c) 2012 DSR Corporation Denver CO, USA.              *
+ *                       http://www.dsr-wireless.com                        *
+ *                                                                          *
+ *                            All rights reserved.                          *
+ *          Copyright (c) 2011 ClarIDy Solutions, Inc., Taipei, Taiwan.     *
+ *                       http://www.claridy.com/                            *
+ *                                                                          *
+ *          Copyright (c) 2011 Uniband Electronic Corporation (UBEC),       *
+ *                             Hsinchu, Taiwan.                             *
+ *                       http://www.ubec.com.tw/                            *
+ *                                                                          *
+ *          Copyright (c) 2011 DSR Corporation Denver CO, USA.              *
+ *                       http://www.dsr-wireless.com                        *
+ *                                                                          *
+ *                            All rights reserved.                          *
+ *                                                                          *
+ *                                                                          *
+ * ZigBee Pro 2007 stack, also known as ZBOSS (R) ZB stack is available     *
+ * under either the terms of the Commercial License or the GNU General      *
+ * Public License version 2.0.  As a recipient of ZigBee Pro 2007 stack, you*
+ * may choose which license to receive this code under (except as noted in  *
+ * per-module LICENSE files).                                               *
+ *                                                                          *
+ * ZBOSS is a registered trademark of DSR Corporation AKA Data Storage      *
+ * Research LLC.                                                            *
+ *                                                                          *
+ * GNU General Public License Usage                                         *
+ * This file may be used under the terms of the GNU General Public License  *
+ * version 2.0 as published by the Free Software Foundation and appearing   *
+ * in the file LICENSE.GPL included in the packaging of this file.  Please  *
+ * review the following information to ensure the GNU General Public        *
+ * License version 2.0 requirements will be met:                            *
+ * http://www.gnu.org/licenses/old-licenses/gpl-2.0.html.                   *
+ *                                                                          *
+ * Commercial Usage                                                         *
+ * Licensees holding valid ClarIDy/UBEC/DSR Commercial licenses may use     *
+ * this file in accordance with the ClarIDy/UBEC/DSR Commercial License     *
+ * Agreement provided with the Software or, alternatively, in accordance    *
+ * with the terms contained in a written agreement between you and          *
+ * ClarIDy/UBEC/DSR.                                                        *
+ *                                                                          *
+ ****************************************************************************
+   PURPOSE: 8051-specific platform depenednt stuff
+ */
 
 #ifndef ZB_OSIF_8051_H
 #define ZB_OSIF_8051_H 1
@@ -76,15 +76,15 @@ PURPOSE: 8051-specific platform depenednt stuff
 
 #elif defined KEIL
 //#include "REG51.H"
-sbit ES   = 0xAC;
-sbit RI   = 0x98;
-sbit TI   = 0x99;
-sfr  SCON = 0x98;
-sfr  SBUF = 0x99;
+sbit ES = 0xAC;
+sbit RI = 0x98;
+sbit TI = 0x99;
+sfr SCON = 0x98;
+sfr SBUF = 0x99;
 #include "C8051F120.h"
 
-sbit LED1 = P3^0;
-sbit LED2 = P3^1;
+sbit LED1 = P3 ^ 0;
+sbit LED2 = P3 ^ 1;
 
 #elif defined ZB_IAR
 
@@ -113,8 +113,8 @@ sbit LED2 = P3^1;
 #define LED1 P3_bit.P30
 #define LED2 P3_bit.P31
 
-#define CONFIG_PAGE       0x0F    /* SYSTEM AND PORT CONFIGURATION PAGE */
-#define LEGACY_PAGE       0x00    /* LEGACY SFR PAGE */
+#define CONFIG_PAGE       0x0F      /* SYSTEM AND PORT CONFIGURATION PAGE */
+#define LEGACY_PAGE       0x00      /* LEGACY SFR PAGE */
 
 #else
 #error Port me!!!
@@ -164,10 +164,10 @@ sbit LED2 = P3^1;
 #define ZB_SDCC_XDATA
 #define ZB_CALLBACK
 /**
-  In Keil reentrant prevents compiler from sharing data segment with other
-  routines.
-  Currently only main scheduler loop declared as reentrant in Keil: must not
-  share its variable with functions it calls via pointers.
+   In Keil reentrant prevents compiler from sharing data segment with other
+   routines.
+   Currently only main scheduler loop declared as reentrant in Keil: must not
+   share its variable with functions it calls via pointers.
  */
 #define ZB_KEIL_REENTRANT reentrant
 
@@ -217,7 +217,7 @@ sbit LED2 = P3^1;
    Complilers stuff
  */
 #if defined(SDCC)
-  #define INTERRUPT_DEFINITION(x, y) __interrupt (x) __using (y)
+  #define INTERRUPT_DEFINITION(x, y) __interrupt(x) __using(y)
 #elif defined(KEIL)
   #define INTERRUPT_DEFINITION(x, y)
 #elif defined(ZB_IAR)
@@ -227,8 +227,8 @@ sbit LED2 = P3^1;
 #endif
 
 #if defined(SDCC)
-  #define INTERRUPT_DECLARATION(x, y) __interrupt (x) __using (y)
-  #define INTERRUPT_DECLARATION_NOBANK(x) __interrupt (x)
+  #define INTERRUPT_DECLARATION(x, y) __interrupt(x) __using(y)
+  #define INTERRUPT_DECLARATION_NOBANK(x) __interrupt(x)
 #elif defined(KEIL)
  #define INTERRUPT_DECLARATION(x, y) interrupt x using y
  #define INTERRUPT_DECLARATION_NOBANK(x) interrupt x
@@ -240,11 +240,12 @@ sbit LED2 = P3^1;
 #endif
 
 #if defined(SDCC)
-  #define DECLARE_REGISTER_AT(type, var, val) type at (val) var
+  #define DECLARE_REGISTER_AT(type, var, val) type at(val) var
 #elif defined(KEIL)
   #define DECLARE_REGISTER_AT(type, var, val) type var = val
 #elif defined(ZB_IAR)
-  #define DECLARE_REGISTER_AT(type, var, val) __sfr __no_init volatile type var @ val
+  #define DECLARE_REGISTER_AT(type, var, \
+                              val) __sfr __no_init volatile type var @ val
 #else
   #error Port me!!!
 #endif
@@ -300,10 +301,10 @@ sbit LED2 = P3^1;
 #ifdef C8051F120
 #define SPI_INTER_NUMBER    SPIF_int
 /*
-  See table 11.4 and ioC8051F124.h to match interrupt vector with number.
+   See table 11.4 and ioC8051F124.h to match interrupt vector with number.
 
-  For 2400 with F124 int number 2 == 0x13 == IE1_int
-*/
+   For 2400 with F124 int number 2 == 0x13 == IE1_int
+ */
 #define UBEC_2400_INTER_NUMBER IE1_int
 #define ZB_DISABLE_UBEC_2400() EX1 = 0, EX1 = 0
 #define ZB_ENABLE_UBEC_2400() EX1 = 1
@@ -311,8 +312,8 @@ sbit LED2 = P3^1;
 
 #elif defined ZB_UZ2410
 /*
-For 2410 int 6 - 0x33 == SPIF_int
-*/
+   For 2410 int 6 - 0x33 == SPIF_int
+ */
 #define UBEC_2400_INTER_NUMBER 0x33
 #define ZB_DISABLE_UBEC_2400() ESPI0 = 0, ESPI0 = 0
 #define ZB_ENABLE_UBEC_2400() ESPI0 = 1
@@ -353,10 +354,10 @@ For 2410 int 6 - 0x33 == SPIF_int
 
 #ifdef C8051F120
 #define ZB_STOP_WATCHDOG() \
-(                          \
-  WDTCN = 0xde,            \
-  WDTCN = 0xad             \
-)
+    (                          \
+        WDTCN = 0xde,            \
+        WDTCN = 0xad             \
+    )
 #else
 #define ZB_STOP_WATCHDOG()
 #endif  /*TODO seems like wd on uz2410 is disabled by default, but need to check this */
@@ -379,7 +380,7 @@ zb_uint16_t zb_random();
 #define ZB_MEMCMP memcmp
 
 void zb_bzero_short(char *s, zb_uint8_t n);
-#define ZB_BZERO(s,l) zb_bzero_short((char*)(s), (l))
+#define ZB_BZERO(s, l) zb_bzero_short((char *)(s), (l))
 #define ZB_BZERO2(s) ZB_BZERO(s, 2)
 
 #define ZB_CODE_MEM ((zb_uint8_t code *)0x00)
@@ -388,7 +389,8 @@ void zb_bzero_short(char *s, zb_uint8_t n);
 
 /* for SDCC: handler prototype MUST be defined in the same file with main() function */
 #define DECLARE_UBEC_2400_INTER_HANDLER() \
-  void ubec_2400_handler(void) INTERRUPT_DEFINITION(UBEC_2400_INTER_NUMBER, REGISTER_BANK_0);
+    void ubec_2400_handler(void) INTERRUPT_DEFINITION(UBEC_2400_INTER_NUMBER, \
+                                                      REGISTER_BANK_0);
 
 #ifndef KEIL
 #define ZVUNUSED(v) (void)v
@@ -398,20 +400,26 @@ void zb_bzero_short(char *s, zb_uint8_t n);
 #endif
 /* nvram functions */
 /* dummy
-typedef zb_uint8_t zb_node_desc_t[15];
-typedef zb_uint8_t zb_power_desc_t[2];
-typedef zb_uint8_t zb_simple_desc_t[12];
-*/
+   typedef zb_uint8_t zb_node_desc_t[15];
+   typedef zb_uint8_t zb_power_desc_t[2];
+   typedef zb_uint8_t zb_simple_desc_t[12];
+ */
 
-zb_ret_t zb_write_nvram_config(zb_uint8_t aps_designated_coord, zb_uint8_t aps_use_insecure_join, zb_uint8_t aps_use_extended_pan_id,
-    zb_ieee_addr_t mac_extended_address);
+zb_ret_t zb_write_nvram_config(zb_uint8_t aps_designated_coord,
+                               zb_uint8_t aps_use_insecure_join,
+                               zb_uint8_t aps_use_extended_pan_id,
+                               zb_ieee_addr_t mac_extended_address);
 
 zb_ret_t zb_config_from_nvram();
 
 void zb_erase_nvram(zb_uint8_t page);
 
-zb_ret_t zb_write_formdesc_data(zb_uint8_t profile_in_use, zb_ieee_addr_t long_parent_addr, zb_uint32_t aps_channel_mask,
-zb_uint16_t short_parent_addr, zb_uint8_t     depth, zb_uint16_t pan_id, zb_ext_pan_id_t ext_pan_id, zb_uint16_t nwk_short_addr);
+zb_ret_t zb_write_formdesc_data(zb_uint8_t profile_in_use,
+                                zb_ieee_addr_t long_parent_addr,
+                                zb_uint32_t aps_channel_mask,
+                                zb_uint16_t short_parent_addr, zb_uint8_t depth,
+                                zb_uint16_t pan_id, zb_ext_pan_id_t ext_pan_id,
+                                zb_uint16_t nwk_short_addr);
 
 zb_ret_t zb_read_formdesc_data();
 
@@ -432,7 +440,7 @@ zb_ret_t zb_read_up_counter();
  */
 
 void zb_ext_int_init(); /* external interrupt init */
-void zb_xram_init(); /*off-chip xram initialization */
+void zb_xram_init();    /*off-chip xram initialization */
 
 
 /*! @} */

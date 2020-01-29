@@ -1,57 +1,57 @@
 /***************************************************************************
-*                      ZBOSS ZigBee Pro 2007 stack                         *
-*                                                                          *
-*          Copyright (c) 2012 DSR Corporation Denver CO, USA.              *
-*                       http://www.dsr-wireless.com                        *
-*                                                                          *
-*                            All rights reserved.                          *
-*          Copyright (c) 2011 ClarIDy Solutions, Inc., Taipei, Taiwan.     *
-*                       http://www.claridy.com/                            *
-*                                                                          *
-*          Copyright (c) 2011 Uniband Electronic Corporation (UBEC),       *
-*                             Hsinchu, Taiwan.                             *
-*                       http://www.ubec.com.tw/                            *
-*                                                                          *
-*          Copyright (c) 2011 DSR Corporation Denver CO, USA.              *
-*                       http://www.dsr-wireless.com                        *
-*                                                                          *
-*                            All rights reserved.                          *
-*                                                                          *
-*                                                                          *
-* ZigBee Pro 2007 stack, also known as ZBOSS (R) ZB stack is available     *
-* under either the terms of the Commercial License or the GNU General      *
-* Public License version 2.0.  As a recipient of ZigBee Pro 2007 stack, you*
-* may choose which license to receive this code under (except as noted in  *
-* per-module LICENSE files).                                               *
-*                                                                          *
-* ZBOSS is a registered trademark of DSR Corporation AKA Data Storage      *
-* Research LLC.                                                            *
-*                                                                          *
-* GNU General Public License Usage                                         *
-* This file may be used under the terms of the GNU General Public License  *
-* version 2.0 as published by the Free Software Foundation and appearing   *
-* in the file LICENSE.GPL included in the packaging of this file.  Please  *
-* review the following information to ensure the GNU General Public        *
-* License version 2.0 requirements will be met:                            *
-* http://www.gnu.org/licenses/old-licenses/gpl-2.0.html.                   *
-*                                                                          *
-* Commercial Usage                                                         *
-* Licensees holding valid ClarIDy/UBEC/DSR Commercial licenses may use     *
-* this file in accordance with the ClarIDy/UBEC/DSR Commercial License     *
-* Agreement provided with the Software or, alternatively, in accordance    *
-* with the terms contained in a written agreement between you and          *
-* ClarIDy/UBEC/DSR.                                                        *
-*                                                                          *
-****************************************************************************
-PURPOSE: general-purpose typedefs
-*/
+ *                      ZBOSS ZigBee Pro 2007 stack                         *
+ *                                                                          *
+ *          Copyright (c) 2012 DSR Corporation Denver CO, USA.              *
+ *                       http://www.dsr-wireless.com                        *
+ *                                                                          *
+ *                            All rights reserved.                          *
+ *          Copyright (c) 2011 ClarIDy Solutions, Inc., Taipei, Taiwan.     *
+ *                       http://www.claridy.com/                            *
+ *                                                                          *
+ *          Copyright (c) 2011 Uniband Electronic Corporation (UBEC),       *
+ *                             Hsinchu, Taiwan.                             *
+ *                       http://www.ubec.com.tw/                            *
+ *                                                                          *
+ *          Copyright (c) 2011 DSR Corporation Denver CO, USA.              *
+ *                       http://www.dsr-wireless.com                        *
+ *                                                                          *
+ *                            All rights reserved.                          *
+ *                                                                          *
+ *                                                                          *
+ * ZigBee Pro 2007 stack, also known as ZBOSS (R) ZB stack is available     *
+ * under either the terms of the Commercial License or the GNU General      *
+ * Public License version 2.0.  As a recipient of ZigBee Pro 2007 stack, you*
+ * may choose which license to receive this code under (except as noted in  *
+ * per-module LICENSE files).                                               *
+ *                                                                          *
+ * ZBOSS is a registered trademark of DSR Corporation AKA Data Storage      *
+ * Research LLC.                                                            *
+ *                                                                          *
+ * GNU General Public License Usage                                         *
+ * This file may be used under the terms of the GNU General Public License  *
+ * version 2.0 as published by the Free Software Foundation and appearing   *
+ * in the file LICENSE.GPL included in the packaging of this file.  Please  *
+ * review the following information to ensure the GNU General Public        *
+ * License version 2.0 requirements will be met:                            *
+ * http://www.gnu.org/licenses/old-licenses/gpl-2.0.html.                   *
+ *                                                                          *
+ * Commercial Usage                                                         *
+ * Licensees holding valid ClarIDy/UBEC/DSR Commercial licenses may use     *
+ * this file in accordance with the ClarIDy/UBEC/DSR Commercial License     *
+ * Agreement provided with the Software or, alternatively, in accordance    *
+ * with the terms contained in a written agreement between you and          *
+ * ClarIDy/UBEC/DSR.                                                        *
+ *                                                                          *
+ ****************************************************************************
+   PURPOSE: general-purpose typedefs
+ */
 #ifndef ZB_TYPES_H
 #define ZB_TYPES_H 1
 
 /**
    @addtogroup base_types
    @{
-*/
+ */
 
 #ifdef ZB8051
 #define ZB_8BIT_WORD
@@ -103,11 +103,10 @@ PURPOSE: general-purpose typedefs
 
 /**
    General purpose boolean type
-*/
-typedef enum zb_bool_e
-{
-  ZB_FALSE = 0,
-  ZB_TRUE = 1
+ */
+typedef enum zb_bool_e {
+    ZB_FALSE    = 0,
+    ZB_TRUE     = 1
 }
 zb_bool_t;
 
@@ -118,71 +117,71 @@ zb_bool_t;
 
 /**
    project-local char type
-*/
-typedef char               zb_char_t;
+ */
+typedef char zb_char_t;
 /**
    project-local unsigned char type
-*/
-typedef unsigned char      zb_uchar_t;
+ */
+typedef unsigned char zb_uchar_t;
 /**
    project-local 1-byte unsigned int type
-*/
-typedef unsigned char      zb_uint8_t;
+ */
+typedef unsigned char zb_uint8_t;
 /**
    project-local 1-byte signed int type
-*/
-typedef signed char        zb_int8_t;
+ */
+typedef signed char zb_int8_t;
 /**
    project-local 2-byte unsigned int type
-*/
-typedef unsigned short     zb_uint16_t;
+ */
+typedef unsigned short zb_uint16_t;
 /**
    project-local 2-byte signed int type
-*/
-typedef signed short       zb_int16_t;
+ */
+typedef signed short zb_int16_t;
 #ifdef ZB8051
 /**
    project-local 4-byte unsigned int type
-*/
-typedef unsigned long      zb_uint32_t;
+ */
+typedef unsigned long zb_uint32_t;
 /**
    project-local 4-byte signed int type
-*/
-typedef signed long        zb_int32_t;
+ */
+typedef signed long zb_int32_t;
 
 /**
    type to be used for unsigned bit fields inside structure
-*/
-typedef zb_uint16_t        zb_bitfield_t;
+ */
+typedef zb_uint16_t zb_bitfield_t;
 /**
    type to be used for signed bit fields inside structure
-*/
-typedef zb_int16_t         zb_sbitfield_t;
+ */
+typedef zb_int16_t zb_sbitfield_t;
 
 /**
    project-local size_t type
-*/
+ */
 
-typedef zb_uint16_t        zb_size_t;
+typedef zb_uint16_t zb_size_t;
 
 
 #else
 /**
    project-local 4-byte unsigned int type
-*/
-typedef unsigned int       zb_uint32_t;
+ */
+typedef unsigned int zb_uint32_t;
 /**
    project-local 4-byte signed int type
-*/
-typedef signed int         zb_int32_t;
+ */
+typedef signed int zb_int32_t;
 /**
    type to be used for unsigned bit fields inside structure
-*/
-typedef zb_uint32_t        zb_bitfield_t;
+ */
+typedef zb_uint32_t zb_bitfield_t;
 /**
    type to be used for signed bit fields inside structure
-*/
-typedef zb_int32_t         zb_sbitfield_t;
+ */
+typedef zb_int32_t zb_sbitfield_t;
 
 
 #endif  /* ZB8051 */
@@ -193,89 +192,89 @@ typedef zb_int32_t         zb_sbitfield_t;
 
 #include <inttypes.h>
 
-typedef uint8_t            zb_uint8_t;
-typedef int8_t             zb_int8_t;
-typedef uint16_t           zb_uint16_t;
-typedef int16_t            zb_int16_t;
-typedef uint32_t           zb_uint32_t;
-typedef int32_t            zb_int32_t;
+typedef uint8_t zb_uint8_t;
+typedef int8_t zb_int8_t;
+typedef uint16_t zb_uint16_t;
+typedef int16_t zb_int16_t;
+typedef uint32_t zb_uint32_t;
+typedef int32_t zb_int32_t;
 
-typedef char               zb_char_t;
-typedef unsigned char      zb_uchar_t;
+typedef char zb_char_t;
+typedef unsigned char zb_uchar_t;
 
-typedef unsigned           zb_bitfield_t;
-typedef signed             zb_sbitfield_t;
+typedef unsigned zb_bitfield_t;
+typedef signed zb_sbitfield_t;
 
 /* Integer with size equal to the pointer size. */
-typedef zb_uint32_t        zb_size_t;
-typedef zb_size_t          zb_ptrsize_uint_t;
+typedef zb_uint32_t zb_size_t;
+typedef zb_size_t zb_ptrsize_uint_t;
 
 
 #endif  /* UNIX */
 
 
 /*
-  Our short and int definition.
-  Short size == 8051 register size, int size is 2 bytes.
+   Our short and int definition.
+   Short size == 8051 register size, int size is 2 bytes.
  */
 #ifdef ZB_8BIT_WORD
 
 /**
     short int (can fit into single CPU register)
  */
-typedef zb_int8_t          zb_short_t;
+typedef zb_int8_t zb_short_t;
 /**
     short unsigned int (can fit into single CPU register)
  */
-typedef zb_uint8_t         zb_ushort_t;
+typedef zb_uint8_t zb_ushort_t;
 /**
     int (at least 2 bytes)
  */
-typedef zb_int16_t         zb_int_t;
+typedef zb_int16_t zb_int_t;
 /**
     unsigned int (at least 2 bytes)
  */
-typedef zb_uint16_t        zb_uint_t;
+typedef zb_uint16_t zb_uint_t;
 /**
     long int (at least 4 bytes)
  */
-typedef zb_int32_t         zb_long_t;
+typedef zb_int32_t zb_long_t;
 /**
     unsigned long int (at least 4 bytes)
  */
-typedef zb_uint32_t        zb_ulong_t;
+typedef zb_uint32_t zb_ulong_t;
 #else
 /**
     short int (can fit into single CPU register)
  */
-typedef int                zb_short_t;
+typedef int zb_short_t;
 /**
     unsigned short int (can fit into single CPU register)
  */
-typedef unsigned int       zb_ushort_t;
+typedef unsigned int zb_ushort_t;
 /**
     int (at least 2 bytes)
  */
-typedef int                zb_int_t;
+typedef int zb_int_t;
 /**
     unsigned int (at least 2 bytes)
  */
-typedef unsigned int       zb_uint_t;
+typedef unsigned int zb_uint_t;
 /**
     long int (at least 4 bytes)
  */
-typedef zb_int_t           zb_long_t;
+typedef zb_int_t zb_long_t;
 /**
     unsigned long int (at least 4 bytes)
  */
-typedef zb_uint_t          zb_ulong_t;
+typedef zb_uint_t zb_ulong_t;
 #endif
 
 /**
    ptr to void
  */
-typedef void *             zb_voidp_t;
-typedef void               zb_void_t;
+typedef void *zb_voidp_t;
+typedef void zb_void_t;
 
 #define ZB_INT8_MIN       (-127 - 1)
 #define ZB_INT8_MAX       127
@@ -297,13 +296,13 @@ typedef void               zb_void_t;
 #define ZB_UINT_MIN      0UL
 
 /*
-  Short defined as register size, int as large enough int on this platform.
-  32 bit on PC, 8 and 16 bit on 8051
+   Short defined as register size, int as large enough int on this platform.
+   32 bit on PC, 8 and 16 bit on 8051
  */
 
 
 /**
-  Max value constants per type
+   Max value constants per type
  */
 #ifdef ZB_32BIT_WORD
 
@@ -354,25 +353,26 @@ extern zb_64bit_addr_t g_zero_addr;
    Clear long address
  */
 #define ZB_64BIT_ADDR_ZERO(addr)                \
-  ZB_MEMSET((addr), 0, 8)
+    ZB_MEMSET((addr), 0, 8)
 
 
 /**
    Copy long address
  */
-#define ZB_64BIT_ADDR_COPY(dst, src) ZB_MEMCPY(dst, src, sizeof(zb_64bit_addr_t))
+#define ZB_64BIT_ADDR_COPY(dst, src) ZB_MEMCPY(dst, src, \
+                                               sizeof(zb_64bit_addr_t))
 
 /**
    Return 1 if long addresses are equal
  */
-#define ZB_64BIT_ADDR_CMP(one, two) ((zb_bool_t)!ZB_MEMCMP((one), (two), 8))
+#define ZB_64BIT_ADDR_CMP(one, two) ((zb_bool_t) !ZB_MEMCMP((one), (two), 8))
 
 /**
-  Long (64-bit) device address
+   Long (64-bit) device address
  */
 typedef zb_64bit_addr_t zb_ieee_addr_t;
 /**
-  Long (64-bit) Extented pan id
+   Long (64-bit) Extented pan id
  */
 typedef zb_64bit_addr_t zb_ext_pan_id_t;
 
@@ -387,21 +387,21 @@ typedef zb_64bit_addr_t zb_ext_pan_id_t;
 #define ZB_IEEE_ADDR_CMP ZB_64BIT_ADDR_CMP
 
 #define ZB_ADDR_CMP(addr_mode, addr1, addr2)                            \
-  ((addr_mode == ZB_ADDR_16BIT_DEV_OR_BROADCAST) ?                      \
-   (addr1.addr_short == addr2.addr_short) : ZB_64BIT_ADDR_CMP(addr1.addr_long, addr2.addr_long))
+    ((addr_mode == ZB_ADDR_16BIT_DEV_OR_BROADCAST) ?                      \
+     (addr1.addr_short == addr2.addr_short) : ZB_64BIT_ADDR_CMP(addr1.addr_long, \
+                                                                addr2.addr_long))
 
 /**
    Union to address either long or short address
  */
-union zb_addr_u
-{
-  zb_uint16_t  addr_short;
-  zb_ieee_addr_t addr_long;
+union zb_addr_u {
+    zb_uint16_t addr_short;
+    zb_ieee_addr_t addr_long;
 };
 
 /**
- definitions for constants of given type
-*/
+   definitions for constants of given type
+ */
 #define ZB_INT8_C(c)  c
 #define ZB_UINT8_C(c) c ## U
 
@@ -413,11 +413,13 @@ union zb_addr_u
 
 #define ZB_OFFSETOF(t, f) (zb_size_t)(&((t *)0)->f)
 
-#define ZB_OFFSETOF_VAR(s, f) (zb_size_t)(((zb_int8_t *)(&(s)->f)) - ((zb_int8_t *)(s)))
+#define ZB_OFFSETOF_VAR(s, \
+                        f) (zb_size_t)(((zb_int8_t *)(&(s)->f)) - \
+                                       ((zb_int8_t *)(s)))
 
-#define ZB_SIZEOF_FIELD(type, field) (sizeof(((type*)0)->field))
+#define ZB_SIZEOF_FIELD(type, field) (sizeof(((type *)0)->field))
 
-#define ZB_ARRAY_SIZE(arr) (sizeof((arr))/sizeof((arr)[0]))
+#define ZB_ARRAY_SIZE(arr) (sizeof((arr)) / sizeof((arr)[0]))
 
 
 #define ZB_SIGNED_SHIFT(v, s) ((zb_int_t)(v) >> (s))
@@ -444,53 +446,56 @@ union zb_addr_u
 
    @param ptr - destination pointer. It is ok if it not aligned to 2.
    @param val - source pointer. It is ok if it not aligned to 2.
-*/
+ */
 
 #define ZB_HTOLE16(ptr, val)   ZB_MEMCPY((ptr), (val), 2)
 #define ZB_HTOLE32(ptr, val)   ZB_MEMCPY((ptr), (val), 4)
 #define ZB_HTOLE64(ptr, val)   ZB_MEMCPY((ptr), (val), 8)
 #else
 
-#define ZB_HTOLE16(ptr, val)   (((zb_uint16_t *)(ptr))[0] = *((zb_uint16_t *)(val)))
-#define ZB_HTOLE32(ptr, val)   (((zb_uint32_t *)(ptr))[0] = *((zb_uint32_t *)(val)))
+#define ZB_HTOLE16(ptr, \
+                   val)   (((zb_uint16_t *)(ptr))[0] = *((zb_uint16_t *)(val)))
+#define ZB_HTOLE32(ptr, \
+                   val)   (((zb_uint32_t *)(ptr))[0] = *((zb_uint32_t *)(val)))
 /*
-#define ZB_HTOLE64(ptr, val)                              \
-  (((zb_uint32_t *)(ptr))[0] = ((zb_uint32_t *)(val))[0], \
+ #define ZB_HTOLE64(ptr, val)                              \
+   (((zb_uint32_t *)(ptr))[0] = ((zb_uint32_t *)(val))[0], \
    ((zb_uint32_t *)(ptr))[1] = ((zb_uint32_t *)(val))[1])
-*/
+ */
 #define ZB_HTOLE64(ptr, val) ZB_MEMCPY(ptr, val, sizeof(zb_64bit_addr_t))
 #endif  /* need_align */
 #define ZB_HTOBE16(ptr, val)                            \
-  (((zb_uint8_t *)(ptr))[0] = ((zb_uint8_t *)(val))[1], \
-   ((zb_uint8_t *)(ptr))[1] = ((zb_uint8_t *)(val))[0]  \
-  )
+    (((zb_uint8_t *)(ptr))[0] = ((zb_uint8_t *)(val))[1], \
+     ((zb_uint8_t *)(ptr))[1] = ((zb_uint8_t *)(val))[0]  \
+    )
 
 
 #define ZB_HTOBE16_VAL(ptr, val)                \
-{                                               \
-  zb_uint16_t _v = (val);                       \
-  ZB_HTOBE16((ptr), &_v);                       \
-}
+    {                                               \
+        zb_uint16_t _v = (val);                       \
+        ZB_HTOBE16((ptr), &_v);                       \
+    }
 
 #else  /* !little endian */
 
 #define ZB_HTOLE16(ptr, val)                            \
-  (((zb_uint8_t *)(ptr))[0] = ((zb_uint8_t *)(val))[1], \
-   ((zb_uint8_t *)(ptr))[1] = ((zb_uint8_t *)(val))[0]  \
-  )
+    (((zb_uint8_t *)(ptr))[0] = ((zb_uint8_t *)(val))[1], \
+     ((zb_uint8_t *)(ptr))[1] = ((zb_uint8_t *)(val))[0]  \
+    )
 
 void zb_htole32(zb_uint32_t ZB_XDATA *ptr, zb_uint32_t ZB_XDATA *val);
-#define ZB_HTOLE32(ptr, val) zb_htole32((zb_uint32_t*)(ptr), (zb_uint32_t*)(val))
+#define ZB_HTOLE32(ptr, val) zb_htole32((zb_uint32_t *)(ptr), \
+                                        (zb_uint32_t *)(val))
 
 #define ZB_HTOBE16(ptr, val) (*(zb_uint16_t *)(ptr)) = *((zb_uint16_t *)(val))
 
 #ifdef ZB_NEED_ALIGN
 
 #define ZB_HTOBE16_VAL(ptr, val)                \
-{                                               \
-  zb_uint16_t _v = (val);                       \
-  ZB_MEMCPY((ptr), &_v, 2);                     \
-}
+    {                                               \
+        zb_uint16_t _v = (val);                       \
+        ZB_MEMCPY((ptr), &_v, 2);                     \
+    }
 
 #else
 
@@ -502,14 +507,14 @@ void zb_htole32(zb_uint32_t ZB_XDATA *ptr, zb_uint32_t ZB_XDATA *val);
                                  * 8-byte array in the order it transmitted */
 
 #define ZB_HTOLE64(ptr, val)                                \
-        *((zb_uint8_t*)(ptr)+7) = *((zb_uint8_t*)(val)  ),  \
-        *((zb_uint8_t*)(ptr)+6) = *((zb_uint8_t*)(val)+1),  \
-        *((zb_uint8_t*)(ptr)+5) = *((zb_uint8_t*)(val)+2),  \
-        *((zb_uint8_t*)(ptr)+4) = *((zb_uint8_t*)(val)+3),  \
-        *((zb_uint8_t*)(ptr)+3) = *((zb_uint8_t*)(val)+4),  \
-        *((zb_uint8_t*)(ptr)+2) = *((zb_uint8_t*)(val)+5),  \
-        *((zb_uint8_t*)(ptr)+1) = *((zb_uint8_t*)(val)+6),  \
-        *((zb_uint8_t*)(ptr)  ) = *((zb_uint8_t*)(val)+7)
+    *((zb_uint8_t *)(ptr) + 7) = *((zb_uint8_t *)(val)),  \
+    *((zb_uint8_t *)(ptr) + 6) = *((zb_uint8_t *)(val) + 1),  \
+    *((zb_uint8_t *)(ptr) + 5) = *((zb_uint8_t *)(val) + 2),  \
+    *((zb_uint8_t *)(ptr) + 4) = *((zb_uint8_t *)(val) + 3),  \
+    *((zb_uint8_t *)(ptr) + 3) = *((zb_uint8_t *)(val) + 4),  \
+    *((zb_uint8_t *)(ptr) + 2) = *((zb_uint8_t *)(val) + 5),  \
+    *((zb_uint8_t *)(ptr) + 1) = *((zb_uint8_t *)(val) + 6),  \
+    *((zb_uint8_t *)(ptr)) = *((zb_uint8_t *)(val) + 7)
 #endif
 
 #define ZB_HTOLE64(ptr, val)   ZB_MEMCPY((ptr), (val), 8)
@@ -537,7 +542,7 @@ void zb_get_next_letoh16(zb_uint16_t *dst, zb_uint8_t **src);
 
    @param ptr - destination pointer. It is ok if it not aligned to 2.
    @param val - source pointer. It is ok if it not aligned to 2.
-*/
+ */
 #define ZB_LETOH16 ZB_HTOLE16
 #define ZB_LETOH32 ZB_HTOLE32
 #define ZB_BETOH16 ZB_HTOBE16
