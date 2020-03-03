@@ -130,8 +130,7 @@ typedef struct zb_nwk_broadcast_retransmit_s {
     zb_uint8_t seq_num;
     zb_uint8_t passive_ack[ZB_NWK_BRCST_PASSIVE_ACK_ARRAY_SIZE]; /* passive ack
                                                                  * bit array */
-}
-zb_nwk_broadcast_retransmit_t;
+} ZB_PACKED_STRUCT zb_nwk_broadcast_retransmit_t;
 
 
 typedef struct zb_leave_pending_list_s {

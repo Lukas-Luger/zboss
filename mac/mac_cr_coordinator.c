@@ -367,7 +367,7 @@ ZB_SDCC_REENTRANT
     ZB_SUPERFRAME_SET_BLE(ptr, beacon_frame_params->ble);
 #ifdef ZB_COORDINATOR_ROLE
     if (ZB_AIB().aps_designated_coordinator ==  1) {
-        ZB_SUPERFRAME_SET_PAN_COORD(ptr, 1);
+        ZB_SUPERFRAME_SET_PAN_COORD(ptr, 0);
     }
 #else
     /* pan coord bit is set to 0 already */

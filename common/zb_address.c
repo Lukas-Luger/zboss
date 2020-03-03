@@ -487,7 +487,7 @@ void zb_address_by_ref(zb_ieee_addr_t ieee_address,
 {
     zb_address_map_t *ent = &ZG->addr.addr_map[ref];
 
-    *short_address_p = ent->addr;
+    ZB_MEMCPY(short_address_p, &ent->addr, 2);
     ZB_ADDRESS_DECOMPRESS(ieee_address, ent->ieee_addr);
 }
 
@@ -506,7 +506,7 @@ void zb_address_short_by_ref(zb_uint16_t *short_address_p,
 {
     zb_address_map_t *ent = &ZG->addr.addr_map[ref];
 
-    *short_address_p = ent->addr;
+    ZB_MEMCPY(short_address_p, &ent->addr, 2);
 }
 
 
@@ -632,7 +632,7 @@ static zb_bool_t short_search(zb_uint16_t short_addr,
     }
 
     TRACE_MSG(TRACE_NWK3,
-              "short_addr %d l %d ZG->addr.short_sorted[l] %d addr %d",
+              "short_addr 0x%x l %d ZG->addr.short_sorted[l] %d addr 0x%x",
               (FMT__D_D_D_D, short_addr, l, ZG->addr.short_sorted[l],
                ZG->addr.addr_map[ZG->addr.short_sorted[l]].addr));
 

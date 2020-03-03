@@ -60,7 +60,10 @@ void zdo_send_req_by_short(zb_uint16_t command_id, zb_uint8_t param,
 void zdo_send_req_by_long(zb_uint8_t command_id, zb_uint8_t param,
                           zb_callback_t cb, zb_ieee_addr_t addr);
 void zdo_send_resp_by_short(zb_uint16_t command_id, zb_uint8_t param,
-                            zb_uint8_t tsn, zb_uint16_t addr) ZB_SDCC_REENTRANT;
+                            zb_uint8_t tsn, zb_uint16_t addr);
+void zdo_send_resp_by_long(zb_uint16_t command_id, zb_uint8_t param,
+                           zb_uint8_t tsn,
+                           zb_ieee_addr_t addr);
 
 /*
    Signal user that response came.

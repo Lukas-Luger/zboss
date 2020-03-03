@@ -63,6 +63,7 @@ void zb_zdo_data_indication(zb_uint8_t param) ZB_CALLBACK;
 
 void zb_apsde_data_indication(zb_uint8_t param) ZB_CALLBACK
 {
+    printf("ZOMGG data indication\n");
     zb_buf_t *asdu = (zb_buf_t *)ZB_BUF_FROM_REF(param);
     zb_apsde_data_indication_t *ind = ZB_GET_BUF_PARAM(asdu,
                                                        zb_apsde_data_indication_t);
@@ -110,6 +111,7 @@ void zb_af_set_data_indication(zb_callback_t cb)
 
 void zb_apsde_data_acknowledged(zb_uint8_t param) ZB_CALLBACK
 {
+    printf("apsde acked\n");
     zb_aps_hdr_t aps_hdr;
     zb_buf_t *asdu = (zb_buf_t *)ZB_BUF_FROM_REF(param);
 
@@ -171,7 +173,9 @@ void zb_apsde_data_acknowledged(zb_uint8_t param) ZB_CALLBACK
     else
 #endif  /* ZB_LIMITED_FEATURES2 */
     {
-        zb_free_buf(asdu);
+        if (zdo_af_resp(param) != RET_OK) {
+            zb_free_buf(asdu);
+        }
     }
 
     TRACE_MSG(TRACE_APS3, "<<apsde_data_acked", (FMT__0));

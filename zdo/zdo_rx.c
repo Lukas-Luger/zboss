@@ -222,7 +222,13 @@ void zb_zdo_data_indication(zb_uint8_t param) ZB_CALLBACK
 #ifdef ZB_ROUTER_ROLE
     if ((ind->clusterid == ZDO_DEVICE_ANNCE_CLID) &&
         (!ZG->nwk.handle.joined_pro)) {
-        zdo_device_annce_srv(param, (void *)(body + 1));
+//       printf("body:\n");
+//       od_hex_dump(body, 32, 16);
+        zdo_device_annce_srv(param, (void *)(body));
+//       printf("body:\n");
+//       od_hex_dump(body, 32, 16);
+//       printf("asdu:\n");
+//       od_hex_dump(asdu, 32, 16);
         skip_free_buf = 0;
     }
     else
@@ -327,6 +333,35 @@ void zb_zdo_data_indication(zb_uint8_t param) ZB_CALLBACK
             zdo_change_channel(param);
         }
     }
+    else if (ind->clusterid == 0x1000) {
+        zb_uint8_t zll_command = *(ZB_BUF_BEGIN(ZB_BUF_FROM_REF(param)) + 2);
+        TRACE_MSG(TRACE_ZDO1, "received ZLL command: 0x%hx",
+                  (FMT__H, zll_command));
+        switch (zll_command) {
+            case 0x0: /* scan request */
+                zdo_zll_scan_resp(param);
+                break;
+
+            case 0x6: /* identify request */
+                zdo_zll_identify_resp(param);
+                break;
+
+            case 0x10: /* network start request */
+                printf("network start request\n");
+                zdo_zll_start_network_resp(param);
+                break;
+
+            case 0x12: /* join router request */
+                printf("join router request\n");
+                zdo_zll_join_router_resp(param);
+                break;
+
+            default:
+                printf("unhandled ZLL command 0x%x\n", zll_command);
+                break;
+        }
+
+    }
     else
 #endif  /* ZB_LIMITED_FEATURES */
     {
@@ -334,29 +369,6 @@ void zb_zdo_data_indication(zb_uint8_t param) ZB_CALLBACK
                   (FMT__H, ind->clusterid));
         skip_free_buf = 0;
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     TRACE_MSG(TRACE_ZDO3, "skip_free_buf %hd", (FMT__H, skip_free_buf));
     if (!skip_free_buf) {

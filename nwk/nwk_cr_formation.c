@@ -391,7 +391,7 @@ static void call_mlme_start(zb_buf_t *buf, zb_uint16_t pan_id,
     zb_mlme_start_req_t req;
 
     /* the NLME will choose 0x0000 as the 16-bit short MAC address */
-    ZB_PIB_SHORT_ADDRESS() = 0;
+//   ZB_PIB_SHORT_ADDRESS() = 0x0002;
 
     /* if the NIB attribute  nwkExtendedPANId is equal to 0x0000000000000000, this
        attribute will be initialized with the value of the MAC constant
@@ -400,6 +400,8 @@ static void call_mlme_start(zb_buf_t *buf, zb_uint16_t pan_id,
     if (ZB_IEEE_ADDR_IS_ZERO(ZB_NIB_EXT_PAN_ID())) {
         ZB_EXTPANID_COPY(ZB_NIB_EXT_PAN_ID(), ZB_PIB_EXTENDED_ADDRESS());
     }
+
+    printf("panid 0x%x channel %u\n", pan_id, channel);
 
     /* TODO: fill zero params if necessary */
     req.pan_id = pan_id;
@@ -438,7 +440,8 @@ void zb_nwk_update_beacon_payload()
     /* TODO: when will implement PRO, handle PRO device participate in 2007 network as ZE. */
     ZB_PIB_BEACON_PAYLOAD().stack_profile = ZB_STACK_PROFILE;
     ZB_PIB_BEACON_PAYLOAD().protocol_version = ZB_PROTOCOL_VERSION;
-    ZB_PIB_BEACON_PAYLOAD().device_depth = ZB_NIB_DEPTH();
+//   ZB_PIB_BEACON_PAYLOAD().device_depth = ZB_NIB_DEPTH();
+    ZB_PIB_BEACON_PAYLOAD().device_depth = 1;
     ZB_EXTPANID_COPY(ZB_PIB_BEACON_PAYLOAD().extended_panid,
                      ZB_NIB_EXT_PAN_ID());
     ZB_MEMSET(&ZB_PIB_BEACON_PAYLOAD().txoffset, 0xFF,
@@ -448,10 +451,11 @@ void zb_nwk_update_beacon_payload()
        TODO: count # of ZR and ZE separately.
      */
     if (ZB_NIB_DEPTH() < ZB_NWK_MAX_DEPTH) {
-        ZB_PIB_BEACON_PAYLOAD().router_capacity =
-            MAC_PIB().mac_association_permit;
-        ZB_PIB_BEACON_PAYLOAD().end_device_capacity =
-            MAC_PIB().mac_association_permit;
+//     ZB_PIB_BEACON_PAYLOAD().router_capacity = MAC_PIB().mac_association_permit;
+        ZB_PIB_BEACON_PAYLOAD().router_capacity = 1;
+//     ZB_PIB_BEACON_PAYLOAD().end_device_capacity = MAC_PIB().mac_association_permit;
+        ZB_PIB_BEACON_PAYLOAD().end_device_capacity = 1;
+        MAC_PIB().mac_association_permit = 0;
     }
     else {
         ZB_PIB_BEACON_PAYLOAD().router_capacity = 0;

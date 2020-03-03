@@ -174,6 +174,8 @@ void zb_apsde_data_request(zb_uint8_t param) ZB_CALLBACK
         ZB_GET_BUF_TAIL(apsdu, sizeof(zb_apsde_data_req_t));
 
     TRACE_MSG(TRACE_APS1, "+apsde_data_req %hd", (FMT__H, param));
+//     od_hex_dump(ZB_BUF_BEGIN(apsdu), ZB_BUF_LEN(apsdu), 16);
+//   printf("aps param buf at 0x%lx\n", apsreq);
 /*
    That macros are implied (set values to 0):
    ZB_APS_FC_SET_FRAME_TYPE(fc, ZB_APS_FRAME_DATA);
@@ -181,10 +183,14 @@ void zb_apsde_data_request(zb_uint8_t param) ZB_CALLBACK
    ZB_APS_FC_SET_EXT_HDR_PRESENT(fc, 0);
  */
     nldereq.radius = apsreq->radius;
-    nldereq.addr_mode = ZB_ADDR_16BIT_DEV_OR_BROADCAST;
+    nldereq.addr_mode = apsreq->addr_mode;
     nldereq.nonmember_radius = 0;   /* if multicast, get it from APS IB */
     nldereq.discovery_route = 1;    /* always! see 2.2.4.1.1.3 */
     /* use NWK security only if not use APS security */
+
+//   printf("addr_mode: 0x%x\n", apsreq->addr_mode);
+//   printf("tx_options: 0x%x\n", apsreq->tx_options);
+//   printf("radius: 0x%x\n", apsreq->radius);
 
     switch ((int)apsreq->addr_mode) {
 #ifndef ZB_LIMITED_FEATURES
@@ -210,7 +216,7 @@ void zb_apsde_data_request(zb_uint8_t param) ZB_CALLBACK
                     return;
                 }
 
-                apsreq->dst_addr.addr_short = nldereq.dst_addr;
+                apsreq->dst_addr = nldereq.dst_addr;
             }
             else {
                 TRACE_MSG(TRACE_APS3,
@@ -229,8 +235,7 @@ void zb_apsde_data_request(zb_uint8_t param) ZB_CALLBACK
                 (zb_uint8_t)(~(zb_uint16_t)ZB_APSDE_TX_OPT_ACK_TX);
             ZB_APS_FC_SET_DELIVERY_MODE(fc, ZB_APS_DELIVERY_GROUP);
             TRACE_MSG(TRACE_APS3, "apsde_data group, group %d, options 0x%hx",
-                      (FMT__D_H, apsreq->dst_addr.addr_short,
-                       apsreq->tx_options));
+                      (FMT__D_H, apsreq->dst_addr, apsreq->tx_options));
             /* no dest endp */
             break;
 #endif  /* ZB_LIMITED_FEATURES */
@@ -238,31 +243,43 @@ void zb_apsde_data_request(zb_uint8_t param) ZB_CALLBACK
         case ZB_APS_ADDR_MODE_16_ENDP_PRESENT:
             /* unicast - address is known*/
 
-            if (apsreq->dst_addr.addr_short == ZB_NWK_BROADCAST_ALL_DEVICES ||
-                apsreq->dst_addr.addr_short ==
-                ZB_NWK_BROADCAST_RX_ON_WHEN_IDLE ||
-                apsreq->dst_addr.addr_short ==
-                ZB_NWK_BROADCAST_ROUTER_COORDINATOR ||
-                apsreq->dst_addr.addr_short ==
-                ZB_NWK_BROADCAST_LOW_POWER_ROUTER) {
+            if (apsreq->dst_addr == ZB_NWK_BROADCAST_ALL_DEVICES ||
+                apsreq->dst_addr == ZB_NWK_BROADCAST_RX_ON_WHEN_IDLE ||
+                apsreq->dst_addr == ZB_NWK_BROADCAST_ROUTER_COORDINATOR ||
+                apsreq->dst_addr == ZB_NWK_BROADCAST_LOW_POWER_ROUTER) {
                 ZB_APS_FC_SET_DELIVERY_MODE(fc, ZB_APS_DELIVERY_BROADCAST);
             }
             else {
                 ZB_APS_FC_SET_DELIVERY_MODE(fc, ZB_APS_DELIVERY_UNICAST);
             }
-            nldereq.dst_addr = apsreq->dst_addr.addr_short;
-            TRACE_MSG(TRACE_APS3, "apsde_data unicast, dst %d, options 0x%hx",
+
+            nldereq.dst_addr = apsreq->dst_addr;
+            TRACE_MSG(TRACE_APS3, "apsde_data unicast, dst 0x%x, options 0x%hx",
                       (FMT__D_H, nldereq.dst_addr, apsreq->tx_options));
             break;
+
         case ZB_APS_ADDR_MODE_64_ENDP_PRESENT:
             ZB_APS_FC_SET_DELIVERY_MODE(fc, ZB_APS_DELIVERY_UNICAST);
             /* convert long (64) to short (16) address, then unicast */
-            nldereq.dst_addr = zb_address_short_by_ieee(
-                apsreq->dst_addr.addr_long);
-            apsreq->dst_addr.addr_short = nldereq.dst_addr;
+            nldereq.dst_addr = zb_address_short_by_ieee(apsreq->dst_addr_long);
+            apsreq->dst_addr = nldereq.dst_addr;
             TRACE_MSG(TRACE_APS3, "apsde_data unicast, dst %d, options 0x%hx",
                       (FMT__D_H, nldereq.dst_addr, apsreq->tx_options));
             break;
+
+        case ZB_APS_ADDR_MODE_64_ENDP_NOT_PRESENT:
+            ZB_APS_FC_SET_DELIVERY_MODE(fc, ZB_APS_DELIVERY_UNICAST);
+//         /* convert long (64) to short (16) address, then unicast */
+            //         nldereq.dst_addr = zb_address_short_by_ieee(apsreq->dst_addr_long);
+//         apsreq->dst_addr = nldereq.dst_addr;
+
+            ZB_IEEE_ADDR_COPY(nldereq.dst_addr_long, apsreq->dst_addr_long);
+            ZB_APS_FC_SET_FRAME_TYPE(fc, ZB_APS_FRAME_INTERPAN);
+
+            TRACE_MSG(TRACE_APS3, "apsde_data interpan, dst %d, options 0x%hx",
+                      (FMT__D_H, nldereq.dst_addr, apsreq->tx_options));
+            break;
+
         default:
             TRACE_MSG(TRACE_ERROR, "strange addr mode %d",
                       (FMT__D, apsreq->addr_mode));
@@ -272,6 +289,7 @@ void zb_apsde_data_request(zb_uint8_t param) ZB_CALLBACK
     ZB_APS_FC_SET_ACK_FORMAT(fc, 0);
 #ifndef ZB_LIMITED_FEATURES2
     if (apsreq->tx_options & ZB_APSDE_TX_OPT_ACK_TX) {
+        printf("apsde ack\n");
         zb_apsde_data_req_t req;
         zb_uint8_t ret = 0;
         zb_uint8_t ref = 0;
@@ -286,14 +304,15 @@ void zb_apsde_data_request(zb_uint8_t param) ZB_CALLBACK
             ZB_SCHEDULE_CALLBACK(zb_apsde_data_confirm, param);
             return;
         }
-        /* Optimize traffic for ZED: if wait for ACK, send POLL soon to be able to
-         * retrive ACK. */
+        /* Optimize traffic for ZED: if wait for ACK, send POLL soon to be able
+         * to retrive ACK. */
         zb_zdo_reschedule_poll_parent(ZB_APS_POLL_AFTER_REQ_TMO);
         ZB_SCHEDULE_ALARM(zb_aps_ack_timer_cb, ref, ZB_N_APS_ACK_WAIT_DURATION);
     }
     else
 #endif
     {
+        printf("apsde ack not\n");
         aps_data_hdr_fill_datareq(fc, apsreq, apsdu);
     }
     ZB_CHK_ARR(ZB_BUF_BEGIN(apsdu), 8); /* check hdr fill */
@@ -304,7 +323,11 @@ void zb_apsde_data_request(zb_uint8_t param) ZB_CALLBACK
 
     ZB_MEMCPY(
         ZB_GET_BUF_TAIL(apsdu, sizeof(zb_nlde_data_req_t)),
-        &nldereq, sizeof(nldereq));
+        &nldereq,
+        sizeof(nldereq));
+
+    zb_nlde_data_req_t *nlde2req =
+        ZB_GET_BUF_TAIL(apsdu, sizeof(zb_nlde_data_req_t));
 
 #ifndef ZB_LIMITED_FEATURES
     /* Check for our group table and transmit buffer to us locally */
@@ -320,6 +343,7 @@ void zb_apsde_data_request(zb_uint8_t param) ZB_CALLBACK
 #endif
     {
         /* Now send (pass to NWK). If address got from the bind, send more then once (?).  */
+//         od_hex_dump(ZB_BUF_BEGIN(apsdu), ZB_BUF_LEN(apsdu), 16);
         ZB_SCHEDULE_CALLBACK(zb_nlde_data_request, param);
     }
 
@@ -361,7 +385,7 @@ void zb_aps_pass_up_group_buf(zb_uint8_t param) ZB_CALLBACK
     zb_buf_t *buf = ZB_BUF_FROM_REF(param);
 
     if (ZB_RING_BUFFER_IS_FULL(&ZG->aps.group.pass_up_q)) {
-        TRACE_MSG(TRACE_APS3, "no space in the queue - drop this packet",
+        TRACE_MSG(TRACE_APS1, "no space in the queue - drop this packet",
                   (FMT__0));
         zb_free_buf(buf);
     }
@@ -371,7 +395,7 @@ void zb_aps_pass_up_group_buf(zb_uint8_t param) ZB_CALLBACK
 
         if (!ZG->aps.group.active_pass_up_buf) {
             /* If queue is empty, group data passing up is not schedules */
-            TRACE_MSG(TRACE_APS3, "schedule pass up group message", (FMT__0));
+            TRACE_MSG(TRACE_APS1, "schedule pass up group message", (FMT__0));
             ZG->aps.group.active_pass_up_buf = buf;
             zb_get_in_buf_delayed(zb_aps_pass_group_msg_up);
         }
@@ -379,9 +403,10 @@ void zb_aps_pass_up_group_buf(zb_uint8_t param) ZB_CALLBACK
             /* Passing up is scheduled (via schedule or delayed alloc) - just
              * add buffer to the queue */
             ZB_RING_BUFFER_PUT(&ZG->aps.group.pass_up_q, param);
-            TRACE_MSG(TRACE_APS3,
+            TRACE_MSG(TRACE_APS1,
                       "pass up group message is in progress - add to q",
                       (FMT__0));
+            printf("QUEUEING FOR BUFFER\n");
         }
     }
 }
@@ -389,7 +414,7 @@ void zb_aps_pass_up_group_buf(zb_uint8_t param) ZB_CALLBACK
 
 
 /**
-   Fill APS header in the packe for data request.
+   Fill APS header in the packet for data request.
 
    @param fc - FC field (created at upper layer)
    @param req - APS data request
@@ -412,6 +437,10 @@ static void aps_data_hdr_fill_datareq(zb_uint8_t fc, zb_apsde_data_req_t *req,
      * Group address exists */
 
     aps_hdr_size += is_group;
+
+    if (req->addr_mode == ZB_APS_ADDR_MODE_64_ENDP_NOT_PRESENT) {
+        aps_hdr_size -= 1 + 1 + 1; /* no dst_endpoint src_endpoint aps_counter */
+    }
 
 #ifdef ZB_SECURITY
     apsdu->u.hdr.encrypt_type = ZB_SECUR_NO_ENCR;
@@ -448,9 +477,9 @@ static void aps_data_hdr_fill_datareq(zb_uint8_t fc, zb_apsde_data_req_t *req,
 
     /* If Group addressing, no dest endpoint but have Group address */
     if (is_group) {
-        zb_put_next_htole16(&aps_hdr, req->dst_addr.addr_short);
+        zb_put_next_htole16(&aps_hdr, req->dst_addr);
     }
-    else {
+    else if (req->addr_mode != ZB_APS_ADDR_MODE_64_ENDP_NOT_PRESENT) {
         *aps_hdr++ = req->dst_endpoint;
     }
 
@@ -460,9 +489,12 @@ static void aps_data_hdr_fill_datareq(zb_uint8_t fc, zb_apsde_data_req_t *req,
      */
     zb_put_next_htole16(&aps_hdr, req->clusterid);
     zb_put_next_htole16(&aps_hdr, req->profileid);
-    *aps_hdr++ = req->src_endpoint;
-    *aps_hdr++ = ZB_AIB_APS_COUNTER();
-    ZB_AIB_APS_COUNTER_INC();
+
+    if (req->addr_mode != ZB_APS_ADDR_MODE_64_ENDP_NOT_PRESENT) {
+        *aps_hdr++ = req->src_endpoint;
+        *aps_hdr++ = ZB_AIB_APS_COUNTER();
+        ZB_AIB_APS_COUNTER_INC();
+    }
 
 #ifdef ZB_SECURITY
 #ifdef APS_FRAME_SECURITY
@@ -482,6 +514,10 @@ static void aps_data_hdr_fill_datareq(zb_uint8_t fc, zb_apsde_data_req_t *req,
 
 zb_ushort_t zb_aps_full_hdr_size(zb_uint8_t *pkt)
 {
+    if (ZB_APS_FC_GET_FRAME_TYPE(*pkt) == ZB_APS_FRAME_INTERPAN) {
+        return 5; /* FCF 1 + Cluster 2 + Profile 2 */
+    }
+
     zb_ushort_t size = ZB_APS_HDR_SIZE(*pkt);
 
 #ifdef ZB_SECURITY
@@ -644,6 +680,7 @@ void zb_nlde_data_indication_continue(zb_uint8_t param) ZB_CALLBACK
               (FMT__H, param));
 
     zb_aps_hdr_parse(packet, &aps_hdr, ZB_TRUE);
+    TRACE_MSG(TRACE_APS1, "fc 0x%x", (FMT__D, aps_hdr.fc));
 
     if (ZG->aps.retrans.ack_buf != (zb_uint8_t)-1) {
         aps_ack_send_handle(ZB_BUF_FROM_REF(ZG->aps.retrans.ack_buf), &aps_hdr);
@@ -682,12 +719,12 @@ void zb_nlde_data_indication_continue(zb_uint8_t param) ZB_CALLBACK
                   ZB_APS_DELIVERY_GROUP))
 #endif
             {
-                TRACE_MSG(TRACE_APS3, "data pkt", (FMT__0));
+                TRACE_MSG(TRACE_APS1, "data pkt", (FMT__0));
                 ZB_SCHEDULE_CALLBACK(zb_apsde_data_indication, param);
             }
 #ifndef ZB_LIMITED_FEATURES
             else {
-                TRACE_MSG(TRACE_APS3, "data pkt - group addressed", (FMT__0));
+                TRACE_MSG(TRACE_APS1, "data pkt - group addressed", (FMT__0));
                 ZB_SCHEDULE_CALLBACK(zb_aps_pass_up_group_buf, param);
             }   /* else (group) */
 #endif
@@ -703,6 +740,8 @@ void zb_aps_hdr_parse(zb_buf_t *packet, zb_aps_hdr_t *aps_hdr,
 {
     zb_nwk_hdr_t *nwk_hdr = (zb_nwk_hdr_t *)ZB_BUF_BEGIN(packet);
     zb_uint8_t *apshdr = NULL;
+
+//   printf("zb_nwk_hdr_size %u\n", zb_nwk_hdr_size(nwk_hdr->frame_control));
 
     /* Parse NWK header */
     /* get src and dst address from the NWK header */
@@ -726,14 +765,19 @@ void zb_aps_hdr_parse(zb_buf_t *packet, zb_aps_hdr_t *aps_hdr,
     apshdr++;
 
     /* init */
+    aps_hdr->group_addr = 0;
+    aps_hdr->src_endpoint = 0;
+    aps_hdr->dst_endpoint = 0;
 
     if (ZB_APS_FC_GET_ACK_FORMAT(aps_hdr->fc) == 0) {
-        if (ZB_APS_FC_GET_DELIVERY_MODE(aps_hdr->fc) != ZB_APS_DELIVERY_GROUP) {
+        if (ZB_APS_FC_GET_DELIVERY_MODE(aps_hdr->fc) != ZB_APS_DELIVERY_GROUP &&
+            ZB_APS_FC_GET_FRAME_TYPE(aps_hdr->fc) != ZB_APS_FRAME_INTERPAN) {
             /* has endpoint if not group addressing */
             aps_hdr->dst_endpoint = *apshdr;
             apshdr++;
         }
-        else {
+        else if (ZB_APS_FC_GET_DELIVERY_MODE(aps_hdr->fc) ==
+                 ZB_APS_DELIVERY_GROUP) {
             zb_get_next_letoh16(&aps_hdr->group_addr, &apshdr);
             TRACE_MSG(TRACE_APS3, "Group addressing, group %d",
                       (FMT__D, aps_hdr->group_addr));
@@ -742,10 +786,15 @@ void zb_aps_hdr_parse(zb_buf_t *packet, zb_aps_hdr_t *aps_hdr,
         /* Not sure pointer is aligned to 2. Use macro. */
         zb_get_next_letoh16(&aps_hdr->clusterid, &apshdr);
         zb_get_next_letoh16(&aps_hdr->profileid, &apshdr);
-        aps_hdr->src_endpoint = *apshdr;
-        apshdr++;
+
+        if (ZB_APS_FC_GET_FRAME_TYPE(aps_hdr->fc) != ZB_APS_FRAME_INTERPAN) {
+            aps_hdr->src_endpoint = *apshdr;
+            apshdr++;
+        }
     }
-    aps_hdr->aps_counter = *apshdr;
+    if (ZB_APS_FC_GET_FRAME_TYPE(aps_hdr->fc) != ZB_APS_FRAME_INTERPAN) {
+        aps_hdr->aps_counter = *apshdr;
+    }
     if (ZB_APS_FC_GET_EXT_HDR_PRESEBT(aps_hdr->fc)) {
         /* TODO: handle fragmentation and Extended header here */
         TRACE_MSG(TRACE_APS3, "Ext hdr present!", (FMT__0));
@@ -756,6 +805,8 @@ void zb_aps_hdr_parse(zb_buf_t *packet, zb_aps_hdr_t *aps_hdr,
 #ifndef ZB_LIMITED_FEATURES
 void zb_aps_pass_group_msg_up(zb_uint8_t param) ZB_CALLBACK
 {
+    printf("zb_aps_pass_group_msg_up\n");
+
     /*
        handle - index in the endpoints array
      */
@@ -775,7 +826,7 @@ void zb_aps_pass_group_msg_up(zb_uint8_t param) ZB_CALLBACK
         || ZG->aps.group.active_pass_up_buf->u.hdr.handle >=
         ZG->aps.group.groups[g_i].n_endpoints) {
         /* No such group, or done with this buffer. Free buffer and reschedule myself to check next buffer */
-        TRACE_MSG(TRACE_APS3, "done with buf %p/%hd",
+        TRACE_MSG(TRACE_APS1, "done with buf %p/%hd",
                   (FMT__P_H, ZG->aps.group.active_pass_up_buf,
                    ZB_REF_FROM_BUF(ZG->aps.group.active_pass_up_buf)));
         zb_free_buf(ZG->aps.group.active_pass_up_buf);
@@ -790,7 +841,7 @@ void zb_aps_pass_group_msg_up(zb_uint8_t param) ZB_CALLBACK
         else {
             ZG->aps.group.active_pass_up_buf = NULL;
             zb_free_buf(ZB_BUF_FROM_REF(param));
-            TRACE_MSG(TRACE_APS3, "No more job of passing group data up",
+            TRACE_MSG(TRACE_APS1, "No more job of passing group data up",
                       (FMT__0));
         }
     }
@@ -806,7 +857,7 @@ void zb_aps_pass_group_msg_up(zb_uint8_t param) ZB_CALLBACK
                                                 ->u.hdr.handle];
         ZG->aps.group.active_pass_up_buf->u.hdr.handle++;
 
-        TRACE_MSG(TRACE_APS3, "Pass group packet up to endp %hd",
+        TRACE_MSG(TRACE_APS1, "Pass group packet up to endp %hd",
                   (FMT__H, ZB_GET_BUF_PARAM(buf, zb_aps_hdr_t)->dst_endpoint));
         ZB_SCHEDULE_CALLBACK(zb_apsde_data_indication, param);
 
@@ -999,15 +1050,15 @@ static zb_uint8_t save_ack_data(zb_uint8_t param, zb_apsde_data_req_t *req,
         if (ZG->aps.retrans.hash[i].state == ZB_APS_RETRANS_ENT_FREE) {
             switch (req->addr_mode) {
                 case ZB_APS_ADDR_MODE_DST_ADDR_ENDP_NOT_PRESENT:
-                    ZG->aps.retrans.hash[i].addr = req->dst_addr.addr_short;
+                    ZG->aps.retrans.hash[i].addr = req->dst_addr;
                     break;
                 case ZB_APS_ADDR_MODE_16_GROUP_ENDP_NOT_PRESENT:
                     break;
                 case ZB_APS_ADDR_MODE_16_ENDP_PRESENT:
-                    ZG->aps.retrans.hash[i].addr = req->dst_addr.addr_short;
+                    ZG->aps.retrans.hash[i].addr = req->dst_addr;
                     break;
                 case ZB_APS_ADDR_MODE_64_ENDP_PRESENT:
-                    ZG->aps.retrans.hash[i].addr = req->dst_addr.addr_short;
+                    ZG->aps.retrans.hash[i].addr = req->dst_addr;
                     break;
                 default:
                     break;

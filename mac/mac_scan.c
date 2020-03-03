@@ -292,7 +292,7 @@ void zb_mlme_scan_step(zb_uint8_t param) ZB_CALLBACK
 #ifdef ZB_MAC_TESTING_MODE
         zb_buf_t *desc_list_buf;
         zb_uint8_t desc_count = 0;
-        if (scan_type == ACTIVE_SCAN) {
+        if (scan_params->scan_type == ACTIVE_SCAN) {
             /* copy list of pan descriptors if it was formed. macAutoRequest case */
             if (MAC_CTX().rt_ctx.active_scan.pan_desc_buf_param !=
                 ZB_UNDEFINED_BUFFER) {
@@ -390,8 +390,7 @@ zb_ret_t zb_mlme_active_scan() ZB_SDCC_REENTRANT
 #ifdef ZB_MAC_TESTING_MODE
     if (MAC_CTX().rt_ctx.active_scan.stop_scan) {
         ZB_SCHEDULE_ALARM_CANCEL(zb_mac_scan_timeout, 0);
-        ret = RET_OK;
-        break;
+        return RET_OK;
     }
 #endif
     TRACE_MSG(TRACE_MAC2, "chan mask %x %x , chan %hd",

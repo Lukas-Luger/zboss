@@ -1133,6 +1133,33 @@ typedef struct zb_zdo_mgmt_lqi_resp_s {
 ZB_PACKED_STRUCT
 zb_zdo_mgmt_lqi_resp_t;
 
+/**
+   Response for ZLL scan request
+ */
+typedef struct zb_zdo_zll_scan_resp_s {
+    zb_uint8_t zcl_command;
+    zb_uint32_t transaction_id;
+    zb_uint8_t rssi_correction;
+    zb_uint8_t zigbee_information;
+    zb_uint8_t touchlink_information;
+    zb_uint16_t key_bitmask;
+    zb_uint32_t response_id;
+    zb_ieee_addr_t extended_pan_id;
+    zb_uint8_t network_update_id;
+    zb_uint8_t logical_channel;
+    zb_uint16_t pan_id;
+    zb_uint16_t network_address;
+    zb_uint8_t subdevices;
+    zb_uint8_t total_group_identifiers;
+    zb_uint8_t endpoint;
+    zb_uint16_t profile_id;
+    zb_uint16_t device_id;
+    zb_uint8_t version;
+    zb_uint8_t group_id_count;
+}
+ZB_PACKED_STRUCT
+zb_zdo_zll_scan_resp_t;
+
 
 /* bits 0 - 1, mask 0x3 */
 #define ZB_ZDO_RECORD_SET_DEVICE_TYPE(var, type) (var &= ~3, var |= type)

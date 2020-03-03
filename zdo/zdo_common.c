@@ -73,7 +73,7 @@ void zdo_send_req_by_short(zb_uint16_t command_id, zb_uint8_t param,
 
     TRACE_MSG(TRACE_ZDO2, ">> zdo_send_req_by_short ", (FMT__0));
     ZB_BZERO(dreq, sizeof(*dreq));
-    dreq->dst_addr.addr_short = addr;
+    dreq->dst_addr = addr;
     if (!ZB_NWK_IS_ADDRESS_BROADCAST(addr)) {
         dreq->tx_options = ZB_APSDE_TX_OPT_ACK_TX;
     }
@@ -92,7 +92,7 @@ void zdo_send_req_by_long(zb_uint8_t command_id, zb_uint8_t param,
         ZB_GET_BUF_TAIL(ZB_BUF_FROM_REF(param), sizeof(zb_apsde_data_req_t));
 
     ZB_BZERO(dreq, sizeof(*dreq));
-    ZB_IEEE_ADDR_COPY(dreq->dst_addr.addr_long, addr);
+    ZB_IEEE_ADDR_COPY(dreq->dst_addr_long, addr);
     dreq->addr_mode = ZB_APS_ADDR_MODE_64_ENDP_PRESENT;
     dreq->clusterid = command_id;
     dreq->tx_options = ZB_APSDE_TX_OPT_ACK_TX;
@@ -129,10 +129,10 @@ void zdo_send_resp_by_short(zb_uint16_t command_id, zb_uint8_t param,
     zb_uint8_t *tsn_p;
 
     TRACE_MSG(TRACE_ZDO3,
-              "zdo_send_resp_by_short, command_id %d, param %hd, tsn %hd, addr %d",
+              "zdo_send_resp_by_short, command_id %d, param %hd, tsn %hd, addr %x",
               (FMT__D_H_H_D, command_id, param, tsn, addr));
     ZB_BZERO(dreq, sizeof(*dreq));
-    dreq->dst_addr.addr_short = addr;
+    dreq->dst_addr = addr;
     if (!ZB_NWK_IS_ADDRESS_BROADCAST(addr)) {
         dreq->tx_options = ZB_APSDE_TX_OPT_ACK_TX;
     }
@@ -143,10 +143,44 @@ void zdo_send_resp_by_short(zb_uint16_t command_id, zb_uint8_t param,
     ZB_SCHEDULE_CALLBACK(zb_apsde_data_request, param);
 }
 
+void zdo_send_resp_by_long(zb_uint16_t command_id, zb_uint8_t param,
+                           zb_uint8_t tsn,
+                           zb_ieee_addr_t addr) ZB_SDCC_REENTRANT
+{
+    zb_apsde_data_req_t *dreq =
+        ZB_GET_BUF_TAIL(ZB_BUF_FROM_REF(param), sizeof(zb_apsde_data_req_t));
+    zb_uint8_t *tsn_p;
+
+//     printf("zdo param buf at 0x%lx\n", dreq);
+
+    TRACE_MSG(TRACE_ZDO3,
+              "zdo_send_resp_by_long, command_id %d, param %hd, tsn %hd, addr " TRACE_FORMAT_64,
+              (FMT__D_H_H_D, command_id, param, tsn, TRACE_ARG_64(addr)));
+
+    ZB_BZERO(dreq, sizeof(*dreq));
+    ZB_IEEE_ADDR_COPY(dreq->dst_addr_long, addr);
+
+//     dreq->tx_options = ZB_APSDE_TX_OPT_ACK_TX;
+    dreq->addr_mode = ZB_APS_ADDR_MODE_64_ENDP_NOT_PRESENT;
+    dreq->clusterid = command_id;
+    dreq->profileid = 0xc05e; /* FIXME ZLL */
+//     printf("zdo addr_mode 0x%x\n", dreq->addr_mode);
+//     printf("zdo radius 0x%x\n", dreq->radius);
+
+    ZB_BUF_ALLOC_LEFT(ZB_BUF_FROM_REF(param), 1, tsn_p);
+    *tsn_p = tsn;
+
+    zb_uint8_t *fc;
+    ZB_BUF_ALLOC_LEFT(ZB_BUF_FROM_REF(param), 1, fc);
+    *fc = 0x19; /* FIXME ZLL */
+
+    ZB_SCHEDULE_CALLBACK(zb_apsde_data_request, param);
+}
 
 void register_zdo_cb(zb_uint8_t tsn, zb_callback_t cb,
                      zb_uint8_t resp_counter) ZB_SDCC_REENTRANT
 {
+    printf("register tsn %u\n", tsn);
     zb_ushort_t h_i = ZB_TSN_HASH(tsn);
     zb_ushort_t i = h_i;
 
@@ -177,11 +211,26 @@ void register_zdo_cb(zb_uint8_t tsn, zb_callback_t cb,
  */
 zb_ret_t zdo_af_resp(zb_uint8_t param)
 {
-    zb_uint8_t tsn = *(zb_uint8_t *)ZB_BUF_BEGIN(ZB_BUF_FROM_REF(param));
+    zb_buf_t *zbbuf = ZB_BUF_FROM_REF(param);
+
+    zb_uint8_t tsn;
+
+    uint8_t aps_fcf = *(zb_uint8_t *)ZB_BUF_BEGIN(zbbuf);
+    if (aps_fcf != ZB_APS_FRAME_INTERPAN) {
+        /* get the sequence number from the aps header */
+        zb_buf_cut_left(zbbuf, zb_aps_full_hdr_size(zbbuf) - 1);
+        tsn = *(zb_uint8_t *)ZB_BUF_BEGIN(zbbuf);
+        zb_buf_cut_left(zbbuf, sizeof(tsn));
+    }
+    else {
+        /* interpan frame has no tsn in aps so get it from zcl */
+        ZB_APS_HDR_CUT(zbbuf);
+        tsn = *(zb_uint8_t *)(ZB_BUF_BEGIN(zbbuf) + 1);
+    }
+
     zb_ushort_t h_i = ZB_TSN_HASH(tsn);
     zb_ushort_t i = h_i;
 
-    zb_buf_cut_left(ZB_BUF_FROM_REF(param), sizeof(tsn));
     TRACE_MSG(TRACE_ZDO2, ">> zdo_af_resp %hd", (FMT__H, tsn));
     do {
         if (ZDO_CTX().zdo_cb[i].tsn == tsn
@@ -202,7 +251,7 @@ zb_ret_t zdo_af_resp(zb_uint8_t param)
         i = (i + 1) % ZDO_TRAN_TABLE_SIZE;
     } while (i != h_i);
     TRACE_MSG(TRACE_ERROR, "tsn 0x%hx not found!", (FMT__H, tsn));
-    /* zb_free_buf(ZB_BUF_FROM_REF(param)); free buffer on caller level */
+    /* zb_free_buf(zbbuf); free buffer on caller level */
     TRACE_MSG(TRACE_ZDO2, ">> zdo_af_resp NOT FOUND", (FMT__H, tsn));
     return RET_NOT_FOUND;
 }

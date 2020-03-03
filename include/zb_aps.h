@@ -65,8 +65,9 @@ enum zb_aps_addr_mode_e {
                                                          * DstEndpoint not present */
     ZB_APS_ADDR_MODE_16_ENDP_PRESENT            = 2,    /*!< 0x02 = 16-bit address for DstAddress and
                                                            DstEndpoint present  */
-    ZB_APS_ADDR_MODE_64_ENDP_PRESENT            = 3     /*!< 0x03 = 64-bit extended address for
+    ZB_APS_ADDR_MODE_64_ENDP_PRESENT            = 3,    /*!< 0x03 = 64-bit extended address for
                                                            DstAddress and DstEndpoint present  */
+    ZB_APS_ADDR_MODE_64_ENDP_NOT_PRESENT        = 4
 };
 
 #define ZB_MIN_ENDPOINT_NUMBER 1
@@ -127,30 +128,31 @@ typedef enum zb_aps_status_e {
    (at its tail).
  */
 typedef struct zb_apsde_data_req_s {
-    union zb_addr_u dst_addr;   /*!< Destination address */
-    zb_uint16_t profileid;      /*!< The identifier of the profile for which this
-                                   frame is intended.  */
-    zb_uint16_t clusterid;      /*!< The identifier of the object for which this
-                                   frame is intended.  */
-    zb_uint8_t dst_endpoint;    /*!< either the number of the individual endpoint
-                                   of the entity to which the ASDU is being
-                                   transferred or the broadcast endpoint (0xff).  */
-    zb_uint8_t src_endpoint;    /*!< The individual endpoint of the entity from
-                                   which the ASDU is being transferred. */
-    zb_uint8_t radius;          /*!< The distance, in hops, that a frame will be
-                                 * allowed to travel through the network. */
-    zb_uint8_t addr_mode;       /*!< The type of destination address supplied by
-                                       the DstAddr parameter - @see zb_aps_addr_mode_e  */
-    zb_uint8_t tx_options;      /*!< The transmission options for the ASDU to be
-                                       transferred. These are a bitwise OR of one or
-                                       more of the following:
-                                       0x01 = Security enabled transmission
-                                       0x02 = Use NWK key
-                                       0x04 = Acknowledged transmission
-                                       0x08 = Fragmentation permitted.
-                                       \see zb_apsde_tx_opt_e
+    zb_uint16_t dst_addr;           /*!< Destination address */
+    zb_ieee_addr_t dst_addr_long;   /*!< Destination address */
+    zb_uint16_t profileid;          /*!< The identifier of the profile for which this
+                                       frame is intended.  */
+    zb_uint16_t clusterid;          /*!< The identifier of the object for which this
+                                       frame is intended.  */
+    zb_uint8_t dst_endpoint;        /*!< either the number of the individual endpoint
+                                       of the entity to which the ASDU is being
+                                       transferred or the broadcast endpoint (0xff).  */
+    zb_uint8_t src_endpoint;        /*!< The individual endpoint of the entity from
+                                       which the ASDU is being transferred. */
+    zb_uint8_t radius;              /*!< The distance, in hops, that a frame will be
+                                     * allowed to travel through the network. */
+    zb_uint8_t addr_mode;           /*!< The type of destination address supplied by
+                                           the DstAddr parameter - @see zb_aps_addr_mode_e  */
+    zb_uint8_t tx_options;          /*!< The transmission options for the ASDU to be
+                                           transferred. These are a bitwise OR of one or
+                                           more of the following:
+                                           0x01 = Security enabled transmission
+                                           0x02 = Use NWK key
+                                           0x04 = Acknowledged transmission
+                                           0x08 = Fragmentation permitted.
+                                           \see zb_apsde_tx_opt_e
 
-                                 */
+                                     */
 } zb_apsde_data_req_t;
 
 
@@ -580,7 +582,8 @@ void zb_aps_send_command(zb_uint8_t param, zb_uint16_t dest_addr,
 enum zb_aps_frame_type_e {
     ZB_APS_FRAME_DATA       = 0,
     ZB_APS_FRAME_COMMAND    = 1,
-    ZB_APS_FRAME_ACK        = 2
+    ZB_APS_FRAME_ACK        = 2,
+    ZB_APS_FRAME_INTERPAN   = 3
 };
 
 

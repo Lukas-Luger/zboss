@@ -791,7 +791,7 @@ void nwk_route_disc_failed(zb_uint8_t param) ZB_CALLBACK
 void zb_nwk_mesh_expiry_route_disc(zb_uint8_t param) ZB_CALLBACK
 {
     ZVUNUSED(param);
-    TRACE_MSG(TRACE_NWK1, ">> exp_r_disc", (FMT__0));
+    // TRACE_MSG(TRACE_NWK1, ">> exp_r_disc", (FMT__0));
 
     if (ZG->nwk.nib.route_disc_table_cnt) {
         zb_ushort_t i;
@@ -846,14 +846,15 @@ void zb_nwk_mesh_expiry_route_disc(zb_uint8_t param) ZB_CALLBACK
                       ZB_NWK_EXPIRY_ROUTE_DISCOVERY);
 
 done:
-    TRACE_MSG(TRACE_NWK1, "<< exp_r_disc", (FMT__0));
+    if (0) {}
+    // TRACE_MSG(TRACE_NWK1, "<< exp_r_disc", (FMT__0));
 }
 
 /* This function called periodically to find expired pending elements */
 void zb_nwk_mesh_expiry_pending(zb_uint8_t param) ZB_CALLBACK
 {
     ZVUNUSED(param);
-    TRACE_MSG(TRACE_NWK1, ">> exp_pend", (FMT__0));
+    // TRACE_MSG(TRACE_NWK1, ">> exp_pend", (FMT__0));
 
     if (ZG->nwk.nib.pending_table_cnt) {
         zb_ushort_t i;
@@ -883,7 +884,7 @@ void zb_nwk_mesh_expiry_pending(zb_uint8_t param) ZB_CALLBACK
     /* Schedule to call later */
     ZB_SCHEDULE_ALARM(zb_nwk_mesh_expiry_pending, 0, ZB_NWK_EXPIRY_PENDING);
 
-    TRACE_MSG(TRACE_NWK1, "<< exp_pend", (FMT__0));
+    // TRACE_MSG(TRACE_NWK1, "<< exp_pend", (FMT__0));
 }
 
 zb_nwk_routing_t *zb_nwk_mesh_find_route(zb_uint16_t dest_addr)

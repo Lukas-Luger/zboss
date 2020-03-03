@@ -152,7 +152,7 @@ void zb_nlme_rejoin_request(zb_uint8_t param) ZB_CALLBACK
                                                    ZB_NWK_FRAME_TYPE_COMMAND,
                                                    ZB_PROTOCOL_VERSION);
         /*ZB_NWK_FRAMECTL_SET_DISCOVER_ROUTE(nwhdr->frame_control, 0); implied*/
-        ZB_NWK_FRAMECTL_SET_SRC_DEST_IEEE(nwhdr->frame_control, 1, 1);
+        ZB_NWK_FRAMECTL_SET_SRC_DEST_IEEE(nwhdr->frame_control, 2, 2);
 #ifdef ZB_SECURITY
         if (secure) {
             ZB_NWK_FRAMECTL_SET_SECURITY(nwhdr->frame_control, 1);
@@ -172,7 +172,7 @@ void zb_nlme_rejoin_request(zb_uint8_t param) ZB_CALLBACK
 
         /* fill rejoin request cmd & payload */
         ZB_NWK_ALLOC_COMMAND_GET_PAYLOAD_PTR(buf, ZB_NWK_CMD_REJOIN_RESPONSE,
-                                             zb_nwk_rejoin_response_t,
+                                             sizeof(zb_nwk_rejoin_response_t),
                                              rejoin_response);
         rejoin_response->network_addr = address;
         ZB_NWK_ADDR_TO_LE16(rejoin_response->network_addr);

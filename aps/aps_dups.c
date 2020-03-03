@@ -81,6 +81,7 @@ zb_short_t aps_check_dups(zb_uint16_t src_addr,
         zb_address_map_t *ent = &ZG->addr.addr_map[addr_ref];
         is_dup = (ent->aps_dup_clock != 0
                   && ent->aps_dup_counter == aps_counter);
+//         is_dup = ent->aps_dup_counter == aps_counter;
 
 #ifdef APS_DUPS_DEBUG
         TRACE_MSG(TRACE_APS2,
@@ -100,8 +101,12 @@ zb_short_t aps_check_dups(zb_uint16_t src_addr,
                               ZB_APS_DUP_CHECK_TIMEOUT);
         }
     }
+    else {
+        ZB_ASSERT(0);
+    }
 
     TRACE_MSG(TRACE_APS2, "-aps_check_dups ret %hd", (FMT__H, is_dup));
+    printf("is_dup: %u\n", is_dup);
     return is_dup;
 #endif
 }

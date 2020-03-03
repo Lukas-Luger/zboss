@@ -203,13 +203,23 @@ zb_ret_t zb_nwk_unsecure_frame(zb_uint8_t param, zb_mac_mhr_t *mhr,
             ZB_LETOH16(&nwk_addr, &nwk_hdr->src_addr);
             TRACE_MSG(TRACE_SECUR2, "nwk addr: 0x%x, mac addr 0x%x",
                       (FMT__D_D, nwk_addr, mhr->src_addr.addr_short));
+
+#if 1
+            /* this lets a second light receive relayed broadcasts from a first */
+            ret = zb_nwk_neighbor_get(addr_ref, (zb_bool_t)1, &nbe);
+#else
             ret =
                 zb_nwk_neighbor_get(addr_ref,
                                     (zb_bool_t)(nwk_hdr->src_addr ==
                                                 mhr->src_addr.addr_short),
                                     &nbe);
+#endif
+        }
+        else {
+            printf("address update failed\n");
         }
     }
+
     if (ret == RET_OK) {
         key = secur_nwk_key_by_seq(aux->key_seq_number);
 

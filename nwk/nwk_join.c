@@ -120,6 +120,7 @@ static zb_ext_neighbor_tbl_ent_t *nwk_choose_parent(
     for (i = 0; i < ZG->nwk.neighbor.ext_neighbor_used; ++i) {
         zb_ext_neighbor_tbl_ent_t *ne = &ZG->nwk.neighbor.ext_neighbor[i];
 
+        ne->lqi = 240;
         TRACE_MSG(TRACE_NWK2,
                   "ne %p panid_ref %hd, potential_par %hd, permit_join %hd, cap r/e %hd/%hd, lqi %hu, upd_id %hd, NIB_uid %hu",
                   (FMT__P_H_H_H_H_H_H_H, ne, panid_ref,

@@ -252,6 +252,7 @@ typedef struct zb_nlde_data_req_s {
 
     zb_uint8_t ndsu_handle;         /*!< The handle associated with the NSDU to be
                                      * transmitted by the NWK layer entity. */
+    zb_ieee_addr_t dst_addr_long;
 
 } zb_nlde_data_req_t;
 
@@ -592,6 +593,7 @@ typedef struct zb_nwk_hdr_s {
    Frame type value from the NWK FCF field: command
  */
 #define ZB_NWK_FRAME_TYPE_COMMAND  1
+#define ZB_NWK_FRAME_TYPE_INTERPAN  3
 
 
 /**
@@ -771,6 +773,14 @@ typedef struct zb_nwk_hdr_s {
     (ZB_OFFSETOF(zb_nwk_hdr_t, dst_ieee_addr) + ((is_multicast) ? 1 : 0))
 
 /**
+   Return size of interpan NWK header (ZLL)
+
+   @return header part size
+ */
+#define ZB_NWK_MIN_HDR_SIZE \
+    (ZB_OFFSETOF(zb_nwk_hdr_t, dst_addr))
+
+/**
    Return hdr size with only one extended address present
 
    @return header part size
@@ -788,6 +798,7 @@ typedef struct zb_nwk_hdr_s {
                                                         mcast_control) + \
                                             ((is_multicast) ? 1 : 0))
 
+#define ZB_NWK_INTERPAN_HDR_SIZE (2)
 
 /**
    Calculate network header size by NWK FCF

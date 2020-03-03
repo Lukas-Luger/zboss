@@ -161,9 +161,11 @@ static zb_ret_t zb_get_buf_delayed(zb_callback_t callback, zb_uint8_t is_in)
     zb_buf_t *buf = zb_get_buf(is_in);
 
     if (buf) {
+        printf("now\n");
         return ZB_SCHEDULE_CALLBACK( callback,  ZB_REF_FROM_BUF(buf));
     }
     else {
+        printf("WAIT FOR BUFFER\n");
         zb_buf_q_ent_t *ent;
 
         VERIFY_BUFS();

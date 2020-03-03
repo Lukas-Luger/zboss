@@ -288,6 +288,7 @@ zb_ret_t zb_mac_send_comm_status(zb_buf_t *pending_buf, zb_uint8_t mac_status,
     cmd_ptr = ZB_BUF_BEGIN(pending_buf);
     zb_parse_mhr(&mhr_pend, cmd_ptr);
 
+    printf("zb_mac_send_comm_status get_buf_param\n");
     ind_params = ZB_GET_BUF_PARAM(buffer, zb_mlme_comm_status_indication_t);
     ind_params->status = mac_status;
     buffer->u.hdr.status = mac_status;
@@ -387,7 +388,10 @@ ZB_SDCC_BANKED
 
     TRACE_MSG(TRACE_MAC2, ">> zb_mac_put_data_to_pending_queue ptr %p",
               (FMT__P, pend_data));
-    TRACE_MSG(TRACE_MAC1, "Setting pending bit", (FMT__0));
+    TRACE_MSG(TRACE_MAC1, "Setting pending bit for 0x%04x param %i",
+                                    (FMT__D, pend_data->dst_addr.addr_short,
+                                        ZB_REF_FROM_BUF(pend_data->pending_data)
+                                    ));
     ZB_SET_PENDING_BIT();
     /* find free slot */
     for (i = 0; i < ZB_MAC_PENDING_QUEUE_SIZE; i++) {
@@ -401,6 +405,7 @@ ZB_SDCC_BANKED
         ZB_SET_MAC_STATUS(MAC_TRANSACTION_OVERFLOW);
     }
     else {
+//         od_hex_dump(ZB_BUF_BEGIN(pend_data->pending_data), ZB_BUF_LEN(pend_data->pending_data), 16);
         ZB_MEMCPY(&MAC_CTX().pending_data_queue[i], pend_data,
                   sizeof(zb_mac_pending_data_t));
 

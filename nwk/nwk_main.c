@@ -61,6 +61,8 @@
 
 #include "zb_bank_3.h"
 
+extern void od_hex_dump(const void *data, size_t data_len, uint8_t width);
+
 /**
    NIB database in memory
  */
@@ -178,6 +180,10 @@ zb_nwk_hdr_t *nwk_alloc_and_fill_hdr(zb_buf_t *buf,
                                                    ZB_NWK_FRAME_TYPE_DATA,
                                                    ZB_PROTOCOL_VERSION);
     }
+
+    TRACE_MSG(TRACE_NWK3, "using src_ieee_addr %d dst_ieee_addr %d",
+              (FMT__D_D, src_ieee_addr, dst_ieee_addr));
+
     ZB_NWK_FRAMECTL_SET_SRC_DEST_IEEE(nwhdr->frame_control,
                                       (src_ieee_addr) ? 1 : 0,
                                       (dst_ieee_addr) ? 1 : 0);
@@ -195,6 +201,9 @@ zb_nwk_hdr_t *nwk_alloc_and_fill_hdr(zb_buf_t *buf,
     nwhdr->radius = 1;
     nwhdr->seq_num = ZB_NIB_SEQUENCE_NUMBER();
     ZB_NIB_SEQUENCE_NUMBER_INC();
+
+    TRACE_MSG(TRACE_NWK3, "using dst_addr 0x%04x", (FMT__D, nwhdr->dst_addr));
+
 
     if (src_ieee_addr && dst_ieee_addr) {
         ZB_IEEE_ADDR_COPY(nwhdr->dst_ieee_addr, dst_ieee_addr);
@@ -231,50 +240,81 @@ void zb_nlde_data_request(zb_uint8_t param)   ZB_CALLBACK
 
     ZB_ASSERT(nldereq);
 
-    TRACE_MSG(TRACE_NWK1, "+nlde_data_request %p", (FMT__P, nldereq));
+    TRACE_MSG(TRACE_NWK1, "+nlde_data_request %hd", (FMT__H, param));
 
-    /* check that we are associated */
-    if (!ZG->nwk.handle.joined) {
-        NWK_CONFIRM_STATUS(nsdu, ZB_NWK_STATUS_INVALID_REQUEST,
-                           zb_nlde_data_confirm);
-        return;
+    /* interpan */
+    if (nldereq->addr_mode == ZB_APS_ADDR_MODE_64_ENDP_NOT_PRESENT) {
+        ZB_BUF_ALLOC_LEFT(nsdu, ZB_NWK_INTERPAN_HDR_SIZE, nwhdr);
+        nwhdr->frame_control[0] = 0x0b;
+        nwhdr->frame_control[1] = 0x00;
+
+        zb_ieee_addr_t dst_addr;
+        ZB_IEEE_ADDR_COPY(&dst_addr, nldereq->dst_addr_long);
+
+//       ZB_SCHEDULE_CALLBACK(zb_nwk_forward, ZB_REF_FROM_BUF(nsdu));
+
+        zb_mcps_data_req_params_t *req = ZB_GET_BUF_PARAM(nsdu,
+                                                          zb_mcps_data_req_params_t);
+        ZB_BZERO(req, sizeof(zb_mcps_data_req_params_t));
+        req->src_addr_mode = ZB_ADDR_64BIT_DEV;
+        req->dst_addr_mode = ZB_ADDR_64BIT_DEV;
+        req->dst_pan_id = 0xffff;
+        req->tx_options = MAC_TX_OPTION_ACKNOWLEDGED_BIT;
+
+        ZB_IEEE_ADDR_COPY(req->dst_addr.addr_long, &dst_addr);
+        ZB_IEEE_ADDR_COPY(req->src_addr.addr_long, ZB_PIB_EXTENDED_ADDRESS());
+
+        ZB_SCHEDULE_CALLBACK(zb_mcps_data_request, ZB_REF_FROM_BUF(nsdu));
     }
+    else {
+        /* check that we are associated */
+        if (!ZG->nwk.handle.joined) {
+            NWK_CONFIRM_STATUS(nsdu, ZB_NWK_STATUS_INVALID_REQUEST,
+                               zb_nlde_data_confirm);
+            return;
+        }
 
-    /* TODO: if not broadcast or multicast, send source and destination ieee
-     * address.
-     * Not sure when really needs to send it.
-     * Sure need to send it for some comman frames (it depends on frame). Usually:
-     * source - always, destination - depends on command.
-     */
+        /* TODO: if not broadcast or multicast, send source and destination ieee
+         * address.
+         * Not sure when really needs to send it.
+         * Sure need to send it for some comman frames (it depends on frame). Usually:
+         * source - always, destination - depends on command.
+         */
 
 #ifdef ZB_SECURITY
-    TRACE_MSG(TRACE_NWK1,
-              "security_enable %hd authenticated %hd secure_all_frames %hd security_level %hd",
-              (FMT__H_H_H_H, nldereq->security_enable, ZG->aps.authenticated,
-               ZG->nwk.nib.secure_all_frames, ZG->nwk.nib.security_level));
+        TRACE_MSG(TRACE_NWK1,
+                  "security_enable %hd authenticated %hd secure_all_frames %hd security_level %hd",
+                  (FMT__H_H_H_H, nldereq->security_enable,
+                   ZG->aps.authenticated, ZG->nwk.nib.secure_all_frames,
+                   ZG->nwk.nib.security_level));
 
-    secure =
-        (zb_bool_t)(nldereq->security_enable && ZG->aps.authenticated &&
-                    ZG->nwk.nib.secure_all_frames
-                    && ZG->nwk.nib.security_level);
+        secure =
+            (zb_bool_t)(nldereq->security_enable && ZG->aps.authenticated &&
+                        ZG->nwk.nib.secure_all_frames
+                        && ZG->nwk.nib.security_level);
 #endif
-    nwhdr = nwk_alloc_and_fill_hdr(nsdu,
-                                   nldereq->dst_addr,
-                                   NULL, NULL,
-                                   (zb_bool_t)(nldereq->addr_mode ==
-                                               ZB_ADDR_16BIT_MULTICAST), secure,
-                                   ZB_FALSE);
-    nwhdr->radius = nldereq->radius ? nldereq->radius : ZB_NIB_MAX_DEPTH() * 2;
 
-    if (nldereq->discovery_route) {
-        ZB_NWK_FRAMECTL_SET_DISCOVER_ROUTE(nwhdr->frame_control, 1);
-    }
+        nwhdr = nwk_alloc_and_fill_hdr(nsdu,
+                                       nldereq->dst_addr,
+                                       NULL, NULL,
+                                       (zb_bool_t)(nldereq->addr_mode ==
+                                                   ZB_ADDR_16BIT_MULTICAST),
+                                       secure,
+                                       ZB_FALSE);
 
-    {
-        zb_uint8_t ndsu_handle = nldereq->ndsu_handle;
+        nwhdr->radius = nldereq->radius ? nldereq->radius : ZB_NIB_MAX_DEPTH() *
+                        2;
 
-        ZB_SET_BUF_PARAM(nsdu, ndsu_handle, zb_uint8_t);
-        ZB_SCHEDULE_CALLBACK(zb_nwk_forward, ZB_REF_FROM_BUF(nsdu));
+        if (nldereq->discovery_route) {
+            ZB_NWK_FRAMECTL_SET_DISCOVER_ROUTE(nwhdr->frame_control, 1);
+        }
+
+        {
+            zb_uint8_t ndsu_handle = nldereq->ndsu_handle;
+
+            ZB_SET_BUF_PARAM(nsdu, ndsu_handle, zb_uint8_t);
+            ZB_SCHEDULE_CALLBACK(zb_nwk_forward, ZB_REF_FROM_BUF(nsdu));
+        }
     }
 
     TRACE_MSG(TRACE_NWK1, "-nlde_data_request", (FMT__0));
@@ -477,12 +517,15 @@ void nwk_broadcast_transmition(zb_uint8_t param) ZB_CALLBACK
 
     TRACE_MSG(TRACE_NWK1, ">>nwk_broadcast_transmition %hd", (FMT__H, param));
 
+    TRACE_MSG(TRACE_MAC2, "buf len: %i",
+              (FMT__D, ZB_BUF_LEN(ZB_BUF_FROM_REF(param))));
+
     /* first transmit broadcast packets for the first time */
     for (i = 0; i < ZB_NWK_BRR_TABLE_SIZE && !ent; i++) {
         if (ZG->nwk.handle.brrt[i].used
             && ZG->nwk.handle.brrt[i].retries == 0) {
             TRACE_MSG(TRACE_NWK2,
-                      "found brdcst packet %hd retries %hd ready to be retransmitted",
+                      "found broadcast packet %hd, retries %hd, ready to be retransmitted",
                       (FMT__H_H, ZG->nwk.handle.brrt[i].buf,
                        ZG->nwk.handle.brrt[i].retries));
             ent = &ZG->nwk.handle.brrt[i];
@@ -501,16 +544,17 @@ void nwk_broadcast_transmition(zb_uint8_t param) ZB_CALLBACK
                 &ZG->nwk.neighbor.base_neighbor[ZG->nwk.handle.brrt[i].
                                                 neighbor_table_iterator
                 ];
+            zb_uint16_t src_addr =
+                ((zb_nwk_hdr_t *)ZB_BUF_BEGIN(ZB_BUF_FROM_REF(ent->buf)))->
+                src_addr;
             zb_address_short_by_ref(&addr, nent->addr_ref);
             ZB_NWK_ADDR_TO_LE16(addr);
 
             /* do not unicast to the originator */
-            if (addr ==
-                ((zb_nwk_hdr_t *)ZB_BUF_BEGIN(ZB_BUF_FROM_REF(ent->buf)))->
-                src_addr) {
+            if (addr == src_addr) {
                 TRACE_MSG(TRACE_NWK2,
-                          "do not unicast brdcst frame to the originator",
-                          (FMT__0));
+                          "do not unicast broadcast frame to the originator 0x%x",
+                          (FMT__D, addr));
                 ent->neighbor_table_iterator =
                     zb_nwk_neighbor_next_ze_children_i(ent->dst_addr,
                                                        ent->neighbor_table_iterator +
@@ -520,7 +564,7 @@ void nwk_broadcast_transmition(zb_uint8_t param) ZB_CALLBACK
                 continue;
             }
             TRACE_MSG(TRACE_NWK2,
-                      "found brdcst packet %hd to be unicasted iterator %hd",
+                      "found broadcast packet %hd to be unicasted iterator %hd",
                       (FMT__H_D, ZG->nwk.handle.brrt[i].buf,
                        ZG->nwk.handle.brrt[i].neighbor_table_iterator));
         }
@@ -532,22 +576,29 @@ void nwk_broadcast_transmition(zb_uint8_t param) ZB_CALLBACK
             && ZB_TIME_GE(ZB_TIMER_GET(),
                           ZG->nwk.handle.brrt[i].next_retransmit)) {
             TRACE_MSG(TRACE_NWK2,
-                      "found brdcst packet %hd with ready to be retransmitted",
+                      "found broadcast packet %hd with ready to be retransmitted",
                       (FMT__H, ZG->nwk.handle.brrt[i].buf));
             ent = &ZG->nwk.handle.brrt[i];
+            printf("retransmitting broadcast %u\n", i);
         }
     }
 
+//   printf("nwk ent: 0x%lx\n", (uint32_t)ent);
     if (ent) {
         TRACE_MSG(TRACE_NWK2, "ent %p rerties %hd nbtbl_iter %d",
                   (FMT__P_H_D, ent, ent->retries,
                    ent->neighbor_table_iterator));
 
+        zb_uint16_t src_addr =
+            ((zb_nwk_hdr_t *)ZB_BUF_BEGIN(ZB_BUF_FROM_REF(ent->buf)))->src_addr;
+        TRACE_MSG(TRACE_NWK2, "forwarding broadcast for src_addr 0x%x",
+                  (FMT__D, src_addr));
+
         /* check we have buffer to be sent */
         if (!param) {
             /* get new one */
             TRACE_MSG(TRACE_NWK2,
-                      "brdcst retransmition need additional buffer %hd",
+                      "broadcast retransmition need additional buffer %hd",
                       (FMT__H, param));
             ZB_GET_OUT_BUF_DELAYED(nwk_broadcast_transmition);
             goto done;
@@ -608,9 +659,21 @@ void nwk_broadcast_transmition(zb_uint8_t param) ZB_CALLBACK
                               ZG->nwk.handle.brrt_cnt);
         }
 
+        TRACE_MSG(TRACE_NWK2, "before buf_copy", (FMT__0));
+//     od_hex_dump(ZB_BUF_BEGIN(ZB_BUF_FROM_REF(param)), 32, 16);
+//     od_hex_dump(ZB_BUF_BEGIN(ZB_BUF_FROM_REF(ent->buf)), 32, 16);
+
         buf = ZB_BUF_FROM_REF(param);
         if (param != ent->buf) {
             ZB_BUF_COPY(buf, ZB_BUF_FROM_REF(ent->buf));
+
+            TRACE_MSG(TRACE_NWK2, "after buf_copy", (FMT__0));
+//       od_hex_dump(ZB_BUF_BEGIN(ZB_BUF_FROM_REF(param)), 32, 16);
+//       od_hex_dump(ZB_BUF_BEGIN(ZB_BUF_FROM_REF(ent->buf)), 32, 16);
+
+            TRACE_MSG(TRACE_NWK2, "copied buffer %u to %u\n",
+                      (FMT__D_D, ent->buf, param));
+
             /* This is not last buffer. It must be dropped after transmit complete
              * inside confirm. Only last transmission of buffer must be confirmed for
              * upper layer.
@@ -641,6 +704,10 @@ void nwk_broadcast_transmition(zb_uint8_t param) ZB_CALLBACK
         else {
             /* broadcast packet */
             TRACE_MSG(TRACE_NWK2, "broadcast transmition", (FMT__0));
+            TRACE_MSG(TRACE_MAC2, "buf len: %i", (FMT__D, ZB_BUF_LEN(buf)));
+            TRACE_MSG(TRACE_MAC2, "buf len: %i",
+                      (FMT__D, ZB_BUF_LEN(ZB_BUF_FROM_REF(ent->buf))));
+
             ZB_SCHEDULE_CALLBACK(zb_mcps_data_request, ZB_REF_FROM_BUF(buf));
         }
 
@@ -655,6 +722,7 @@ void nwk_broadcast_transmition(zb_uint8_t param) ZB_CALLBACK
     /* schedule next execution */
     if (ZG->nwk.handle.brrt_cnt) {
         if (ent) {
+            TRACE_MSG(TRACE_NWK2, "rebroadcasting ent", (FMT__0));
             ZB_SCHEDULE_CALLBACK(nwk_broadcast_transmition, 0);
         }
         else {
@@ -706,6 +774,7 @@ void zb_nwk_forward(zb_uint8_t param) ZB_CALLBACK
         ZB_NWK_COMMAND_STATUS_NO_ROUTE_AVAILABLE;
 
     TRACE_MSG(TRACE_NWK1, ">>forward parm %hd", (FMT__H, param));
+//   od_hex_dump(packet, 32, 16);
 
     ret =
         nwk_calc_destination(packet, handle, &mac_dst, &indirect, &cmd_status);
@@ -741,7 +810,7 @@ void zb_nwk_forward(zb_uint8_t param) ZB_CALLBACK
         }
 
         TRACE_MSG(TRACE_NWK1,
-                  "mcps data req src %hu dst %hu indirect %hd h %hd",
+                  "mcps data req src 0x%hx dst 0x%hx indirect %hd h 0x%hx",
                   (FMT__H_H_H_H, ZB_PIB_SHORT_ADDRESS(), mac_dst, indirect,
                    handle));
         ZB_MCPS_BUILD_DATA_REQUEST(packet, ZB_PIB_SHORT_ADDRESS(), mac_dst,
@@ -755,7 +824,7 @@ void zb_nwk_forward(zb_uint8_t param) ZB_CALLBACK
                                    handle);
 
 #ifdef ZB_ROUTER_ROLE
-        TRACE_MSG(TRACE_NWK3, "dst %d is_br %hd dev_t %hd brrt_cnt %hd",
+        TRACE_MSG(TRACE_NWK3, "dst 0x%x is_br %hd dev_t %hd brrt_cnt %hd",
                   (FMT__D_H_H_D, nwhdr->dst_addr,
                    ZB_NWK_IS_ADDRESS_BROADCAST(nwhdr->dst_addr),
                    ZB_NIB_DEVICE_TYPE(), ZG->nwk.handle.brrt_cnt));
@@ -785,7 +854,7 @@ void zb_nwk_forward(zb_uint8_t param) ZB_CALLBACK
 
                 ZB_SCHEDULE_ALARM_CANCEL(nwk_broadcast_transmition, 0);
                 /* call without buffer first time: allocate buffer only if it really necessary  */
-                ZB_GET_OUT_BUF_DELAYED(nwk_broadcast_transmition);
+                ZB_SCHEDULE_CALLBACK(nwk_broadcast_transmition, 0);
             }
             else {
                 TRACE_MSG(TRACE_NWK3, "brrt tbl full, drop pkt", (FMT__0));
@@ -1037,8 +1106,13 @@ void zb_mcps_data_indication(zb_uint8_t param) ZB_CALLBACK
 
     /* parse and remove MAC header */
     mhr_size = zb_parse_mhr(&mac_hdr, ZB_BUF_BEGIN(buf));
-    ZB_MAC_CUT_HDR(buf, mhr_size, nwk_hdr);
 
+//   printf("mcps data indication src_ieee_addr:\n");
+//   od_hex_dump(&mac_hdr, sizeof(mac_hdr), 16);
+//   od_hex_dump(mac_hdr.src_addr.addr_long, sizeof(zb_ieee_addr_t), 16);
+
+
+    ZB_MAC_CUT_HDR(buf, mhr_size, nwk_hdr);
 
     /* TODO: if frame is from non-joined device, drop it (how to check it??) */
 
@@ -1050,7 +1124,8 @@ void zb_mcps_data_indication(zb_uint8_t param) ZB_CALLBACK
               (FMT__D_H_H, hdr_size, nwk_hdr->radius, frame_type));
     if (nwk_hdr->radius == 0
         || (frame_type != ZB_NWK_FRAME_TYPE_COMMAND
-            && frame_type != ZB_NWK_FRAME_TYPE_DATA)) {
+            && frame_type != ZB_NWK_FRAME_TYPE_DATA
+            && frame_type != ZB_NWK_FRAME_TYPE_INTERPAN)) {
         TRACE_MSG(TRACE_NWK1, "drop bad packet", (FMT__0));
         zb_free_buf(buf);
         goto done;
@@ -1103,7 +1178,7 @@ void zb_mcps_data_indication(zb_uint8_t param) ZB_CALLBACK
                     zb_uint8_t passive_ack_dev_num;
 
                     TRACE_MSG(TRACE_NWK3,
-                              "mark neighbor %d as got passive ack for brdcst source %d seq %hd",
+                              "mark neighbor %d as got passive ack for broadcast source %d seq %hd",
                               (FMT__D_D_H, mac_hdr.src_addr.addr_short,
                                src_addr,
                                nwk_hdr->seq_num));
@@ -1189,6 +1264,7 @@ void zb_mcps_data_indication(zb_uint8_t param) ZB_CALLBACK
             goto done;
         }
         else {
+            TRACE_MSG(TRACE_NWK1, "pkt unsecure succeeded", (FMT__0));
             /* Set flag to secure this frame before send if it will be forwarded */
             buf->u.hdr.encrypt_type = ZB_SECUR_NWK_ENCR;
             /* unsecure frame does left alloc and can move data in the
@@ -1246,12 +1322,16 @@ void zb_mcps_data_indication(zb_uint8_t param) ZB_CALLBACK
         }
     }
 
+    if (frame_type == ZB_NWK_FRAME_TYPE_INTERPAN) {
+        indicate = ZB_TRUE;
+    }
+
     /* update neighbor lqi */
     {
         zb_neighbor_tbl_ent_t *nbt;
 
         if (zb_nwk_neighbor_get_by_short(nwk_hdr->src_addr, &nbt) == RET_OK) {
-#define LQI_TEST
+// #define LQI_TEST
 #ifdef ZB_NS_BUILD
 #ifdef LQI_TEST
             lqi = (nwk_hdr->src_addr * 10 > 255) ? 255 : nwk_hdr->src_addr * 10;
@@ -1264,6 +1344,8 @@ void zb_mcps_data_indication(zb_uint8_t param) ZB_CALLBACK
     }
 
 #ifdef ZB_ROUTER_ROLE
+    printf("nwk indicate %i retransmit %i\n", indicate, retransmit);
+//     retransmit = 0; /* FIXME */
     if (retransmit
         && indicate) {
         zb_nwk_buf_alloc_wait_t *alloc_wait = NULL;
@@ -1352,9 +1434,10 @@ void nwk_frame_indication(zb_uint8_t param) ZB_CALLBACK
     TRACE_MSG(TRACE_NWK1, ">> nwk_frame_indication %hd", (FMT__H, param));
 
     /* handle data/command frames */
-    TRACE_MSG(TRACE_NWK1, "frame type %hd", (FMT__H, frame_type));
+    TRACE_MSG(TRACE_NWK1, "Received frame type: %hd", (FMT__H, frame_type));
 
-    if (frame_type == ZB_NWK_FRAME_TYPE_DATA) {
+    if (frame_type == ZB_NWK_FRAME_TYPE_DATA ||
+        frame_type == ZB_NWK_FRAME_TYPE_INTERPAN) {
         ZB_SCHEDULE_CALLBACK(zb_nlde_data_indication, param);
     }
     else if (frame_type == ZB_NWK_FRAME_TYPE_COMMAND) {
@@ -1777,6 +1860,9 @@ zb_void_t zb_nwk_set_device_type(zb_nwk_device_type_t device_type)
 
 zb_ushort_t zb_nwk_hdr_size(zb_uint8_t *fctl)
 {
+    if (ZB_NWK_FRAMECTL_GET_FRAME_TYPE(fctl) == ZB_NWK_FRAME_TYPE_INTERPAN) {
+        return ZB_NWK_MIN_HDR_SIZE;
+    }
 #ifdef ZB_SECURITY
     return (
         ZB_NWK_SHORT_HDR_SIZE(ZB_NWK_FRAMECTL_GET_MULTICAST_FLAG(fctl)) +
@@ -1795,6 +1881,5 @@ zb_ushort_t zb_nwk_hdr_size(zb_uint8_t *fctl)
         );
 #endif
 }
-
 
 /*! @} */

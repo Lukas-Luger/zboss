@@ -81,7 +81,7 @@ typedef enum {
 
 #define ZB_MAC_BASE_SLOT_DURATION 60
 #define ZB_MAC_NUM_SUPERFRAME_SLOTS 16
-#define ZB_MAC_TRANSACTION_PERSISTENCE_TIME 0x01f4
+#define ZB_MAC_TRANSACTION_PERSISTENCE_TIME 0x01f4 * 5
 
 #ifdef ZB_MANUAL_ACK
 zb_ret_t zb_mac_check_ack();

@@ -109,9 +109,10 @@ static void init_config_attr() ZB_SDCC_REENTRANT
 
 void zdo_main_loop()
 {
-    while (1) {
-        zb_sched_loop_iteration();
-    }
+    // while (1)
+    // {
+    zb_sched_loop_iteration();
+    // }
 }
 
 zb_ret_t zdo_dev_start() ZB_SDCC_REENTRANT
@@ -122,9 +123,11 @@ zb_ret_t zdo_dev_start() ZB_SDCC_REENTRANT
 
     /* Startup procedure as defined in 2.5.5.5.6.2    Startup Procedure */
 
-#ifdef ZB_USE_NVRAM
-    zb_read_formdesc_data();
-#endif
+// done already in zb_init()
+// #ifdef ZB_USE_NVRAM
+//     zb_read_formdesc_data();
+// #endif
+
     if (ZB_EXTPANID_IS_ZERO(ZB_NIB_EXT_PAN_ID())) {
         /* This call is here to take into account parameters changed after
          * zb_init() but before zdo_dev_start(). For instance, it can be MAC
@@ -132,6 +135,7 @@ zb_ret_t zdo_dev_start() ZB_SDCC_REENTRANT
         zb_handle_parms_before_start();
         TRACE_MSG(TRACE_APS1, "ext pan id 0 - startup", (FMT__0));
         if (ZB_AIB().aps_designated_coordinator) {
+            printf("starting ZDO as coordinator\n");
 #ifdef ZB_COORDINATOR_ROLE
             /* will start as coordinator: Formation */
             zb_buf_t *buf = zb_get_out_buf();
@@ -163,12 +167,14 @@ zb_ret_t zdo_dev_start() ZB_SDCC_REENTRANT
         }
 #ifndef ZB_LIMITED_FEATURES
         else if (!ZB_EXTPANID_IS_ZERO(ZB_AIB().aps_use_extended_pan_id)) {
+            printf("starting ZDO trying to rejoin\n");
             /* try to rejoin */
             zb_buf_t *buf = zb_get_out_buf();
             ret = zdo_initiate_rejoin(buf);
         }
 #endif
         else {
+            printf("starting ZDO discovery then join\n");
             /* ZR or ZC: discovery, then join */
             zb_buf_t *buf = zb_get_out_buf();
             zb_nlme_network_discovery_request_t *req = ZB_GET_BUF_PARAM(buf,
@@ -555,7 +561,7 @@ void zdo_send_device_annce(zb_uint8_t param) ZB_CALLBACK
         /* Broadcast to all devices for which macRxOnWhenIdle = TRUE.
            MAC layer in ZE sends unicast to its parent.
          */
-        dreq->dst_addr.addr_short = ZB_NWK_BROADCAST_RX_ON_WHEN_IDLE;
+        dreq->dst_addr = ZB_NWK_BROADCAST_RX_ON_WHEN_IDLE;
         dreq->addr_mode = ZB_APS_ADDR_MODE_16_ENDP_PRESENT;
         /* use default radius, max_depth * 2 */
         dreq->clusterid = ZDO_DEVICE_ANNCE_CLID;
@@ -599,7 +605,7 @@ void zb_zdo_device_annce(zb_uint8_t param) ZB_SDCC_REENTRANT
         /* Broadcast to all devices for which macRxOnWhenIdle = TRUE.
            MAC layer in ZE sends unicast to its parent.
          */
-        dreq->dst_addr.addr_short = ZB_NWK_BROADCAST_RX_ON_WHEN_IDLE;
+        dreq->dst_addr = ZB_NWK_BROADCAST_RX_ON_WHEN_IDLE;
         dreq->addr_mode = ZB_APS_ADDR_MODE_16_ENDP_PRESENT;
         /* use default radius, max_depth * 2 */
         dreq->clusterid = ZDO_DEVICE_ANNCE_CLID;
@@ -676,7 +682,7 @@ static void send_data()
     zb_short_t i;
 
     buf = zb_get_out_buf();
-    req.dst_addr.addr_short = 0; /* send to ZC */
+    req.dst_addr = 0; /* send to ZC */
     req.addr_mode = ZB_APS_ADDR_MODE_16_ENDP_PRESENT;
     req.tx_options = ZB_APSDE_TX_OPT_ACK_TX;
     req.radius = 1;
