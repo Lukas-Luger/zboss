@@ -52,13 +52,17 @@
 #include "zb_types.h"
 #include "zb_debug.h"
 #include "zb_bufpool.h"
-#include "zb_ubec24xx.h"
 #include "zb_ns3.h"
+
+#if defined ZB_UZ2400 || defined ZB_UZ2410
+#include "zb_ubec24xx.h"
+#endif
 #ifdef ZB_CC25XX
 #include "zb_cc25xx.h"
 #endif
-
-
+#ifdef RIOT
+#include "zb_mac_riot.h"
+#endif
 
 
 /*! \cond internals_doc */
@@ -189,7 +193,7 @@ zb_addr_mode_t;
    See 3.2.3 RXMAC.
  */
 #define ZB_MAC_PACKET_LENGTH_SIZE 1
-#define ZB_MAC_EXTRA_DATA_SIZE    9
+#define ZB_MAC_EXTRA_DATA_SIZE    2
 
 /**
     Is used for macBeaconOrder and macSuperframeOrder
@@ -624,18 +628,21 @@ zb_void_t zb_fcf_set_dst_addressing_mode(zb_uint8_t *p_fcf,
    Tail size for mac packet
  */
 #ifndef ZB_CC25XX
-#define ZB_TAIL_SIZE_FOR_RECEIVED_MAC_FRAME (2 /*fcs*/ + ZB_MAC_EXTRA_DATA_SIZE)
+// #define ZB_TAIL_SIZE_FOR_RECEIVED_MAC_FRAME (2/*fcs*/ + ZB_MAC_EXTRA_DATA_SIZE)
+#define ZB_TAIL_SIZE_FOR_RECEIVED_MAC_FRAME (ZB_MAC_EXTRA_DATA_SIZE)
 #else
 #define ZB_TAIL_SIZE_FOR_RECEIVED_MAC_FRAME (1 /*LQI */)
 #endif
+// #define ZB_TAIL_SIZE_FOR_RECEIVED_MAC_FRAME (0)
 
 /**
    Get LQI value
    @param p_buf - pointer to buffer
  */
 #ifndef ZB_CC25XX
+// #define ZB_MAC_GET_LQI(packet) *((zb_uint8_t*)ZB_BUF_BEGIN(packet) + ZB_BUF_LEN(packet) - ZB_MAC_EXTRA_DATA_SIZE)
 #define ZB_MAC_GET_LQI(packet) *((zb_uint8_t *)ZB_BUF_BEGIN(packet) + \
-                                 ZB_BUF_LEN(packet) - ZB_MAC_EXTRA_DATA_SIZE)
+                                 ZB_BUF_LEN(packet))
 #else
 #define ZB_MAC_GET_LQI(packet) 255  /* TI devices can't directly get an LQI, it should be calculated */
                                     /* empirically from RSSI */
@@ -644,9 +651,9 @@ zb_void_t zb_fcf_set_dst_addressing_mode(zb_uint8_t *p_fcf,
    Get RSSI value
    @param p_buf - pointer to buffer
  */
-#define ZB_MAC_GET_RSSI(p_buf) *((zb_uint8_t *)ZB_BUF_BEGIN(packet) + \
-                                 ZB_BUF_LEN(packet) - ZB_MAC_EXTRA_DATA_SIZE + \
-                                 1)
+// #define ZB_MAC_GET_RSSI(packet) *((zb_uint8_t*)ZB_BUF_BEGIN(packet) + ZB_BUF_LEN(packet) - ZB_MAC_EXTRA_DATA_SIZE + 1)
+#define ZB_MAC_GET_RSSI(packet) *((zb_uint8_t *)ZB_BUF_BEGIN(packet) + \
+                                  ZB_BUF_LEN(packet) + 1)
 
 
 #ifdef ZB_NS_BUILD
@@ -705,8 +712,11 @@ zb_mcps_data_confirm_params_t;
     {                                                                     \
         zb_mcps_data_req_params_t *_p = ZB_GET_BUF_PARAM((buf), \
                                                          zb_mcps_data_req_params_t); \
-        _p->src_addr = (src_addr_param);                                    \
-        _p->dst_addr = (dst_addr_param);                                    \
+        _p->src_addr.addr_short = (src_addr_param);                         \
+        _p->dst_addr.addr_short = (dst_addr_param);                         \
+        _p->src_addr_mode = 2;                                              \
+        _p->dst_addr_mode = 2;                                              \
+        _p->dst_pan_id = MAC_PIB().mac_pan_id;                              \
         _p->tx_options = (tx_options_param);                                \
         _p->msdu_handle = (msdu_hande_param);                               \
     }
@@ -2774,20 +2784,21 @@ void mac_add_invisible_short(zb_uint16_t addr);
 #if !defined(ZB_TRANSPORT_8051_DATA_SPI) && !defined(ZB_TRANSPORT_LINUX_SPIDEV)
 #define ZB_WAIT_FOR_TX() while (!MAC_CTX().tx_cnt) ZB_GO_IDLE()
 #else
-#define ZB_WAIT_FOR_TX()                  \
-    while (!MAC_CTX().tx_cnt)          \
-    {                                 \
-        CHECK_INT_N_TIMER();            \
-        if (ZB_GET_TRANS_INT())         \
-        {                               \
-            zb_ubec_check_int_status();   \
-        }                               \
-    }
+// #define ZB_WAIT_FOR_TX()                  \
+//   while(!MAC_CTX().tx_cnt)          \
+//   {                                 \
+//           CHECK_INT_N_TIMER();            \
+//     if (ZB_GET_TRANS_INT())         \
+//     {                               \
+//       zb_ubec_check_int_status();   \
+//     }                               \
+//   }
 #endif
 /* the following macro used to skip tx check */
 /* if fully synchronous output needed - just zero it */
 #define ZB_SKIP_TX_CHK() (MAC_CTX().tx_cnt = 1);  /* disable waiting for the tx */
 
+#define ZB_WAIT_FOR_TX ZB_SKIP_TX_CHK
 
 
 void zb_mac_main_loop();

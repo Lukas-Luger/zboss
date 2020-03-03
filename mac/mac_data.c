@@ -665,7 +665,8 @@ void zb_handle_mcps_data_req_continue(zb_uint8_t param) ZB_CALLBACK
 
     ZB_SKIP_TX_CHK();
     ret = zb_check_cmd_tx_status();
-    is_unicast = !ZB_NWK_IS_ADDRESS_BROADCAST(data_req_params->dst_addr);
+    is_unicast = !ZB_NWK_IS_ADDRESS_BROADCAST(
+        data_req_params->dst_addr.addr_short);
     if (ret != RET_OK && ret != RET_BLOCKED && is_unicast) {
         ZB_TX_FAIL_INC();
     }

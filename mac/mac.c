@@ -52,8 +52,13 @@
 #include "zb_mac.h"
 #include "mac_internal.h"
 #include "zb_mac_transport.h"
-#include "zb_ubec24xx.h"
 #include "zb_mac_globals.h"
+#if defined ZB_UZ2400 || defined ZB_UZ2410
+#include "zb_ubec24xx.h"
+#endif
+#ifdef RIOT
+#include "zb_mac_riot.h"
+#endif
 #ifdef ZB_CC25XX
 #include "zb_cc25xx.h"
 #endif
@@ -642,7 +647,9 @@ void zb_mlme_command_accept(zb_uint8_t param) ZB_CALLBACK
         ZB_SCHEDULE_TX_CB(zb_handle_beacon_req, 0);
         TRACE_MSG(TRACE_MAC3, "free buf %p", (FMT__P, request));
         zb_free_buf(request);
+#ifdef ZB_TRANSPORT_LINUX_SPIDEV
         ZIG->ioctx.recv_data_buf = NULL;
+#endif
     }
     else if ((*cmd_ptr) == MAC_CMD_ASSOCIATION_REQUEST) {
         ZB_SCHEDULE_CALLBACK(zb_accept_ass_request_cmd, param);

@@ -45,8 +45,8 @@
  ****************************************************************************
    PURPOSE: Very simple lists operations (macroses).
  */
-#ifndef LIST_H
-#define LIST_H 1
+#ifndef LIST_MACROS_H
+#define LIST_MACROS_H 1
 
 /*! \cond internals_doc */
 /**
@@ -513,4 +513,4 @@
 /*! @} */
 /*! \endcond */
 
-#endif /* LIST_H */
+#endif /* LIST_MACROS_H */

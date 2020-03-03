@@ -77,8 +77,31 @@ zb_void_t zb_assert(zb_char_t *file_name,
 
 #endif  /* DEBUG */
 
+char *zb_pretty_long_address(char *address_str, unsigned address_str_len,
+                             uint8_t *address_bytes)
+{
+    snprintf(address_str, address_str_len,
+             "%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x",
+             address_bytes[7], address_bytes[6], address_bytes[5],
+             address_bytes[4],
+             address_bytes[3], address_bytes[2], address_bytes[1],
+             address_bytes[0]
+             );
+    return address_str;
+}
 
-#ifdef ZB_MAC_TESTING_MODE
+char *zb_pretty_key(char *key_str, unsigned key_str_len, uint8_t *key_bytes)
+{
+    snprintf(key_str, key_str_len,
+             "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+             key_bytes[0], key_bytes[1], key_bytes[2], key_bytes[3],
+             key_bytes[4], key_bytes[5], key_bytes[6], key_bytes[7],
+             key_bytes[8], key_bytes[9], key_bytes[10], key_bytes[11],
+             key_bytes[12], key_bytes[13], key_bytes[14], key_bytes[15]
+             );
+    return key_str;
+}
+
 void dump_traf(zb_uint8_t *buf, zb_ushort_t len)
 {
     zb_ushort_t i;
@@ -140,8 +163,5 @@ void dump_traf(zb_uint8_t *buf, zb_ushort_t len)
         }
     }
 }
-#endif
-
-
 
 /*! @} */

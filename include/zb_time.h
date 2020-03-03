@@ -84,7 +84,8 @@ typedef zb_uint16_t zb_time_t;
 /**
    Get current timer value (beacon intervals)
  */
-#define ZB_TIMER_GET() (ZB_TIMER_CTX().timer)
+extern zb_time_t zb_timer_get(void);
+#define ZB_TIMER_GET() (zb_timer_get())
 
 /**
    Time subtraction: subtract 'b' from 'a'

@@ -49,7 +49,7 @@
 BUILD_HOME=..
 include $(BUILD_HOME)/Options
 
-SRCS = secur_ccm.c apsme_secur.c zdo_secur.c nwk_secur.c aps_secur.c
+SRCS = secur_ccm.c apsme_secur.c zdo_secur.c nwk_secur.c aps_secur.c mac_secur.c
 
 all: $(SECUR_LIB) $(SECUR_LIB_ED)
 

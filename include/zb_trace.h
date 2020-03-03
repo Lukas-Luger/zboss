@@ -72,6 +72,9 @@
    See \see tests/trace.c for usage example.
  */
 
+/* Setting this >2 at baud <921600 breaks sending pending packets */
+// #define ZB_TRACE_LEVEL 1
+
 #ifdef ZB_TRACE_LEVEL
 #ifndef ZB_TRACE_MASK
 #ifdef ZB_UZ2410
@@ -123,13 +126,19 @@ void zb_trace_deinit_unix();
 /**
    Print trace message
  */
-void zb_trace_msg_unix(zb_char_t *format, zb_char_t *file_name,
-                       zb_int_t line_number, zb_int_t args_size, ...);
+// void zb_trace_msg_unix(zb_char_t *format, zb_char_t *file_name, zb_int_t line_number, zb_int_t args_size, ...);
+void zb_trace_msg_unix(zb_char_t *format, zb_int_t level, zb_char_t *file_name,
+                       const zb_char_t *function, zb_int_t line_number,
+                       zb_int_t args_size, ...);
+void zb_trace_msg_riot(zb_char_t *format, zb_int_t level, zb_char_t *file_name,
+                       const zb_char_t *function, zb_int_t line_number,
+                       zb_int_t args_size, ...);
 
 #define _T0(...) __VA_ARGS__
 #define _T1(s, l, fmts, \
             args) if ((zb_int_t)ZB_TRACE_LEVEL >= (zb_int_t)l && \
-                      ((s) & ZB_TRACE_MASK)) zb_trace_msg_unix(fmts, _T0 args)
+                      ((s) & ZB_TRACE_MASK)) zb_trace_msg_riot(fmts, l, \
+                                                               _T0 args)
 #define TRACE_MSG(lm, fmts, args) _T1(lm, fmts, args)
 
 #elif defined ZB8051
@@ -190,7 +199,7 @@ void zb_trace_msg_8051(zb_char_t ZB_IAR_CODE *file_name, zb_int_t line_number,
 /**
    Trace format for 64-bit address
  */
-#define TRACE_FORMAT_64 "%hx.%hx.%hx.%hx.%hx.%hx.%hx.%hx"
+#define TRACE_FORMAT_64 "%hx:%hx:%hx:%hx:%hx:%hx:%hx:%hx"
 
 /**
    Trace format arguments for 64-bit address
@@ -267,276 +276,545 @@ typedef struct zb_addr64_struct_s {
 
 #ifndef ZB_IAR
 
-#define FMT__0                                   __FILE__, __LINE__, 0
-#define FMT__A                                   __FILE__, __LINE__, 8
-#define FMT__A_A                                 __FILE__, __LINE__, 16
-#define FMT__A_D_A_P                             __FILE__, __LINE__, 21
-#define FMT__A_D_D_P_H                           __FILE__, __LINE__, 16
-#define FMT__A_D_H                               __FILE__, __LINE__, 11
-#define FMT__C                                   __FILE__, __LINE__, 1
-#define FMT__D                                   __FILE__, __LINE__, 2
-#define FMT__D_A                                 __FILE__, __LINE__, 10
-#define FMT__D_A_D_D_D_D_D_D_D_D                 __FILE__, __LINE__, 26
-#define FMT__D_A_D_P_H_H_H                       __FILE__, __LINE__, 18
-#define FMT__D_A_P                               __FILE__, __LINE__, 13
-#define FMT__A_P                                 __FILE__, __LINE__, 11
-#define FMT__D_C                                 __FILE__, __LINE__, 3
-#define FMT__D_D                                 __FILE__, __LINE__, 4
-#define FMT__D_D_A_D                             __FILE__, __LINE__, 14
-#define FMT__D_D_A_D_D_D_D                       __FILE__, __LINE__, 20
-#define FMT__D_D_D                               __FILE__, __LINE__, 6
-#define FMT__D_D_D_C                             __FILE__, __LINE__, 7
-#define FMT__D_D_D_D                             __FILE__, __LINE__, 8
-#define FMT__D_D_D_D_D_D_D_D_D_D_D_D_D_D_D_D_D   __FILE__, __LINE__, 34
-#define FMT__D_D_D_P                             __FILE__, __LINE__, 9
-#define FMT__D_D_P                               __FILE__, __LINE__, 7
-#define FMT__D_D_P_D                             __FILE__, __LINE__, 9
-#define FMT__D_D_P_P_P                           __FILE__, __LINE__, 13
-#define FMT__D_H                                 __FILE__, __LINE__, 3
-#define FMT__D_D_H                               __FILE__, __LINE__, 5
-#define FMT__D_H_H                               __FILE__, __LINE__, 4
-#define FMT__D_H_H_H_H_H_H_D_D_D_D               __FILE__, __LINE__, 16
-#define FMT__D_H_P                               __FILE__, __LINE__, 6
-#define FMT__D_P                                 __FILE__, __LINE__, 5
-#define FMT__D_P_D                               __FILE__, __LINE__, 7
-#define FMT__D_P_H_H_D_H_H                       __FILE__, __LINE__, 11
-#define FMT__D_P_P                               __FILE__, __LINE__, 8
-#define FMT__D_P_P_D_D_H_H                       __FILE__, __LINE__, 14
-#define FMT__D_P_P_H                             __FILE__, __LINE__, 9
-#define FMT__H                                   __FILE__, __LINE__, 1
-#define FMT__H_A                                 __FILE__, __LINE__, 9
-#define FMT__H_A_A                               __FILE__, __LINE__, 17
-#define FMT__H_A_H_H_H_H_H_H_H_H                 __FILE__, __LINE__, 17
-#define FMT__H_C_D_C                             __FILE__, __LINE__, 5
-#define FMT__H_D                                 __FILE__, __LINE__, 3
-#define FMT__H_D_A_H_D                           __FILE__, __LINE__, 14
-#define FMT__H_D_A_H_H_H_H                       __FILE__, __LINE__, 15
-#define FMT__H_D_D                               __FILE__, __LINE__, 5
-#define FMT__H_D_D_D_H_H_D                       __FILE__, __LINE__, 11
-#define FMT__H_H                                 __FILE__, __LINE__, 2
-#define FMT__H_H_D                               __FILE__, __LINE__, 4
-#define FMT__H_H_H                               __FILE__, __LINE__, 3
-#define FMT__H_H_H_H                             __FILE__, __LINE__, 4
-#define FMT__H_H_P                               __FILE__, __LINE__, 5
-#define FMT__H_P                                 __FILE__, __LINE__, 4
-#define FMT__L_L                                 __FILE__, __LINE__, 8
-#define FMT__P                                   __FILE__, __LINE__, 3
-#define FMT__P_D                                 __FILE__, __LINE__, 5
-#define FMT__P_D_D                               __FILE__, __LINE__, 7
-#define FMT__P_D_D_D                             __FILE__, __LINE__, 9
-#define FMT__P_D_D_D_D_D                         __FILE__, __LINE__, 13
-#define FMT__P_D_D_D_D_D_D                       __FILE__, __LINE__, 15
-#define FMT__P_D_D_D_D_D_D_D                     __FILE__, __LINE__, 17
-#define FMT__P_D_D_D_H_D                         __FILE__, __LINE__, 12
-#define FMT__P_D_H                               __FILE__, __LINE__, 6
-#define FMT__P_D_P                               __FILE__, __LINE__, 8
-#define FMT__P_H                                 __FILE__, __LINE__, 4
-#define FMT__P_H_D                               __FILE__, __LINE__, 6
-#define FMT__P_H_H                               __FILE__, __LINE__, 5
-#define FMT__P_H_H_L                             __FILE__, __LINE__, 9
-#define FMT__P_H_L                               __FILE__, __LINE__, 8
-#define FMT__P_H_P_H_L                           __FILE__, __LINE__, 12
-#define FMT__P_H_P_P                             __FILE__, __LINE__, 10
-#define FMT__P_H_P_P_P                           __FILE__, __LINE__, 13
-#define FMT__P_P                                 __FILE__, __LINE__, 6
-#define FMT__P_P_D                               __FILE__, __LINE__, 8
-#define FMT__P_P_D_D_H                           __FILE__, __LINE__, 11
-#define FMT__P_P_D_H_H                           __FILE__, __LINE__, 10
-#define FMT__P_P_H                               __FILE__, __LINE__, 7
-#define FMT__P_P_P                               __FILE__, __LINE__, 9
-#define FMT__H_H_H_D_D_H_A_H_A                   __FILE__, __LINE__, 25
-#define FMT__H_H_P_P_P                           __FILE__, __LINE__, 11
-#define FMT__D_H_D_P_D                           __FILE__, __LINE__, 10
-#define FMT__D_D_D_D_D                           __FILE__, __LINE__, 10
-#define FMT__H_D_D_D_D                           __FILE__, __LINE__, 9
-#define FMT__D_D_D_D_H                           __FILE__, __LINE__, 9
-#define FMT__D_H_H_D                             __FILE__, __LINE__, 6
-#define FMT__D_P_D_D                             __FILE__, __LINE__, 9
-#define FMT__H_H_H_D                             __FILE__, __LINE__, 5
-#define FMT__H_D_H_H                             __FILE__, __LINE__, 5
-#define FMT__P_H_H_H_H_H_H_H                     __FILE__, __LINE__, 10
-#define FMT__P_H_H_H_H_H_H                       __FILE__, __LINE__, 9
-#define FMT__D_D_H_D_H                           __FILE__, __LINE__, 8
-#define FMT__H_D_D_H_H_H_H                       __FILE__, __LINE__, 9
-#define FMT__H_H_A_A                             __FILE__, __LINE__, 18
-#define FMT__P_H_P_P_H                           __FILE__, __LINE__, 11
-#define FMT__P_H_P_H                             __FILE__, __LINE__, 8
-#define FMT__A_D_D                               __FILE__, __LINE__, 12
-#define FMT__P_H_H_H                             __FILE__, __LINE__, 6
-#define FMT__P_H_P                               __FILE__, __LINE__, 7
-#define FMT__P_P_H_H                             __FILE__, __LINE__, 8
-#define FMT__D_P_H_H_D_D                         __FILE__, __LINE__, 11
-#define FMT__A_H                                 __FILE__, __LINE__, 9
-#define FMT__P_H_D_L                             __FILE__, __LINE__, 10
-#define FMT__H_H_H_P                             __FILE__, __LINE__, 6
-#define FMT__A_D_P_H_H_H                         __FILE__, __LINE__, 16
-#define FMT__H_P_H_P_H_H                         __FILE__, __LINE__, 10
-#define FMT__H_P_H_H_H_H                         __FILE__, __LINE__, 8
-#define FMT_H_D_H_H_H_H_H_H                      __FILE__, __LINE__, 9
-#define FMT__H_D_D_H_H_H                         __FILE__, __LINE__, 8
-#define FMT__D_D_H_H                             __FILE__, __LINE__, 6
-#define FMT__H_H_D_H                             __FILE__, __LINE__, 5
-#define FMT__D_H_H_H_H                           __FILE__, __LINE__, 6
-#define FMT__H_H_H_D_H                           __FILE__, __LINE__, 6
-#define FMT__H_D_H                               __FILE__, __LINE__, 4
-#define FMT__H_D_H_D                             __FILE__, __LINE__, 6
-#define FMT__D_H_D_H_H                           __FILE__, __LINE__, 7
-#define FMT__H_P_H_P_H                           __FILE__, __LINE__, 9
-#define FMT__H_P_H_P_H_H                         __FILE__, __LINE__, 10
-#define FMT__H_P_H_H_H                           __FILE__, __LINE__, 7
-#define FMT__D_H_D_H                             __FILE__, __LINE__, 6
-#define FMT__D_H_H_H                             __FILE__, __LINE__, 5
-#define FMT__H_H_D_H_P                           __FILE__, __LINE__, 8
-#define FMT__H_H_H_D_H_P                         __FILE__, __LINE__, 9
-#define FMT__A_H_H                               __FILE__, __LINE__, 10
-#define FMT__P_H_H_H_H                           __FILE__, __LINE__, 7
+#define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, \
+                                                       '/') + 1 : __FILE__)
 
-#define FMT__H_D_P_H_H_H_H_H                     __FILE__, __LINE__, 11
-#define FMT__P_H_H_H_L                           __FILE__, __LINE__, 10
-#define FMT__H_H_H_H_H_H_H_H                     __FILE__, __LINE__, 8
-#define FMT__H_H_H_H_H_H_H                       __FILE__, __LINE__, 7
-#define FMT__H_H_H_H_H_H                         __FILE__, __LINE__, 6
-#define FMT__H_H_H_H_H                           __FILE__, __LINE__, 5
-#define FMT__H_D_H_H_H                           __FILE__, __LINE__, 6
-#define FMT__D_D_D_D_D_D                         __FILE__, __LINE__, 12
-#define FMT__P_H_H_H_H_D                         __FILE__, __LINE__, 7
-#define FMT__H_D_D_H_D_H                         __FILE__, __LINE__, 9
-#define FMT__H_P_H                               __FILE__, __LINE__, 5
-#define FMT__H_H_D_D                             __FILE__, __LINE__, 6
+#define FMT__0                                   __FILENAME__, __func__, \
+    __LINE__, 0
+#define FMT__A                                   __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT__A_A                                 __FILENAME__, __func__, \
+    __LINE__, 16
+#define FMT__A_D_A_P                             __FILENAME__, __func__, \
+    __LINE__, 21
+#define FMT__A_D_D_P_H                           __FILENAME__, __func__, \
+    __LINE__, 16
+#define FMT__A_D_H                               __FILENAME__, __func__, \
+    __LINE__, 11
+#define FMT__C                                   __FILENAME__, __func__, \
+    __LINE__, 1
+#define FMT__D                                   __FILENAME__, __func__, \
+    __LINE__, 2
+#define FMT__D_A                                 __FILENAME__, __func__, \
+    __LINE__, 10
+#define FMT__D_A_D_D_D_D_D_D_D_D                 __FILENAME__, __func__, \
+    __LINE__, 26
+#define FMT__D_A_D_P_H_H_H                       __FILENAME__, __func__, \
+    __LINE__, 18
+#define FMT__D_A_P                               __FILENAME__, __func__, \
+    __LINE__, 13
+#define FMT__A_P                                 __FILENAME__, __func__, \
+    __LINE__, 11
+#define FMT__D_C                                 __FILENAME__, __func__, \
+    __LINE__, 3
+#define FMT__D_D                                 __FILENAME__, __func__, \
+    __LINE__, 4
+#define FMT__D_D_A_D                             __FILENAME__, __func__, \
+    __LINE__, 14
+#define FMT__D_D_A_D_D_D_D                       __FILENAME__, __func__, \
+    __LINE__, 20
+#define FMT__D_D_D                               __FILENAME__, __func__, \
+    __LINE__, 6
+#define FMT__D_D_D_C                             __FILENAME__, __func__, \
+    __LINE__, 7
+#define FMT__D_D_D_D                             __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT__D_D_D_D_D_D_D_D_D_D_D_D_D_D_D_D_D   __FILENAME__, __func__, \
+    __LINE__, 34
+#define FMT__D_D_D_P                             __FILENAME__, __func__, \
+    __LINE__, 9
+#define FMT__D_D_P                               __FILENAME__, __func__, \
+    __LINE__, 7
+#define FMT__D_D_P_D                             __FILENAME__, __func__, \
+    __LINE__, 9
+#define FMT__D_D_P_P_P                           __FILENAME__, __func__, \
+    __LINE__, 13
+#define FMT__D_H                                 __FILENAME__, __func__, \
+    __LINE__, 3
+#define FMT__D_D_H                               __FILENAME__, __func__, \
+    __LINE__, 5
+#define FMT__D_H_H                               __FILENAME__, __func__, \
+    __LINE__, 4
+#define FMT__D_H_H_H_H_H_H_D_D_D_D               __FILENAME__, __func__, \
+    __LINE__, 16
+#define FMT__D_H_P                               __FILENAME__, __func__, \
+    __LINE__, 6
+#define FMT__D_P                                 __FILENAME__, __func__, \
+    __LINE__, 5
+#define FMT__D_P_D                               __FILENAME__, __func__, \
+    __LINE__, 7
+#define FMT__D_P_H_H_D_H_H                       __FILENAME__, __func__, \
+    __LINE__, 11
+#define FMT__D_P_P                               __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT__D_P_P_D_D_H_H                       __FILENAME__, __func__, \
+    __LINE__, 14
+#define FMT__D_P_P_H                             __FILENAME__, __func__, \
+    __LINE__, 9
+#define FMT__H                                   __FILENAME__, __func__, \
+    __LINE__, 1
+#define FMT__H_A                                 __FILENAME__, __func__, \
+    __LINE__, 9
+#define FMT__H_A_A                               __FILENAME__, __func__, \
+    __LINE__, 17
+#define FMT__H_A_H_H_H_H_H_H_H_H                 __FILENAME__, __func__, \
+    __LINE__, 17
+#define FMT__H_C_D_C                             __FILENAME__, __func__, \
+    __LINE__, 5
+#define FMT__H_D                                 __FILENAME__, __func__, \
+    __LINE__, 3
+#define FMT__H_D_A_H_D                           __FILENAME__, __func__, \
+    __LINE__, 14
+#define FMT__H_D_A_H_H_H_H                       __FILENAME__, __func__, \
+    __LINE__, 15
+#define FMT__H_D_D                               __FILENAME__, __func__, \
+    __LINE__, 5
+#define FMT__H_D_D_D_H_H_D                       __FILENAME__, __func__, \
+    __LINE__, 11
+#define FMT__H_H                                 __FILENAME__, __func__, \
+    __LINE__, 2
+#define FMT__H_H_D                               __FILENAME__, __func__, \
+    __LINE__, 4
+#define FMT__H_H_H                               __FILENAME__, __func__, \
+    __LINE__, 3
+#define FMT__H_H_H_H                             __FILENAME__, __func__, \
+    __LINE__, 4
+#define FMT__H_H_P                               __FILENAME__, __func__, \
+    __LINE__, 5
+#define FMT__H_P                                 __FILENAME__, __func__, \
+    __LINE__, 4
+#define FMT__L_L                                 __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT__P                                   __FILENAME__, __func__, \
+    __LINE__, 3
+#define FMT__P_D                                 __FILENAME__, __func__, \
+    __LINE__, 5
+#define FMT__P_D_D                               __FILENAME__, __func__, \
+    __LINE__, 7
+#define FMT__P_D_D_D                             __FILENAME__, __func__, \
+    __LINE__, 9
+#define FMT__P_D_D_D_D_D                         __FILENAME__, __func__, \
+    __LINE__, 13
+#define FMT__P_D_D_D_D_D_D                       __FILENAME__, __func__, \
+    __LINE__, 15
+#define FMT__P_D_D_D_D_D_D_D                     __FILENAME__, __func__, \
+    __LINE__, 17
+#define FMT__P_D_D_D_H_D                         __FILENAME__, __func__, \
+    __LINE__, 12
+#define FMT__P_D_H                               __FILENAME__, __func__, \
+    __LINE__, 6
+#define FMT__P_D_P                               __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT__P_H                                 __FILENAME__, __func__, \
+    __LINE__, 4
+#define FMT__P_H_D                               __FILENAME__, __func__, \
+    __LINE__, 6
+#define FMT__P_H_H                               __FILENAME__, __func__, \
+    __LINE__, 5
+#define FMT__P_H_H_L                             __FILENAME__, __func__, \
+    __LINE__, 9
+#define FMT__P_H_L                               __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT__P_H_P_H_L                           __FILENAME__, __func__, \
+    __LINE__, 12
+#define FMT__P_H_P_P                             __FILENAME__, __func__, \
+    __LINE__, 10
+#define FMT__P_H_P_P_P                           __FILENAME__, __func__, \
+    __LINE__, 13
+#define FMT__P_P                                 __FILENAME__, __func__, \
+    __LINE__, 6
+#define FMT__P_P_D                               __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT__P_P_D_D_H                           __FILENAME__, __func__, \
+    __LINE__, 11
+#define FMT__P_P_D_H_H                           __FILENAME__, __func__, \
+    __LINE__, 10
+#define FMT__P_P_H                               __FILENAME__, __func__, \
+    __LINE__, 7
+#define FMT__P_P_P                               __FILENAME__, __func__, \
+    __LINE__, 9
+#define FMT__H_H_H_D_D_H_A_H_A                   __FILENAME__, __func__, \
+    __LINE__, 25
+#define FMT__H_H_P_P_P                           __FILENAME__, __func__, \
+    __LINE__, 11
+#define FMT__D_H_D_P_D                           __FILENAME__, __func__, \
+    __LINE__, 10
+#define FMT__D_D_D_D_D                           __FILENAME__, __func__, \
+    __LINE__, 10
+#define FMT__H_D_D_D_D                           __FILENAME__, __func__, \
+    __LINE__, 9
+#define FMT__D_D_D_D_H                           __FILENAME__, __func__, \
+    __LINE__, 9
+#define FMT__D_H_H_D                             __FILENAME__, __func__, \
+    __LINE__, 6
+#define FMT__D_P_D_D                             __FILENAME__, __func__, \
+    __LINE__, 9
+#define FMT__H_H_H_D                             __FILENAME__, __func__, \
+    __LINE__, 5
+#define FMT__H_D_H_H                             __FILENAME__, __func__, \
+    __LINE__, 5
+#define FMT__P_H_H_H_H_H_H_H                     __FILENAME__, __func__, \
+    __LINE__, 10
+#define FMT__P_H_H_H_H_H_H                       __FILENAME__, __func__, \
+    __LINE__, 9
+#define FMT__D_D_H_D_H                           __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT__H_D_D_H_H_H_H                       __FILENAME__, __func__, \
+    __LINE__, 9
+#define FMT__H_H_A_A                             __FILENAME__, __func__, \
+    __LINE__, 18
+#define FMT__P_H_P_P_H                           __FILENAME__, __func__, \
+    __LINE__, 11
+#define FMT__P_H_P_H                             __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT__A_D_D                               __FILENAME__, __func__, \
+    __LINE__, 12
+#define FMT__P_H_H_H                             __FILENAME__, __func__, \
+    __LINE__, 6
+#define FMT__P_H_P                               __FILENAME__, __func__, \
+    __LINE__, 7
+#define FMT__P_P_H_H                             __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT__D_P_H_H_D_D                         __FILENAME__, __func__, \
+    __LINE__, 11
+#define FMT__A_H                                 __FILENAME__, __func__, \
+    __LINE__, 9
+#define FMT__P_H_D_L                             __FILENAME__, __func__, \
+    __LINE__, 10
+#define FMT__H_H_H_P                             __FILENAME__, __func__, \
+    __LINE__, 6
+#define FMT__A_D_P_H_H_H                         __FILENAME__, __func__, \
+    __LINE__, 16
+#define FMT__H_P_H_P_H_H                         __FILENAME__, __func__, \
+    __LINE__, 10
+#define FMT__H_P_H_H_H_H                         __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT_H_D_H_H_H_H_H_H                      __FILENAME__, __func__, \
+    __LINE__, 9
+#define FMT__H_D_D_H_H_H                         __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT__D_D_H_H                             __FILENAME__, __func__, \
+    __LINE__, 6
+#define FMT__H_H_D_H                             __FILENAME__, __func__, \
+    __LINE__, 5
+#define FMT__D_H_H_H_H                           __FILENAME__, __func__, \
+    __LINE__, 6
+#define FMT__H_H_H_D_H                           __FILENAME__, __func__, \
+    __LINE__, 6
+#define FMT__H_D_H                               __FILENAME__, __func__, \
+    __LINE__, 4
+#define FMT__H_D_H_D                             __FILENAME__, __func__, \
+    __LINE__, 6
+#define FMT__D_H_D_H_H                           __FILENAME__, __func__, \
+    __LINE__, 7
+#define FMT__H_P_H_P_H                           __FILENAME__, __func__, \
+    __LINE__, 9
+#define FMT__H_P_H_P_H_H                         __FILENAME__, __func__, \
+    __LINE__, 10
+#define FMT__H_P_H_H_H                           __FILENAME__, __func__, \
+    __LINE__, 7
+#define FMT__D_H_D_H                             __FILENAME__, __func__, \
+    __LINE__, 6
+#define FMT__D_H_H_H                             __FILENAME__, __func__, \
+    __LINE__, 5
+#define FMT__H_H_D_H_P                           __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT__H_H_H_D_H_P                         __FILENAME__, __func__, \
+    __LINE__, 9
+#define FMT__A_H_H                               __FILENAME__, __func__, \
+    __LINE__, 10
+#define FMT__P_H_H_H_H                           __FILENAME__, __func__, \
+    __LINE__, 7
+
+#define FMT__H_D_P_H_H_H_H_H                     __FILENAME__, __func__, \
+    __LINE__, 11
+#define FMT__P_H_H_H_L                           __FILENAME__, __func__, \
+    __LINE__, 10
+#define FMT__H_H_H_H_H_H_H_H                     __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT__H_H_H_H_H_H_H                       __FILENAME__, __func__, \
+    __LINE__, 7
+#define FMT__H_H_H_H_H_H                         __FILENAME__, __func__, \
+    __LINE__, 6
+#define FMT__H_H_H_H_H                           __FILENAME__, __func__, \
+    __LINE__, 5
+#define FMT__H_D_H_H_H                           __FILENAME__, __func__, \
+    __LINE__, 6
+#define FMT__D_D_D_D_D_D                         __FILENAME__, __func__, \
+    __LINE__, 12
+#define FMT__P_H_H_H_H_D                         __FILENAME__, __func__, \
+    __LINE__, 7
+#define FMT__H_D_D_H_D_H                         __FILENAME__, __func__, \
+    __LINE__, 9
+#define FMT__H_P_H                               __FILENAME__, __func__, \
+    __LINE__, 5
+#define FMT__H_H_D_D                             __FILENAME__, __func__, \
+    __LINE__, 6
 
 #else  /* IAR */
 
-#define FMT__0                                   __FILE__, __LINE__, 0
-#define FMT__A                                   __FILE__, __LINE__, 8
-#define FMT__A_A                                 __FILE__, __LINE__, 16
-#define FMT__A_D_A_P                             __FILE__, __LINE__, 20
-#define FMT__A_D_D_P_H                           __FILE__, __LINE__, 16
-#define FMT__A_D_H                               __FILE__, __LINE__, 12
-#define FMT__C                                   __FILE__, __LINE__, 2
-#define FMT__D                                   __FILE__, __LINE__, 2
-#define FMT__D_A                                 __FILE__, __LINE__, 10
-#define FMT__D_A_D_D_D_D_D_D_D_D                 __FILE__, __LINE__, 26
-#define FMT__D_A_D_P_H_H_H                       __FILE__, __LINE__, 20
-#define FMT__D_A_P                               __FILE__, __LINE__, 12
-#define FMT__A_P                                 __FILE__, __LINE__, 10
-#define FMT__D_C                                 __FILE__, __LINE__, 4
-#define FMT__D_D                                 __FILE__, __LINE__, 4
-#define FMT__D_D_A_D                             __FILE__, __LINE__, 14
-#define FMT__D_D_A_D_D_D_D                       __FILE__, __LINE__, 20
-#define FMT__D_D_D                               __FILE__, __LINE__, 6
-#define FMT__D_D_D_C                             __FILE__, __LINE__, 8
-#define FMT__D_D_D_D                             __FILE__, __LINE__, 8
-#define FMT__D_D_D_D_D_D_D_D_D_D_D_D_D_D_D_D_D   __FILE__, __LINE__, 34
-#define FMT__D_D_D_P                             __FILE__, __LINE__, 8
-#define FMT__D_D_P                               __FILE__, __LINE__, 6
-#define FMT__D_D_P_D                             __FILE__, __LINE__, 8
-#define FMT__D_D_P_P_P                           __FILE__, __LINE__, 10
-#define FMT__D_H                                 __FILE__, __LINE__, 4
-#define FMT__D_D_H                               __FILE__, __LINE__, 6
-#define FMT__D_H_H                               __FILE__, __LINE__, 6
-#define FMT__D_H_H_H_H_H_H_D_D_D_D               __FILE__, __LINE__, 22
-#define FMT__D_H_P                               __FILE__, __LINE__, 6
-#define FMT__D_P                                 __FILE__, __LINE__, 4
-#define FMT__D_P_D                               __FILE__, __LINE__, 6
-#define FMT__D_P_H_H_D_H_H                       __FILE__, __LINE__, 14
-#define FMT__D_P_P                               __FILE__, __LINE__, 6
-#define FMT__D_P_P_D_D_H_H                       __FILE__, __LINE__, 14
-#define FMT__D_P_P_H                             __FILE__, __LINE__, 8
-#define FMT__H                                   __FILE__, __LINE__, 2
-#define FMT__H_A                                 __FILE__, __LINE__, 10
-#define FMT__H_A_A                               __FILE__, __LINE__, 18
-#define FMT__H_A_H_H_H_H_H_H_H_H                 __FILE__, __LINE__, 26
-#define FMT__H_C_D_C                             __FILE__, __LINE__, 8
-#define FMT__H_D                                 __FILE__, __LINE__, 4
-#define FMT__H_D_A_H_D                           __FILE__, __LINE__, 16
-#define FMT__H_D_A_H_H_H_H                       __FILE__, __LINE__, 20
-#define FMT__H_D_D                               __FILE__, __LINE__, 6
-#define FMT__H_D_D_D_H_H_D                       __FILE__, __LINE__, 14
-#define FMT__H_H                                 __FILE__, __LINE__, 4
-#define FMT__H_H_D                               __FILE__, __LINE__, 6
-#define FMT__H_H_H                               __FILE__, __LINE__, 6
-#define FMT__H_H_H_H                             __FILE__, __LINE__, 8
-#define FMT__H_H_P                               __FILE__, __LINE__, 6
-#define FMT__H_P                                 __FILE__, __LINE__, 4
-#define FMT__L_L                                 __FILE__, __LINE__, 8
-#define FMT__P                                   __FILE__, __LINE__, 2
-#define FMT__P_D                                 __FILE__, __LINE__, 4
-#define FMT__P_D_D                               __FILE__, __LINE__, 6
-#define FMT__P_D_D_D                             __FILE__, __LINE__, 8
-#define FMT__P_D_D_D_D_D                         __FILE__, __LINE__, 12
-#define FMT__P_D_D_D_D_D_D                       __FILE__, __LINE__, 14
-#define FMT__P_D_D_D_D_D_D_D                     __FILE__, __LINE__, 16
-#define FMT__P_D_D_D_H_D                         __FILE__, __LINE__, 12
-#define FMT__P_D_H                               __FILE__, __LINE__, 6
-#define FMT__P_D_P                               __FILE__, __LINE__, 6
-#define FMT__P_H                                 __FILE__, __LINE__, 4
-#define FMT__P_H_D                               __FILE__, __LINE__, 6
-#define FMT__P_H_H                               __FILE__, __LINE__, 6
-#define FMT__P_H_H_L                             __FILE__, __LINE__, 10
-#define FMT__P_H_L                               __FILE__, __LINE__, 8
-#define FMT__P_H_P_H_L                           __FILE__, __LINE__, 12
-#define FMT__P_H_P_P                             __FILE__, __LINE__, 8
-#define FMT__P_H_P_P_P                           __FILE__, __LINE__, 10
-#define FMT__P_P                                 __FILE__, __LINE__, 4
-#define FMT__P_P_D                               __FILE__, __LINE__, 6
-#define FMT__P_P_D_D_H                           __FILE__, __LINE__, 10
-#define FMT__P_P_D_H_H                           __FILE__, __LINE__, 10
-#define FMT__P_P_H                               __FILE__, __LINE__, 6
-#define FMT__P_P_P                               __FILE__, __LINE__, 6
-#define FMT__H_H_H_D_D_H_A_H_A                   __FILE__, __LINE__, 30
-#define FMT__H_H_P_P_P                           __FILE__, __LINE__, 10
-#define FMT__D_H_D_P_D                           __FILE__, __LINE__, 10
-#define FMT__D_D_D_D_D                           __FILE__, __LINE__, 10
-#define FMT__H_D_D_D_D                           __FILE__, __LINE__, 10
-#define FMT__D_D_D_D_H                           __FILE__, __LINE__, 10
-#define FMT__D_H_H_D                             __FILE__, __LINE__, 8
-#define FMT__D_P_D_D                             __FILE__, __LINE__, 8
-#define FMT__H_H_H_D                             __FILE__, __LINE__, 8
-#define FMT__H_D_H_H                             __FILE__, __LINE__, 8
-#define FMT__P_H_H_H_H_H_H_H                     __FILE__, __LINE__, 16
-#define FMT__P_H_H_H_H_H_H                       __FILE__, __LINE__, 14
-#define FMT__D_D_H_D_H                           __FILE__, __LINE__, 10
-#define FMT__H_D_D_H_H_H_H                       __FILE__, __LINE__, 14
-#define FMT__H_H_A_A                             __FILE__, __LINE__, 20
-#define FMT__P_H_P_P_H                           __FILE__, __LINE__, 10
-#define FMT__P_H_P_H                             __FILE__, __LINE__, 8
-#define FMT__A_D_D                               __FILE__, __LINE__, 12
-#define FMT__P_H_H_H                             __FILE__, __LINE__, 8
-#define FMT__P_H_P                               __FILE__, __LINE__, 6
-#define FMT__P_P_H_H                             __FILE__, __LINE__, 8
-#define FMT__D_P_H_H_D_D                         __FILE__, __LINE__, 12
-#define FMT__A_H                                 __FILE__, __LINE__, 10
-#define FMT__P_H_D_L                             __FILE__, __LINE__, 10
-#define FMT__H_H_H_P                             __FILE__, __LINE__, 8
-#define FMT__H_P_H_H_H_H                         __FILE__, __LINE__, 12
-#define FMT__A_D_P_H_H_H                         __FILE__, __LINE__, 18
-#define FMT_H_D_H_H_H_H_H_H                      __FILE__, __LINE__, 9
-#define FMT__H_D_D_H_H_H                         __FILE__, __LINE__, 12
-#define FMT__D_D_H_H                             __FILE__, __LINE__, 8
-#define FMT__H_H_D_H                             __FILE__, __LINE__, 8
-#define FMT__D_H_H_H_H                           __FILE__, __LINE__, 10
-#define FMT__H_H_H_D_H                           __FILE__, __LINE__, 10
-#define FMT__H_D_H                               __FILE__, __LINE__, 6
-#define FMT__H_D_H_D                             __FILE__, __LINE__, 8
-#define FMT__D_H_D_H_H                           __FILE__, __LINE__, 10
-#define FMT__H_P_H_P_H                           __FILE__, __LINE__, 10
-#define FMT__D_H_D_H                             __FILE__, __LINE__, 8
-#define FMT__D_H_H_H                             __FILE__, __LINE__, 8
-#define FMT__H_H_D_H_P                           __FILE__, __LINE__, 10
-#define FMT__H_H_H_D_H_P                         __FILE__, __LINE__, 12
-#define FMT__A_H_H                               __FILE__, __LINE__, 12
-#define FMT__P_H_H_H_H                           __FILE__, __LINE__, 10
-#define FMT__H_D_P_H_H_H_H_H                     __FILE__, __LINE__, 16
-#define FMT__P_H_H_H_L                           __FILE__, __LINE__, 12
-#define FMT__H_H_H_H_H_H_H_H                     __FILE__, __LINE__, 16
-#define FMT__H_H_H_H_H_H_H                       __FILE__, __LINE__, 14
-#define FMT__H_H_H_H_H_H                         __FILE__, __LINE__, 12
-#define FMT__H_H_H_H_H                           __FILE__, __LINE__, 10
-#define FMT__H_D_H_H_H                           __FILE__, __LINE__, 10
-#define FMT__D_D_D_D_D_D                         __FILE__, __LINE__, 12
-#define FMT__H_P_H                               __FILE__, __LINE__, 6
-#define FMT__H_H_D_D                             __FILE__, __LINE__, 8
-#define FMT__H_D_D_H_D_H                         __FILE__, __LINE__, 9
+#define FMT__0                                   __FILENAME__, __func__, \
+    __LINE__, 0
+#define FMT__A                                   __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT__A_A                                 __FILENAME__, __func__, \
+    __LINE__, 16
+#define FMT__A_D_A_P                             __FILENAME__, __func__, \
+    __LINE__, 20
+#define FMT__A_D_D_P_H                           __FILENAME__, __func__, \
+    __LINE__, 16
+#define FMT__A_D_H                               __FILENAME__, __func__, \
+    __LINE__, 12
+#define FMT__C                                   __FILENAME__, __func__, \
+    __LINE__, 2
+#define FMT__D                                   __FILENAME__, __func__, \
+    __LINE__, 2
+#define FMT__D_A                                 __FILENAME__, __func__, \
+    __LINE__, 10
+#define FMT__D_A_D_D_D_D_D_D_D_D                 __FILENAME__, __func__, \
+    __LINE__, 26
+#define FMT__D_A_D_P_H_H_H                       __FILENAME__, __func__, \
+    __LINE__, 20
+#define FMT__D_A_P                               __FILENAME__, __func__, \
+    __LINE__, 12
+#define FMT__A_P                                 __FILENAME__, __func__, \
+    __LINE__, 10
+#define FMT__D_C                                 __FILENAME__, __func__, \
+    __LINE__, 4
+#define FMT__D_D                                 __FILENAME__, __func__, \
+    __LINE__, 4
+#define FMT__D_D_A_D                             __FILENAME__, __func__, \
+    __LINE__, 14
+#define FMT__D_D_A_D_D_D_D                       __FILENAME__, __func__, \
+    __LINE__, 20
+#define FMT__D_D_D                               __FILENAME__, __func__, \
+    __LINE__, 6
+#define FMT__D_D_D_C                             __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT__D_D_D_D                             __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT__D_D_D_D_D_D_D_D_D_D_D_D_D_D_D_D_D   __FILENAME__, __func__, \
+    __LINE__, 34
+#define FMT__D_D_D_P                             __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT__D_D_P                               __FILENAME__, __func__, \
+    __LINE__, 6
+#define FMT__D_D_P_D                             __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT__D_D_P_P_P                           __FILENAME__, __func__, \
+    __LINE__, 10
+#define FMT__D_H                                 __FILENAME__, __func__, \
+    __LINE__, 4
+#define FMT__D_D_H                               __FILENAME__, __func__, \
+    __LINE__, 6
+#define FMT__D_H_H                               __FILENAME__, __func__, \
+    __LINE__, 6
+#define FMT__D_H_H_H_H_H_H_D_D_D_D               __FILENAME__, __func__, \
+    __LINE__, 22
+#define FMT__D_H_P                               __FILENAME__, __func__, \
+    __LINE__, 6
+#define FMT__D_P                                 __FILENAME__, __func__, \
+    __LINE__, 4
+#define FMT__D_P_D                               __FILENAME__, __func__, \
+    __LINE__, 6
+#define FMT__D_P_H_H_D_H_H                       __FILENAME__, __func__, \
+    __LINE__, 14
+#define FMT__D_P_P                               __FILENAME__, __func__, \
+    __LINE__, 6
+#define FMT__D_P_P_D_D_H_H                       __FILENAME__, __func__, \
+    __LINE__, 14
+#define FMT__D_P_P_H                             __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT__H                                   __FILENAME__, __func__, \
+    __LINE__, 2
+#define FMT__H_A                                 __FILENAME__, __func__, \
+    __LINE__, 10
+#define FMT__H_A_A                               __FILENAME__, __func__, \
+    __LINE__, 18
+#define FMT__H_A_H_H_H_H_H_H_H_H                 __FILENAME__, __func__, \
+    __LINE__, 26
+#define FMT__H_C_D_C                             __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT__H_D                                 __FILENAME__, __func__, \
+    __LINE__, 4
+#define FMT__H_D_A_H_D                           __FILENAME__, __func__, \
+    __LINE__, 16
+#define FMT__H_D_A_H_H_H_H                       __FILENAME__, __func__, \
+    __LINE__, 20
+#define FMT__H_D_D                               __FILENAME__, __func__, \
+    __LINE__, 6
+#define FMT__H_D_D_D_H_H_D                       __FILENAME__, __func__, \
+    __LINE__, 14
+#define FMT__H_H                                 __FILENAME__, __func__, \
+    __LINE__, 4
+#define FMT__H_H_D                               __FILENAME__, __func__, \
+    __LINE__, 6
+#define FMT__H_H_H                               __FILENAME__, __func__, \
+    __LINE__, 6
+#define FMT__H_H_H_H                             __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT__H_H_P                               __FILENAME__, __func__, \
+    __LINE__, 6
+#define FMT__H_P                                 __FILENAME__, __func__, \
+    __LINE__, 4
+#define FMT__L_L                                 __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT__P                                   __FILENAME__, __func__, \
+    __LINE__, 2
+#define FMT__P_D                                 __FILENAME__, __func__, \
+    __LINE__, 4
+#define FMT__P_D_D                               __FILENAME__, __func__, \
+    __LINE__, 6
+#define FMT__P_D_D_D                             __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT__P_D_D_D_D_D                         __FILENAME__, __func__, \
+    __LINE__, 12
+#define FMT__P_D_D_D_D_D_D                       __FILENAME__, __func__, \
+    __LINE__, 14
+#define FMT__P_D_D_D_D_D_D_D                     __FILENAME__, __func__, \
+    __LINE__, 16
+#define FMT__P_D_D_D_H_D                         __FILENAME__, __func__, \
+    __LINE__, 12
+#define FMT__P_D_H                               __FILENAME__, __func__, \
+    __LINE__, 6
+#define FMT__P_D_P                               __FILENAME__, __func__, \
+    __LINE__, 6
+#define FMT__P_H                                 __FILENAME__, __func__, \
+    __LINE__, 4
+#define FMT__P_H_D                               __FILENAME__, __func__, \
+    __LINE__, 6
+#define FMT__P_H_H                               __FILENAME__, __func__, \
+    __LINE__, 6
+#define FMT__P_H_H_L                             __FILENAME__, __func__, \
+    __LINE__, 10
+#define FMT__P_H_L                               __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT__P_H_P_H_L                           __FILENAME__, __func__, \
+    __LINE__, 12
+#define FMT__P_H_P_P                             __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT__P_H_P_P_P                           __FILENAME__, __func__, \
+    __LINE__, 10
+#define FMT__P_P                                 __FILENAME__, __func__, \
+    __LINE__, 4
+#define FMT__P_P_D                               __FILENAME__, __func__, \
+    __LINE__, 6
+#define FMT__P_P_D_D_H                           __FILENAME__, __func__, \
+    __LINE__, 10
+#define FMT__P_P_D_H_H                           __FILENAME__, __func__, \
+    __LINE__, 10
+#define FMT__P_P_H                               __FILENAME__, __func__, \
+    __LINE__, 6
+#define FMT__P_P_P                               __FILENAME__, __func__, \
+    __LINE__, 6
+#define FMT__H_H_H_D_D_H_A_H_A                   __FILENAME__, __func__, \
+    __LINE__, 30
+#define FMT__H_H_P_P_P                           __FILENAME__, __func__, \
+    __LINE__, 10
+#define FMT__D_H_D_P_D                           __FILENAME__, __func__, \
+    __LINE__, 10
+#define FMT__D_D_D_D_D                           __FILENAME__, __func__, \
+    __LINE__, 10
+#define FMT__H_D_D_D_D                           __FILENAME__, __func__, \
+    __LINE__, 10
+#define FMT__D_D_D_D_H                           __FILENAME__, __func__, \
+    __LINE__, 10
+#define FMT__D_H_H_D                             __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT__D_P_D_D                             __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT__H_H_H_D                             __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT__H_D_H_H                             __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT__P_H_H_H_H_H_H_H                     __FILENAME__, __func__, \
+    __LINE__, 16
+#define FMT__P_H_H_H_H_H_H                       __FILENAME__, __func__, \
+    __LINE__, 14
+#define FMT__D_D_H_D_H                           __FILENAME__, __func__, \
+    __LINE__, 10
+#define FMT__H_D_D_H_H_H_H                       __FILENAME__, __func__, \
+    __LINE__, 14
+#define FMT__H_H_A_A                             __FILENAME__, __func__, \
+    __LINE__, 20
+#define FMT__P_H_P_P_H                           __FILENAME__, __func__, \
+    __LINE__, 10
+#define FMT__P_H_P_H                             __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT__A_D_D                               __FILENAME__, __func__, \
+    __LINE__, 12
+#define FMT__P_H_H_H                             __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT__P_H_P                               __FILENAME__, __func__, \
+    __LINE__, 6
+#define FMT__P_P_H_H                             __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT__D_P_H_H_D_D                         __FILENAME__, __func__, \
+    __LINE__, 12
+#define FMT__A_H                                 __FILENAME__, __func__, \
+    __LINE__, 10
+#define FMT__P_H_D_L                             __FILENAME__, __func__, \
+    __LINE__, 10
+#define FMT__H_H_H_P                             __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT__H_P_H_H_H_H                         __FILENAME__, __func__, \
+    __LINE__, 12
+#define FMT__A_D_P_H_H_H                         __FILENAME__, __func__, \
+    __LINE__, 18
+#define FMT_H_D_H_H_H_H_H_H                      __FILENAME__, __func__, \
+    __LINE__, 9
+#define FMT__H_D_D_H_H_H                         __FILENAME__, __func__, \
+    __LINE__, 12
+#define FMT__D_D_H_H                             __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT__H_H_D_H                             __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT__D_H_H_H_H                           __FILENAME__, __func__, \
+    __LINE__, 10
+#define FMT__H_H_H_D_H                           __FILENAME__, __func__, \
+    __LINE__, 10
+#define FMT__H_D_H                               __FILENAME__, __func__, \
+    __LINE__, 6
+#define FMT__H_D_H_D                             __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT__D_H_D_H_H                           __FILENAME__, __func__, \
+    __LINE__, 10
+#define FMT__H_P_H_P_H                           __FILENAME__, __func__, \
+    __LINE__, 10
+#define FMT__D_H_D_H                             __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT__D_H_H_H                             __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT__H_H_D_H_P                           __FILENAME__, __func__, \
+    __LINE__, 10
+#define FMT__H_H_H_D_H_P                         __FILENAME__, __func__, \
+    __LINE__, 12
+#define FMT__A_H_H                               __FILENAME__, __func__, \
+    __LINE__, 12
+#define FMT__P_H_H_H_H                           __FILENAME__, __func__, \
+    __LINE__, 10
+#define FMT__H_D_P_H_H_H_H_H                     __FILENAME__, __func__, \
+    __LINE__, 16
+#define FMT__P_H_H_H_L                           __FILENAME__, __func__, \
+    __LINE__, 12
+#define FMT__H_H_H_H_H_H_H_H                     __FILENAME__, __func__, \
+    __LINE__, 16
+#define FMT__H_H_H_H_H_H_H                       __FILENAME__, __func__, \
+    __LINE__, 14
+#define FMT__H_H_H_H_H_H                         __FILENAME__, __func__, \
+    __LINE__, 12
+#define FMT__H_H_H_H_H                           __FILENAME__, __func__, \
+    __LINE__, 10
+#define FMT__H_D_H_H_H                           __FILENAME__, __func__, \
+    __LINE__, 10
+#define FMT__D_D_D_D_D_D                         __FILENAME__, __func__, \
+    __LINE__, 12
+#define FMT__H_P_H                               __FILENAME__, __func__, \
+    __LINE__, 6
+#define FMT__H_H_D_D                             __FILENAME__, __func__, \
+    __LINE__, 8
+#define FMT__H_D_D_H_D_H                         __FILENAME__, __func__, \
+    __LINE__, 9
 #endif  /* IAR */
 
 /**

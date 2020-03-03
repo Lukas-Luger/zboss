@@ -111,8 +111,17 @@ extern ZB_SDCC_XDATA zb_intr_globals_t g_izb;
 #include "zb_af_globals.h"
 #include "zb_zdo_globals.h"
 #include "zb_zcl_globals.h"
-#include "zb_ubec24xx.h" /* TODO: configure this include depending
-                          * on transceiver */
+
+#if defined ZB_UZ2400 || defined ZB_UZ2410
+#include "zb_ubec24xx.h"
+#endif
+#ifdef ZB_CC25XX
+#include "zb_cc25xx.h"
+#endif
+#ifdef RIOT
+#include "zb_mac_riot.h"
+#endif
+
 #else
 #include "zb_ringbuffer.h"
 #endif /* ZB_SNIFFER */
@@ -145,7 +154,9 @@ struct zb_globals_s {
    Global data area for data to be accessed from interrupt handlers
  */
 struct zb_intr_globals_s {
+#ifdef ZB_TRANSPORT_LINUX_SPIDEV
     zb_io_ctx_t ioctx;
+#endif
     zb_timer_t time;
     zb_transceiver_ctx_t transceiver;
 };

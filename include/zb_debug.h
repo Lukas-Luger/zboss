@@ -48,6 +48,8 @@
 #ifndef ZB_DEBUG_H
 #define ZB_DEBUG_H 1
 
+#include "zb_types.h"
+
 /*! \addtogroup ZB_DEBUG */
 /*! @{ */
 
@@ -62,6 +64,10 @@ void zb_abort(char *caller_file, int caller_line);
 
 #if defined DEBUG || defined USE_ASSERT
 
+
+char *zb_pretty_long_address(char *address_str, unsigned address_str_len,
+                             zb_uint8_t *address_bytes);
+char *zb_pretty_key(char *key_str, unsigned key_str_len, uint8_t *key_bytes);
 
 #ifdef SDCC
 /*
@@ -103,7 +109,8 @@ zb_void_t zb_assert(zb_char_t *file_name,
 #else  /* release */
 
 #ifndef KEIL
-#define ZB_ASSERT(expr) ((void)0)
+void _assert_failure(const char *file, unsigned line);
+#define ZB_ASSERT(cond) ((cond) ? (void)0 :  _assert_failure(RIOT_FILE_RELATIVE, __LINE__))
 #else
 #define ZB_ASSERT(expr)
 #endif

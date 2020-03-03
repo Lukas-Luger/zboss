@@ -49,6 +49,8 @@
 /*! \addtogroup sched */
 /*! @{ */
 
+#ifndef ZB_PLATFORM_RIOT_ARM
+
 #include "zb_common.h"
 #include "zb_list_macros.h"
 
@@ -396,5 +398,7 @@ zb_ret_t zb_schedule_alarm_cancel(zb_callback_t func,
 
     return ret;
 }
+
+#endif /* ZB_PLATFORM_RIOT_ARM */
 
 /*! @} */

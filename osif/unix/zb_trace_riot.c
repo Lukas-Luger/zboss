@@ -50,7 +50,7 @@
 #include "zb_osif.h"
 #include <pthread.h>
 
-#if defined UNIX && !defined RIOT
+#ifdef RIOT
 
 /*! \addtogroup ZB_TRACE */
 /*! @{ */
@@ -76,7 +76,7 @@ FILE * g_trace_file;
 /**
    Global trace mutex for Unix trace implementation
  */
-static pthread_mutex_t s_trace_mutex;
+// static pthread_mutex_t s_trace_mutex;
 
 
 /**
@@ -89,12 +89,13 @@ void zb_trace_init_unix(zb_char_t *name)
     zb_char_t namefile[255];
 
     sprintf(namefile, "%s%ld.log", name, (long)getpid());
-    g_trace_file = fopen(namefile, "a+");
+    // g_trace_file = fopen(namefile, "a+");
+    g_trace_file = stdout;
     if (g_trace_file) {
         /* set line buffering so not need to call fflush() */
         setvbuf(g_trace_file, NULL, _IOLBF, 512);
     }
-    pthread_mutex_init( &s_trace_mutex, NULL );
+    // pthread_mutex_init( &s_trace_mutex, NULL );
 }
 
 
@@ -103,7 +104,7 @@ void zb_trace_init_unix(zb_char_t *name)
  */
 void zb_trace_mutex_lock_unix()
 {
-    pthread_mutex_lock( &s_trace_mutex );
+    // pthread_mutex_lock( &s_trace_mutex );
 }
 
 
@@ -112,7 +113,7 @@ void zb_trace_mutex_lock_unix()
  */
 void zb_trace_mutex_unlock_unix()
 {
-    pthread_mutex_unlock( &s_trace_mutex );
+    // pthread_mutex_unlock( &s_trace_mutex );
 }
 
 
@@ -126,7 +127,7 @@ void zb_trace_deinit_unix()
         fclose(g_trace_file);
         g_trace_file = NULL;
     }
-    pthread_mutex_destroy(&s_trace_mutex);
+    // pthread_mutex_destroy(&s_trace_mutex);
 }
 
 
@@ -149,8 +150,9 @@ void zb_set_trace_enabled(char val)
    @param level - message trace level. Do trace if level <= ZB_TRACE_LEVEL
    @param format - printf-like format string
  */
-void zb_trace_msg_unix(zb_char_t *format, zb_char_t *file_name,
-                       zb_int_t line_number, zb_int_t args_size, ...)
+void zb_trace_msg_unix(zb_char_t *format, zb_int_t level, zb_char_t *file_name,
+                       const zb_char_t *function, zb_int_t line_number,
+                       zb_int_t args_size, ...)
 {
     /* If ZB_TRACE_LEVEL not defined, output nothing */
 #ifdef ZB_TRACE_LEVEL
@@ -171,16 +173,16 @@ void zb_trace_msg_unix(zb_char_t *format, zb_char_t *file_name,
         gettimeofday(&tmv, NULL);
         t = tmv.tv_sec;
         tm = localtime(&t);
-        msec = tmv.tv_usec / 1000;
+        // msec = tmv.tv_usec / 1000;
 
         ZB_LOG_PRINTF(
-            "%02d:%02d:%02d.%03ld %d %s:%d\t",
+            "%02d:%02d:%02d.%06ld %d %s:%d %s()\t",
             tm->tm_hour,
             tm->tm_min,
             tm->tm_sec,
-            (long)msec,
+            tmv.tv_usec,
             ZB_TIMER_GET(),
-            file_name, line_number
+            file_name, line_number, function
             );
     }
     va_start(arglist, args_size);
@@ -194,11 +196,80 @@ void zb_trace_msg_unix(zb_char_t *format, zb_char_t *file_name,
     (void)file_name;
     (void)line_number;
     (void)level;
-    (void)mask;
+//   (void)mask;
     (void)format;
 #endif
 }
 
-#endif  /* UNIX */
+#endif  /* RIOT */
+
+
+
+
+#if 0
+
+#include <sys/stat.h>
+
+void *_sbrk(ptrdiff_t incr)
+{}
+
+pid_t _getpid(void)
+{}
+
+int _kill(pid_t pid, int sig)
+{
+    (void)pid;
+    (void)sig;
+    return -1;
+}
+
+_ssize_t _write(int fd, const void *data, size_t count)
+{}
+
+_ssize_t _read(int fd, void *buffer, size_t count)
+{}
+
+int _open(const char *name, int flags, int mode)
+{}
+
+int _close(int fd)
+{}
+
+_off_t _lseek(int fd, _off_t pos, int dir)
+{}
+
+int _fstat(int fd, struct stat *st)
+{
+    (void)fd;
+    (void)st;
+    return -1;
+}
+
+int _stat(const char *name, struct stat *st)
+{
+    (void)name;
+    (void)st;
+    return -1;
+}
+
+int _unlink(const char *path)
+{
+    (void)path;
+    return -1;
+}
+
+int _isatty(int fd)
+{
+    return 0;
+}
+
+int _gettimeofday(struct timeval *restrict tp, void *restrict tzp)
+{
+    (void)tp;
+    (void)tzp;
+    return -1;
+}
+
+#endif
 
 /*! @} */

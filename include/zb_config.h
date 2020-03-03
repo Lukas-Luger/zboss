@@ -51,6 +51,9 @@
 #define ZB_CONFIG_H 1
 
 
+#define ZB_MAC_EXT_DATA_REQ
+
+
 /*! \addtogroup ZB_CONFIG */
 /*! @{ */
 
@@ -65,238 +68,284 @@
 
    To be used near always to prevent flash damage (flash can do ~1000 rewrites only)
  */
-#define NO_NVRAM
+// #define NO_NVRAM
+#define ZB_USE_NVRAM
+
 
 #ifdef ZB_PLATFORM_LINUX_PC32
-/**
-   Some additional run-time checks.
- */
-#ifdef DEBUG
-/**
-   Check arrays to be verified by valgring. Useful for Linux/PC build only. Slows down execution.
- */
-//#define ZB_ARRAYS_CHECK
- #endif
 
 
+    /**
+    Some additional run-time checks.
+    */
+    #ifdef DEBUG
 
+        /* Check arrays to be verified by valgring. Useful for Linux/PC build only.
+        * Slows down execution. */
+//         #define ZB_ARRAYS_CHECK
+    #endif
 
-#define ZB_INIT_HAS_ARGS
+    #define ZB_INIT_HAS_ARGS
 
-#ifdef DEBUG
-/**
-   Check arrays to be verified by valgring
- */
-//#define ZB_ARRAYS_CHECK
-#endif
+    #define ZB_SECURITY
 
-/**
-   If defined, security is compiled
- */
-#define ZB_SECURITY
+    #define ZB_TRAFFIC_DUMP_ON
 
-/**
-   If defined, switch on traffic dump
- */
-#define ZB_TRAFFIC_DUMP_ON
+    #ifndef UNIX
+        #define UNIX
+    #endif
 
-#ifndef UNIX
-#define UNIX
-#endif
-#ifndef LINUX
-#define LINUX
-#endif
+    #ifndef LINUX
+        #define LINUX
+    #endif
 
-/**
-   In Linux work size 4 bytes, at 8051 1 byte
- */
-#define ZB_WORD_SIZE_4
-/**
-   If defined, we run on little-endian  machine
- */
-#define ZB_LITTLE_ENDIAN
+    /**
+    In Linux work size 4 bytes, at 8051 1 byte
+    */
+    #define ZB_WORD_SIZE_4
+    /**
+    If defined, we run on little-endian  machine
+    */
+    #define ZB_LITTLE_ENDIAN
 
-/* Hardcode transport now. In the future there will be real transiver in Linux,
- * its connection can differ. */
-/**
-   If defined, transport is named pipes in Linux
- */
-#define ZB_TRANSPORT_LINUX_PIPES
-/**
-   Linux named pipes transport timeout: wait in select() for this number of seconds
- */
-#define ZB_LINUX_PIPE_TRANSPORT_TIMEOUT 1
-/**
-   If defined, this is special build to work with ns-3 network simulator.
- */
-#define ZB_NS_BUILD
-/**
-   If defined (for NS build),  ack is sent and checked manually
- */
-#define ZB_MANUAL_ACK
+    /* Hardcode transport now. In the future there will be real transiver in Linux,
+    * its connection can differ. */
+    /**
+    If defined, transport is named pipes in Linux
+    */
+    #define ZB_TRANSPORT_LINUX_PIPES
+    /**
+    Linux named pipes transport timeout: wait in select() for this number of seconds
+    */
+    #define ZB_LINUX_PIPE_TRANSPORT_TIMEOUT 1
+    /**
+    If defined, this is special build to work with ns-3 network simulator.
+    */
+    #define ZB_NS_BUILD
+    /**
+    If defined (for NS build),  ack is sent and checked manually
+    */
+    #define ZB_MANUAL_ACK
+
 
 #elif defined ZB_PLATFORM_LINUX_ARM_2400
-/**
-   If defined, need some tricks for the work alignment (useful at ARM devices)
- */
-#define ZB_NEED_ALIGN
-/**
-   Use UZ2400 transiever
- */
-#define ZB_UZ2400
 
-/**
-   Timer functuionality is inside idle function  - Linux/ARM only
- */
+    /**
+    If defined, need some tricks for the work alignment (useful at ARM devices)
+    */
+    #define ZB_NEED_ALIGN
 
-#define ZB_TIMER_INSIDE_IDLE
+    /**
+    Use ZB_MAC_RIOT transiever
+    */
+    #define ZB_MAC_RIOT
+    // #define ZB_UZ2400
+    // #define ZB_CC25XX
 
-/**
-   If defined, security swithced on
- */
-#define ZB_SECURITY
+    /**
+    Timer functuionality is inside idle function  - Linux/ARM only
+    */
+    #define ZB_TIMER_INSIDE_IDLE
 
-/**
-   If defined, switch on traffic dump
- */
-#define ZB_TRAFFIC_DUMP_ON
+    /**
+    If defined, security switched on
+    */
+    #define ZB_SECURITY
 
-/**
-   If defined, transport calls traffic dump by itself, generic MAC not need to do it
- */
-#define ZB_TRANSPORT_OWN_TRAFFIC_DUMP_ON
+    /**
+    If defined, switch on traffic dump
+    */
+    #define ZB_TRAFFIC_DUMP_ON
 
-#ifndef UNIX
-/**
-   If defined, compiled under some UNIX
- */
-#define UNIX
-#endif
-#ifndef LINUX
-/**
-   If defined, compiled under Linux
- */
-#define LINUX
-#endif
+    /**
+    If defined, transport calls traffic dump by itself, generic MAC not need to do it
+    */
+    #define ZB_TRANSPORT_OWN_TRAFFIC_DUMP_ON
 
-/**
-   In Linux work size 4 bytes, at 8051 1 byte
- */
-#define ZB_WORD_SIZE_4
-/**
-   If defined, we run on little-endian  machine
- */
-#define ZB_LITTLE_ENDIAN
+    #define RIOT
 
-/**
-   If defined, transport is spidev and zbintr drivers - Linux/ARM
- */
-#define ZB_TRANSPORT_LINUX_SPIDEV
+    #ifndef UNIX
+        #define UNIX
+    #endif
+    #ifndef LINUX
+        #define LINUX
+    #endif
 
-/**
-   Linux named pipes transport timeout: wait in select() for this number of seconds
- */
-#define ZB_LINUX_SPIDEV_INTR_TIMEOUT 1
+    /**
+    In Linux work size 4 bytes, at 8051 1 byte
+    */
+    #define ZB_WORD_SIZE_4
+    /**
+    If defined, we run on little-endian  machine
+    */
+    #define ZB_LITTLE_ENDIAN
 
-/**
-   If defined, security swithced on
- */
-#define ZB_SECURITY
+    /**
+    If defined, transport is spidev and zbintr drivers - Linux/ARM
+    */
+    #define ZB_TRANSPORT_LINUX_SPIDEV
 
-/**
-   Our Linux/ARM devices has bas antennas - try to send 3 beacons
- */
-//#define ZB_MULTIPLE_BEACONS 3
+    /**
+    Linux named pipes transport timeout: wait in select() for this number of seconds
+    */
+    #define ZB_LINUX_SPIDEV_INTR_TIMEOUT 1
 
-#elif defined ZB_PLATFORM_8051_SIM  /* ZB_PLATFORM_LINUX_PC32 */
+    /**
+    If defined, security swithced on
+    */
+    #define ZB_SECURITY
 
-#ifdef ZB_IAR
-#define ZB_LITTLE_ENDIAN
-#pragma diag_suppress=Pa050
-#else
-/**
-   If defined, host is big endian (8051)
- */
-#define ZB_BIG_ENDIAN
-#endif
+    /**
+    Our Linux/ARM devices has bas antennas - try to send 3 beacons
+    */
+    //#define ZB_MULTIPLE_BEACONS 3
+asdf
 
-#ifndef ZB8051
-/**
-   If defined, platform is some 8051 clone
- */
-#define ZB8051
-#endif
+#elif defined ZB_PLATFORM_RIOT_ARM
 
-/**
-   Need to play with code banks
- */
-#ifdef SDCC
-/* s51 does not support >64k ROM, so don't use banks */
-//#define ZB_BANKED_BUILD
-#endif
-
-#if !defined(SDCC) && !defined(KEIL) && !defined(ZB_IAR)
-#error 8051 platform but compiler is not SDCC and KEIL!
-#endif
-
-/* Transport types:
-   - ZB_TRANSPORT_8051_DATA_UART, if specified zigbee data is sent over uart transport
-   - ZB_TRANSPORT_8051_DATA_SPI, if specified zigbee data is sent over spi transport
-   - ZB_TRANSPORT_8051_UART is used for zigbee data, trace or dump
-   - ZB_TRANSPORT_8051 is used to choose general transport type for MAC, trace and dump
- */
-/* TODO: choose data uart/spi transport type based on some logic */
-#ifdef ZB_NS_BUILD
-/**
-   If defined (ns build, 8051), data transport is UART
- */
-#define ZB_TRANSPORT_8051_DATA_UART
-#define ZB_MANUAL_ACK
 #define ZB_INIT_HAS_ARGS
 
+    #define RIOT
 
-#elif !defined ZB_UZ2410 && !defined ZB_CC25XX
-/* non-ns, uz2400 */
+    #ifndef UNIX
+        #define UNIX
+    #endif
+    #ifndef LINUX
+        #define LINUX
+    #endif
 
-/**
-   If defined (for UZ2400), data transport is SPI
- */
-#define ZB_TRANSPORT_8051_DATA_SPI
-#define ZB_UZ2400
-#endif
+    #define ZB_WORD_SIZE_4
+    #define ZB_LITTLE_ENDIAN
 
-#if defined C8051F120 && defined ZB_UZ2410
-#error Only one MCU can be chosen!
-#endif
+    #define ZB_NEED_ALIGN
 
-#if defined ZB_SNIFFER && defined ZB_SNIFFER_SERIAL_TRACE
-#define ZB_TRANSPORT_8051_UART
-#endif
+    /**
+    Use ZB_MAC_RIOT transiever
+    */
+    #define ZB_MAC_RIOT
+
+    /**
+    Timer functuionality is inside idle function  - Linux/ARM only
+    */
+    #define ZB_TIMER_INSIDE_IDLE
+
+    #define ZB_SECURITY
+
+    /**
+    If defined, switch on traffic dump
+    */
+    #define ZB_TRAFFIC_DUMP_ON
+
+    /**
+    If defined, transport calls traffic dump by itself, generic MAC not need to do it
+    */
+    #define ZB_TRANSPORT_OWN_TRAFFIC_DUMP_ON
+
+    /**
+    If defined, transport is spidev and zbintr drivers - Linux/ARM
+    */
+//     #define ZB_TRANSPORT_LINUX_SPIDEV
+
+    /**
+    Linux named pipes transport timeout: wait in select() for this number of seconds
+    */
+//     #define ZB_LINUX_SPIDEV_INTR_TIMEOUT 1
+
+    #define ZB_SECURITY
 
 
-#if defined(ZB_TRANSPORT_8051_DATA_UART) || defined(ZB_TRACE_LEVEL) || \
-    defined(ZB_TRAFFIC_DUMP_ON)
-/**
-   If defined, use UART for either data or trace
- */
-#define ZB_TRANSPORT_8051_UART
-#endif
+#elif defined ZB_PLATFORM_8051_SIM
 
-/**
-   If defined, implemented some transport at 8051
- */
-#define ZB_TRANSPORT_8051 /* MAC transport type */
 
-#if defined(ZB_TRANSPORT_8051_DATA_UART) && defined(ZB_TRANSPORT_8051_DATA_SPI)
-#error Only one transport for ZB data could be specified!
-#endif
+    #ifdef ZB_IAR
+        #define ZB_LITTLE_ENDIAN
+        #pragma diag_suppress=Pa050
+    #else
+        /**
+        If defined, host is big endian (8051)
+        */
+        #define ZB_BIG_ENDIAN
+    #endif
 
-/**
-   If defined, use hw 8051 timer
- */
-#define ZB_8051_TIMER
+    #ifndef ZB8051
+        /**
+        If defined, platform is some 8051 clone
+        */
+        #define ZB8051
+    #endif
 
-#endif
+    /**
+    Need to play with code banks
+    */
+    #ifdef SDCC
+        /* s51 does not support >64k ROM, so don't use banks */
+        //#define ZB_BANKED_BUILD
+    #endif
+
+    #if !defined(SDCC) && !defined(KEIL) && !defined(ZB_IAR)
+        #error 8051 platform but compiler is not SDCC and KEIL!
+    #endif
+
+    /* Transport types:
+    - ZB_TRANSPORT_8051_DATA_UART, if specified zigbee data is sent over uart transport
+    - ZB_TRANSPORT_8051_DATA_SPI, if specified zigbee data is sent over spi transport
+    - ZB_TRANSPORT_8051_UART is used for zigbee data, trace or dump
+    - ZB_TRANSPORT_8051 is used to choose general transport type for MAC, trace and dump
+    */
+    /* TODO: choose data uart/spi transport type based on some logic */
+    #ifdef ZB_NS_BUILD
+        /**
+        If defined (ns build, 8051), data transport is UART
+        */
+        #define ZB_TRANSPORT_8051_DATA_UART
+        #define ZB_MANUAL_ACK
+        #define ZB_INIT_HAS_ARGS
+
+
+    #elif !defined ZB_UZ2410 && !defined ZB_CC25XX
+        /* non-ns, uz2400 */
+
+        /**
+        If defined (for UZ2400), data transport is SPI
+        */
+        #define ZB_TRANSPORT_8051_DATA_SPI
+        #define ZB_UZ2400
+    #endif
+
+    #if defined C8051F120 && defined ZB_UZ2410
+        #error Only one MCU can be chosen!
+    #endif
+
+    #if defined ZB_SNIFFER && defined ZB_SNIFFER_SERIAL_TRACE
+        #define ZB_TRANSPORT_8051_UART
+    #endif
+
+
+    #if defined(ZB_TRANSPORT_8051_DATA_UART) || defined(ZB_TRACE_LEVEL) || \
+        defined(ZB_TRAFFIC_DUMP_ON)
+        /**
+        If defined, use UART for either data or trace
+        */
+        #define ZB_TRANSPORT_8051_UART
+    #endif
+
+    /**
+    If defined, implemented some transport at 8051
+    */
+    #define ZB_TRANSPORT_8051 /* MAC transport type */
+
+    #if defined(ZB_TRANSPORT_8051_DATA_UART) && defined(ZB_TRANSPORT_8051_DATA_SPI)
+        #error Only one transport for ZB data could be specified!
+    #endif
+
+    /**
+    If defined, use hw 8051 timer
+    */
+    #define ZB_8051_TIMER
+
+
+#endif /* ZB_PLATFORM_8051_SIM */
+
 
 /**
    Port to be used for zb-over-udp when converting traffic dump into .pcap for WireShark
@@ -337,7 +386,7 @@
 #ifdef ZB_EMBER_GOLDEN_UNIT
   #define ZB_STACK_PROFILE 0
 #else
-  #define ZB_STACK_PROFILE 1
+  #define ZB_STACK_PROFILE 2
 #endif
 /**
    If defined, 2007 stack profile is implemented
@@ -370,7 +419,7 @@
 /**
    Number of packet buffers. More buffers - more memory. Less buffers - risk to be blocked due to buffer absence.
  */
-#define ZB_IOBUF_POOL_SIZE 16
+#define ZB_IOBUF_POOL_SIZE 32
 
 /* MAC */
 
@@ -616,7 +665,8 @@
 #define ZB_NWK_MAX_BROADCAST_JITTER 0x40 * ZB_TIME_ONE_SECOND
 
 /* The maximum number of retries allowed after a broadcast transmission failure. */
-#define ZB_NWK_MAX_BROADCAST_RETRIES 0x02
+// #define ZB_NWK_MAX_BROADCAST_RETRIES 0x02
+#define ZB_NWK_MAX_BROADCAST_RETRIES 0x00
 
 /* The maximum time duration in milliseconds allowed for the parent and all
  * child devices to retransmit a broadcast message */
@@ -663,19 +713,21 @@
 
 #ifndef ZB_PLATFORM_LINUX_ARM_2400
 /* #define ZB_DEFAULT_APS_CHANNEL_MASK ZB_TRANSCEIVER_ALL_CHANNELS_MASK */
-#define ZB_DEFAULT_APS_CHANNEL_MASK (1l << 14)
+#define ZB_DEFAULT_APS_CHANNEL_MASK (1l << 25)
 #else
 /**
    Default value of ZB_AIB().aps_channel_mask
    Channels to be used for discovery and join. If here is single channel, not need to do energy scan.
    This definition often
  */
-#define ZB_DEFAULT_APS_CHANNEL_MASK ((1l << 15))
+#define ZB_DEFAULT_APS_CHANNEL_MASK ((1l << 25))
 #endif
 
-#else
-#define ZB_DEFAULT_APS_CHANNEL_MASK ((1l << 11) | (1l << 12))
-#endif
+#else /* ZB_NS_BUILD */
+
+#define ZB_DEFAULT_APS_CHANNEL_MASK ((1l << 25))
+
+#endif /* ZB_NS_BUILD */
 
 /**
    Default duration to permit joining (currently infinite)
@@ -693,6 +745,7 @@
 #define ZB_APS_COMMAND_RADIUS 5
 
 
+// #undef ZB_SECURITY
 #ifdef ZB_SECURITY
 
 /* security section */
@@ -888,7 +941,9 @@
 
 /* Definitions for 802.15.4 certification hacks */
 
-//#define MAC_CERT_TEST_HACKS
+// #define MAC_CERT_TEST_HACKS
+// #define ZB_MAC_TESTING_MODE
+// #define ZB_MAC_ONLY_STACK
 
 #define ZB_PREDEFINED_ROUTER_ADDR 0x3344
 #define ZB_PREDEFINED_ED_ADDR     0x3344
@@ -898,8 +953,6 @@
 /*! @} */
 
 //#define TP_PRO_BV_31
-
-//define ZB_MAC_TESTING_MODE
 
 #ifdef ZB_MAC_TESTING_MODE
 #define ZB_MAC_SECURITY
@@ -923,7 +976,7 @@
 /**
    Disabling of processing of bind_req and end_device_bind_req for certification purposes
  */
-#define ZB_DISABLE_BIND_REQ
+// #define ZB_DISABLE_BIND_REQ
 //#define ZB_DISABLE_ED_BIND_REQ
 
 /*PRO STACK COMPATIBILITY, it's better to turn it on only when needed */

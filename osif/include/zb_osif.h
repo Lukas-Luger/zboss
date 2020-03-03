@@ -100,6 +100,36 @@
 #else  /* SDCC && ZB_BANKED_BUILD */
 #endif  /* SDCC && ZB_BANKED_BUILD */
 
+
+zb_ret_t zb_save_nvram_config();
+
+zb_ret_t zb_config_from_nvram();
+
+void zb_erase_nvram(zb_uint8_t page);
+
+zb_ret_t zb_save_formdesc_data();
+
+zb_ret_t zb_read_formdesc_data();
+
+
+zb_ret_t zb_write_security_key();
+
+zb_ret_t zb_read_security_key();
+
+zb_ret_t zb_write_up_counter();
+
+zb_ret_t zb_read_up_counter();
+
+zb_uint8_t zb_read_nvram(zb_uint8_t pos, void *buf, zb_uint8_t len);
+zb_uint8_t zb_write_nvram(zb_uint8_t pos, void *buf, zb_uint8_t len);
+
+/* config section (for nvram routines */
+#define ZB_CONFIG_SIZE 9
+
+#define ZB_CONFIG_PAGE 0
+#define ZB_VOLATILE_PAGE 128
+#define ZB_SCRATCHPAD_PAGE_SIZE 128
+
 /*! @} */
 
 #endif /* ZB_OSIF_H */

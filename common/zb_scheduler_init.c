@@ -53,6 +53,8 @@
 
 #include "zb_bank_6.h"
 
+#ifndef ZB_PLATFORM_RIOT_ARM
+
 void zb_sched_init() ZB_CALLBACK /* __reentrant for sdcc, to save DSEG space */
 {
     zb_uint8_t i;
@@ -67,6 +69,6 @@ void zb_sched_init() ZB_CALLBACK /* __reentrant for sdcc, to save DSEG space */
 
 }
 
-
+#endif /* ZB_PLATFORM_RIOT_ARM */
 
 /*! @} */

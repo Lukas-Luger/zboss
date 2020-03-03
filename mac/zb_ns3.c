@@ -53,7 +53,13 @@
 #include "zb_mac.h"
 #include "mac_internal.h"
 #include "zb_mac_transport.h"
+
+#if defined ZB_UZ2400 || defined ZB_UZ2410
 #include "zb_ubec24xx.h"
+#endif
+#ifdef RIOT
+#include "zb_mac_riot.h"
+#endif
 
 
 /*! \addtogroup ZB_MAC */
