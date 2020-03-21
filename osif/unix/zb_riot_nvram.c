@@ -186,15 +186,15 @@ zb_ret_t zb_read_formdesc_data(void)
     /* parent long addr */
 
     char addr[24];
-    printf("restoring extended pan id %s\n", zb_pretty_long_address(
+    LOG_DEBUG("restoring extended pan id %s\n", zb_pretty_long_address(
         addr, sizeof(addr), ZB_AIB().aps_use_extended_pan_id));
 
-    printf("restoring mac short address 0x%04x\n", MAC_PIB().mac_short_address);
-    printf("restoring mac pan id 0x%04x\n", MAC_PIB().mac_pan_id);
-    printf("restoring group id 0x%04x\n", g_group_id);
+    LOG_DEBUG("restoring mac short address 0x%04x\n", MAC_PIB().mac_short_address);
+    LOG_DEBUG("restoring mac pan id 0x%04x\n", MAC_PIB().mac_pan_id);
+    LOG_DEBUG("restoring group id 0x%04x\n", g_group_id);
 
-    printf("restoring device depth %u\n", ZB_NIB_DEPTH());
-    printf("restoring channel mask 0x%08lx\n", ZB_AIB().aps_channel_mask);
+    LOG_DEBUG("restoring device depth %u\n", ZB_NIB_DEPTH());
+    LOG_DEBUG("restoring channel mask 0x%08lx\n", ZB_AIB().aps_channel_mask);
 
     return RET_OK;
 }

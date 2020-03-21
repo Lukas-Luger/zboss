@@ -29,16 +29,17 @@ bool has_eeprom;
 #include "zb_aps.h"
 #include "zb_zdo.h"
 #include "zb_secur_api.h"
+#include "zb_bufpool.h"
 
 #include <stdarg.h>
 
-#define ENABLE_DEBUG (1)
+#define ENABLE_DEBUG (0)
 #include "debug.h"
 
 #if ENABLE_DEBUG
 #include "od.h"
 #else
-#define od_hex_dump
+#define od_hex_dump(...)
 #endif
 
 #ifndef ZB_IS_COORDINATOR
@@ -96,8 +97,8 @@ static uint8_t _callback_memarray_buf[sizeof(callback_msg_t) *
 
 void zb_transceiver_set_pan_id(uint16_t pan_id)
 {
-//     gnrc_netapi_set(_zb_iface_id, NETOPT_NID, 0, &pan_id, sizeof(uint16_t));
-    LOG_INFO("NID NOT set: 0x%x\n", pan_id);
+    gnrc_netapi_set(_zb_iface_id, NETOPT_NID, 0, &pan_id, sizeof(uint16_t));
+    LOG_INFO("NID set: 0x%x\n", pan_id);
 }
 
 void zb_uz2400_fifo_read(zb_uint8_t tx_fifo, zb_buf_t *buf, zb_uint8_t length)
@@ -181,7 +182,7 @@ void group_add_conf1(zb_uint8_t param)
 {
     (void)param;
     zb_apsme_add_group_conf_t *conf = ZB_GET_BUF_PARAM(ZB_BUF_FROM_REF(param), zb_apsme_add_group_conf_t);
-    printf("group add status: %i\n", conf->status);
+    DEBUG("group add status: %i\n", conf->status);
 }
 
 void zb_zdo_startup_complete(zb_uint8_t param)
@@ -191,16 +192,23 @@ void zb_zdo_startup_complete(zb_uint8_t param)
     TRACE_MSG(TRACE_APS2, ">>zb_zdo_startup_complete status %d",
               (FMT__D, (int)buf->u.hdr.status));
     if (buf->u.hdr.status == 0) {
-        LOG_ERROR("ZDO started ok\n");
+        LOG_INFO("ZDO started ok\n");
         zb_af_set_data_indication(zb_data_indication);
-        {
-            zb_apsme_add_group_req_t *req;
-            zb_buf_reuse(buf);
-            req = ZB_GET_BUF_PARAM(buf, zb_apsme_add_group_req_t);
-            req->group_address = g_group_id;
-            req->endpoint = 1;
-            zb_zdo_add_group_req(param, group_add_conf1);
-        }
+        zb_data_indication(param);
+
+        zb_apsme_add_group_req_t *req;
+        zb_buf_reuse(buf);
+        req = ZB_GET_BUF_PARAM(buf, zb_apsme_add_group_req_t);
+        req->group_address = g_group_id;
+        req->endpoint = 1;
+        zb_zdo_add_group_req(param, group_add_conf1);
+
+        zb_apsme_add_group_req_t *req2;
+        zb_buf_t *buf2 = zb_get_out_buf();
+        req2 = ZB_GET_BUF_PARAM(buf2, zb_apsme_add_group_req_t);
+        req2->group_address = 0;
+        req2->endpoint = 1;
+        zb_zdo_add_group_req(ZB_REF_FROM_BUF(buf2), group_add_conf1);
     }
     else {
         zb_free_buf(buf);
@@ -430,10 +438,10 @@ void zb_sched_init(void)
                             5,
                             THREAD_CREATE_STACKTEST,
                             _zb_thread, NULL, "zigbee");
-    printf("started Zigbee stack with pid %i\n", _zb_pid);
+    LOG_INFO("started Zigbee stack with pid %i\n", _zb_pid);
 }
 
-int _input_zigbee_packet(int argc, char **argv)
+int zb_input_packet(int argc, char **argv)
 {
     if (argc != 2) {
         printf(
@@ -475,14 +483,17 @@ void send_packet(uint8_t *buf, uint32_t length)
 //     driver->send(netdev, &iolist);
 
     gnrc_pktsnip_t *pkt = gnrc_pktbuf_add(NULL, buf, length,
-                                                        GNRC_NETTYPE_802154);
+                                                        GNRC_NETTYPE_UNDEF);
+
+//     gnrc_pktsnip_t netif_hdr = gnrc_netif_hdr_build(src, src_len, dst, dst_len);
+//     netif_hdr.next = pkt;
 
     gnrc_netapi_send(netif->pid, pkt);
 //     gnrc_netapi_dispatch_send(GNRC_NETTYPE_NETIF, GNRC_NETREG_TYPE_DEFAULT,
 //                                                                 netif_hdr);
 }
 
-int inject_packet(int argc, char **argv)
+int zb_inject_packet(int argc, char **argv)
 {
     if (argc != 2) {
         printf(
@@ -511,18 +522,18 @@ zb_uint8_t zb_write_nvram (zb_uint8_t pos, void *buf, zb_uint8_t len)
 {
 #ifdef MODULE_PERIPH_FLASHPAGE
     /* get the existing page data */
-    printf("read\n");
+//     printf("read\n");
     flashpage_read(_flash_page, pagebuf);
 
     /* make the requested changes */
     memcpy(pagebuf + pos, buf, len);
 
     /* erase the flash page */
-    printf("erase\n");
+//     printf("erase\n");
     flashpage_write(_flash_page, NULL);
 
     /* write the new page data */
-    printf("write\n");
+//     printf("write\n");
     if (flashpage_write_and_verify(_flash_page, pagebuf) != FLASHPAGE_OK) {
         LOG_ERROR("flashpage write failure\n");
         return 0;
@@ -588,9 +599,10 @@ LOG_INFO("using page %u of internal flash as nonvolatile storage\n",
         LOG_ERROR("eeprom not detected\n");
     }
 #else
-    LOG_ERROR("compiled without eeprom/nvram support\n");
+    LOG_WARNING("compiled without eeprom/nvram support\n");
 #endif
 
+#if ENABLE_DEBUG
     /* print eeprom contents to console */
     if (has_eeprom) {
         uint8_t buf[255];
@@ -598,6 +610,7 @@ LOG_INFO("using page %u of internal flash as nonvolatile storage\n",
         zb_read_nvram(0, buf, sizeof(buf));
         od_hex_dump(buf, sizeof(buf), 16);
     }
+#endif
 
     /* net netif to register */
     netif = gnrc_netif_iter(NULL); /* FIXME only works on first interface */
@@ -609,7 +622,7 @@ LOG_INFO("using page %u of internal flash as nonvolatile storage\n",
     netreg.type = GNRC_NETREG_TYPE_DEFAULT;
 #endif
     netreg.target.pid = netif->pid;
-    gnrc_netreg_register(GNRC_NETTYPE_802154, &netreg);
+    gnrc_netreg_register(GNRC_NETTYPE_NETIF, &netreg);
 
     netdev = netif->dev;
     driver = (netdev_driver_t *)netdev->driver;
@@ -636,7 +649,7 @@ LOG_INFO("using page %u of internal flash as nonvolatile storage\n",
     // uint8_t omg[] = {0x03, 0x08, 0x77, 0xff, 0xff, 0xff, 0xff, 0x07};
     // send_packet(omg, sizeof(omg));
 
-    printf("starting zigbee stack\n");
+    LOG_INFO("starting zigbee stack\n");
 
     /* copy long mac from radio to zigbee stack */
     uint8_t addr_long[8];
@@ -651,7 +664,7 @@ LOG_INFO("using page %u of internal flash as nonvolatile storage\n",
     /* get addr_short from hardware */
     uint16_t addr_short;
     gnrc_netapi_get(_zb_iface_id, NETOPT_ADDRESS, 0, (uint8_t *)&addr_short, 2);
-    printf("got hw short address 0x%04x\n", addr_short);
+    LOG_INFO("got hw short address 0x%04x\n", addr_short);
     MAC_PIB().mac_short_address = addr_short;
     zb_transceiver_update_short_addr(addr_short);
 
@@ -692,7 +705,7 @@ LOG_INFO("using page %u of internal flash as nonvolatile storage\n",
     }
 
     int res = zdo_dev_start();
-    printf("zdo_dev_start() returned %i\n", res);
+    DEBUG("zdo_dev_start() returned %i\n", res);
 
     zdo_main_loop(); /* this does nothing and returns immediately */
 }
@@ -706,12 +719,20 @@ int cmd_zconfig(int argc, char *argv[])
     printf("joined pro: \t\t %i\n", ZG->nwk.handle.joined_pro);
     printf("trust center: \t\t %i\n", ZG->nwk.handle.is_tc);
     printf("join untrusted: \t %i\n", ZG->aps.authenticated);
+    printf("RX on while idle: \t %i\n", ZG->mac.pib.mac_rx_on_when_idle);
     printf("aps authenticated: \t %i\n", ZG->aps.authenticated);
     printf("designated coordinator:  %i\n", ZB_AIB().aps_designated_coordinator);
     printf("nwk state:\t\t %i\n", ZG->nwk.handle.state);
     printf("router: \t\t %i\n", ZG->nwk.handle.router_started);
     printf("device type: \t\t %i\n", ZG->nwk.nib.device_type);
+    printf("permit joining: \t %i\n", ZG->nwk.handle.permit_join);
 
+    printf("in buffers used: \t %i/%i\n", ZG->bpool.bufs_allocated[1],
+                                            ZB_IOBUF_POOL_SIZE / 2);
+    printf("out buffers used: \t %i/%i\n", ZG->bpool.bufs_allocated[0],
+                                            ZB_IOBUF_POOL_SIZE / 2);
+
+    printf("Group ID \t\t 0x%04x\n", g_group_id);
 
     uint8_t *network_key = ZG->nwk.nib.secur_material_set[0].key;
 

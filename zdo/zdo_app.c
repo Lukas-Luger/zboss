@@ -135,7 +135,7 @@ zb_ret_t zdo_dev_start() ZB_SDCC_REENTRANT
         zb_handle_parms_before_start();
         TRACE_MSG(TRACE_APS1, "ext pan id 0 - startup", (FMT__0));
         if (ZB_AIB().aps_designated_coordinator) {
-            printf("starting ZDO as coordinator\n");
+            LOG_INFO("starting ZDO as coordinator\n");
 #ifdef ZB_COORDINATOR_ROLE
             /* will start as coordinator: Formation */
             zb_buf_t *buf = zb_get_out_buf();
@@ -313,7 +313,8 @@ void zb_nlme_join_indication(zb_uint8_t param) ZB_CALLBACK
 #if defined ZB_SECURITY && defined ZB_COORDINATOR_ROLE
     if (ZG->nwk.nib.security_level != 0) {
         /* Authenticate device: send network key to it */
-        ZB_SCHEDULE_CALLBACK(secur_authenticate_child, param);
+        /* FIXME ZLL */
+//         ZB_SCHEDULE_CALLBACK(secur_authenticate_child, param);
     }
     else
 #endif

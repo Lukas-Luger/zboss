@@ -289,7 +289,6 @@ void zb_apsde_data_request(zb_uint8_t param) ZB_CALLBACK
     ZB_APS_FC_SET_ACK_FORMAT(fc, 0);
 #ifndef ZB_LIMITED_FEATURES2
     if (apsreq->tx_options & ZB_APSDE_TX_OPT_ACK_TX) {
-        printf("apsde ack\n");
         zb_apsde_data_req_t req;
         zb_uint8_t ret = 0;
         zb_uint8_t ref = 0;
@@ -312,7 +311,6 @@ void zb_apsde_data_request(zb_uint8_t param) ZB_CALLBACK
     else
 #endif
     {
-        printf("apsde ack not\n");
         aps_data_hdr_fill_datareq(fc, apsreq, apsdu);
     }
     ZB_CHK_ARR(ZB_BUF_BEGIN(apsdu), 8); /* check hdr fill */
@@ -805,8 +803,6 @@ void zb_aps_hdr_parse(zb_buf_t *packet, zb_aps_hdr_t *aps_hdr,
 #ifndef ZB_LIMITED_FEATURES
 void zb_aps_pass_group_msg_up(zb_uint8_t param) ZB_CALLBACK
 {
-    printf("zb_aps_pass_group_msg_up\n");
-
     /*
        handle - index in the endpoints array
      */

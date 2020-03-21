@@ -203,7 +203,7 @@ asdf
 
 #elif defined ZB_PLATFORM_RIOT_ARM
 
-#define ZB_INIT_HAS_ARGS
+    #define ZB_INIT_HAS_ARGS
 
     #define RIOT
 
@@ -414,7 +414,7 @@ asdf
 
    Be sure keep it multiple of 4 to exclude alignment problems at ARM
  */
-#define ZB_IO_BUF_SIZE 148
+#define ZB_IO_BUF_SIZE 128
 
 /**
    Number of packet buffers. More buffers - more memory. Less buffers - risk to be blocked due to buffer absence.

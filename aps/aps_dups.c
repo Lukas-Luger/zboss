@@ -106,7 +106,6 @@ zb_short_t aps_check_dups(zb_uint16_t src_addr,
     }
 
     TRACE_MSG(TRACE_APS2, "-aps_check_dups ret %hd", (FMT__H, is_dup));
-    printf("is_dup: %u\n", is_dup);
     return is_dup;
 #endif
 }

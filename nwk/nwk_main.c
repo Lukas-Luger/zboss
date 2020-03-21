@@ -1344,8 +1344,7 @@ void zb_mcps_data_indication(zb_uint8_t param) ZB_CALLBACK
     }
 
 #ifdef ZB_ROUTER_ROLE
-    printf("nwk indicate %i retransmit %i\n", indicate, retransmit);
-//     retransmit = 0; /* FIXME */
+//     printf("nwk indicate %i retransmit %i\n", indicate, retransmit);
     if (retransmit
         && indicate) {
         zb_nwk_buf_alloc_wait_t *alloc_wait = NULL;

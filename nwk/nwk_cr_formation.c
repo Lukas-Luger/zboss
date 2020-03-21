@@ -401,7 +401,7 @@ static void call_mlme_start(zb_buf_t *buf, zb_uint16_t pan_id,
         ZB_EXTPANID_COPY(ZB_NIB_EXT_PAN_ID(), ZB_PIB_EXTENDED_ADDRESS());
     }
 
-    printf("panid 0x%x channel %u\n", pan_id, channel);
+    LOG_DEBUG("panid 0x%x channel %u\n", pan_id, channel);
 
     /* TODO: fill zero params if necessary */
     req.pan_id = pan_id;

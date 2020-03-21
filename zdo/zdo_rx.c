@@ -365,6 +365,7 @@ void zb_zdo_data_indication(zb_uint8_t param) ZB_CALLBACK
     else
 #endif  /* ZB_LIMITED_FEATURES */
     {
+        LOG_WARNING("unhandled cluster 0x%x\n", ind->clusterid);
         TRACE_MSG(TRACE_ZDO1, "unhandl clu %hd - drop",
                   (FMT__H, ind->clusterid));
         skip_free_buf = 0;

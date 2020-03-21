@@ -70,10 +70,10 @@
  * In the future will rewrite trace to use fixed-size buffer and do not use
  * packet buffers.
  */
-#ifdef ZB_ASSERT
-#undef ZB_ASSERT
-#define ZB_ASSERT(x)
-#endif
+// #ifdef ZB_ASSERT
+// #undef ZB_ASSERT
+// #define ZB_ASSERT(x)
+// #endif
 
 #endif
 
@@ -112,6 +112,13 @@ static zb_buf_t *zb_get_buf(zb_uint8_t is_in)
 {
     zb_buf_t *buf = NULL;
 
+//     printf("head: 0x%lx\n", (uint32_t)ZG->bpool.head);
+//     for (int i = 0; i < 6; i++) {
+//         od_hex_dump(&ZG->bpool.pool[i], sizeof(ZG->bpool.pool[0]), 32);
+//     }
+
+    ZB_ASSERT(ZG->bpool.head);
+
     /* check that zb_init_buffers() was called */
     ZB_ASSERT(
         ZG->bpool.head || ZG->bpool.bufs_allocated[0] ||
@@ -126,6 +133,7 @@ static zb_buf_t *zb_get_buf(zb_uint8_t is_in)
         if (buf) {
             VERIFY_BUFS();
             ZG->bpool.head = buf->u.next;
+            ZB_ASSERT(ZG->bpool.head);
             VERIFY_BUFS();
             ZB_BZERO(&buf->u, sizeof(buf->u));
             ZG->bpool.bufs_allocated[is_in]++;
@@ -141,6 +149,8 @@ static zb_buf_t *zb_get_buf(zb_uint8_t is_in)
                 ZG->bpool.bufs_allocated[1]));
 #endif
 
+//     printf("buf(%u):  0x%lx (allocated %u)\n", is_in, (uint32_t)buf,
+//                                             ZG->bpool.bufs_allocated[is_in]);
     return buf;
 }
 
@@ -161,11 +171,10 @@ static zb_ret_t zb_get_buf_delayed(zb_callback_t callback, zb_uint8_t is_in)
     zb_buf_t *buf = zb_get_buf(is_in);
 
     if (buf) {
-        printf("now\n");
         return ZB_SCHEDULE_CALLBACK( callback,  ZB_REF_FROM_BUF(buf));
     }
     else {
-        printf("WAIT FOR BUFFER\n");
+        LOG_ERROR("WAIT FOR BUFFER\n");
         zb_buf_q_ent_t *ent;
 
         VERIFY_BUFS();
@@ -222,9 +231,13 @@ void zb_free_buf(zb_buf_t *buf)
                ZG->bpool.bufs_allocated[1], ZG->bpool.bufs_allocated[0]));
 #endif
 
+//     memset(buf, 0x55, sizeof(*buf));
+//     printf("free(%u): 0x%lx (last head 0x%lx)\n", buf->u.hdr.is_in_buf, (uint32_t)buf, (uint32_t)ZG->bpool.head);
     VERIFY_BUF(buf);
     buf->u.next = ZG->bpool.head;
+    ZB_ASSERT(buf->u.next);
     ZG->bpool.head = buf;
+    ZB_ASSERT(ZG->bpool.head);
     VERIFY_BUFS();
 
     if (buf->u.hdr.is_in_buf) {
@@ -249,6 +262,8 @@ void zb_free_buf(zb_buf_t *buf)
                 ZG->bpool.bufs_allocated[1], ZG->bpool.bufs_allocated[0],
                 buf, buf->u.next, ZG->bpool.head));
 #endif
+
+//     od_hex_dump(buf, sizeof(*buf), 32);
 
 }
 

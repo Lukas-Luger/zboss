@@ -50,6 +50,10 @@
 
 #include "zb_types.h"
 
+#ifdef RIOT
+#include "log.h"
+#endif
+
 /*! \addtogroup ZB_DEBUG */
 /*! @{ */
 
@@ -108,9 +112,11 @@ zb_void_t zb_assert(zb_char_t *file_name,
 
 #else  /* release */
 
-#ifndef KEIL
+#if defined ZB_PLATFORM_RIOT_ARM && defined DEBUG_ASSERT_VERBOSE
 void _assert_failure(const char *file, unsigned line);
 #define ZB_ASSERT(cond) ((cond) ? (void)0 :  _assert_failure(RIOT_FILE_RELATIVE, __LINE__))
+#elif !defined KEIL
+#define ZB_ASSERT(expr) { if (!(expr)) { puts("assertion failure"); while(1); } }
 #else
 #define ZB_ASSERT(expr)
 #endif
