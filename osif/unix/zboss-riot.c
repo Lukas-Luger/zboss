@@ -144,9 +144,10 @@ void zb_transceiver_update_long_addr(uint8_t *addr)
 
 void zb_transceiver_update_short_addr(uint16_t addr)
 {
-//     addr = byteorder_swaps(addr);
-    gnrc_netapi_set(_zb_iface_id, NETOPT_ADDRESS, 0, &addr, 2);
     LOG_INFO("short hwaddr set: 0x%x\n", addr);
+    /* gnrc_netapi_set() expects little endian */
+    addr = byteorder_swaps(addr);
+    gnrc_netapi_set(_zb_iface_id, NETOPT_ADDRESS, 0, &addr, 2);
 }
 
 void zb_set_pending_bit(int set)
