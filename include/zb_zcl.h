@@ -375,6 +375,16 @@ void zb_zcl_gen_default_resp(zb_buf_t *buf, zb_zcl_status_t status,
                              zb_uint8_t seq_number, zb_uint8_t command_id);
 
 /**
+ * Handle a group request received from a peer
+ *
+ * @param param - packet buffer to operate on
+ *
+ * @return nothing
+ */
+void zb_zcl_handle_group_request(zb_uint8_t param);
+
+
+/**
    DeInitialize Zigbee cluster library
  */
 void zb_zcl_deinit();
