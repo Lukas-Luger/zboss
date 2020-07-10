@@ -434,11 +434,15 @@ static void aps_data_hdr_fill_datareq(zb_uint8_t fc, zb_apsde_data_req_t *req,
     /* If group addressing, dst_endpoint is absent but instead of it 2-bytes
      * Group address exists */
 
-    aps_hdr_size += is_group;
+    if (is_group) {
+//         aps_hdr_size++;
+    }
 
     if (req->addr_mode == ZB_APS_ADDR_MODE_64_ENDP_NOT_PRESENT) {
         aps_hdr_size -= 1 + 1 + 1; /* no dst_endpoint src_endpoint aps_counter */
     }
+
+    printf("aps_hdr_size: %u\n", aps_hdr_size);
 
 #ifdef ZB_SECURITY
     apsdu->u.hdr.encrypt_type = ZB_SECUR_NO_ENCR;
@@ -467,6 +471,10 @@ static void aps_data_hdr_fill_datareq(zb_uint8_t fc, zb_apsde_data_req_t *req,
 
     /* TODO: handle fragmentation and Extended header. Now suppose no Extended header */
     ZB_BUF_ALLOC_LEFT(apsdu, aps_hdr_size, aps_hdr);
+
+    if (is_group) {
+        aps_hdr--;
+    }
 
     *aps_hdr++ = fc;
 
@@ -1170,8 +1178,20 @@ void zb_aps_ack_timer_cb(zb_uint8_t param) ZB_CALLBACK
 
     /* Note: 'param' here is index, not packet buffer!  */
     {
-        zb_uint8_t fc =
-            *ZB_BUF_BEGIN(ZB_BUF_FROM_REF(ZG->aps.retrans.hash[param].buf));
+
+        volatile zb_uint8_t b = ZG->aps.retrans.hash[param].buf;
+        if (b == 255) {
+            printf("problem\n");
+            return;
+        }
+        volatile zb_buf_t *bu = ZB_BUF_FROM_REF(b);
+        volatile zb_uint8_t fc = *ZB_BUF_BEGIN(bu);
+
+//         printf("param %i\n", param);
+//         printf("b %u\n", b);
+
+//         zb_uint8_t fc =
+//             *ZB_BUF_BEGIN(ZB_BUF_FROM_REF(ZG->aps.retrans.hash[param].buf));
 
         if (ZG->aps.retrans.hash[param].aps_retries) {
             ZG->aps.retrans.hash[param].aps_retries--;

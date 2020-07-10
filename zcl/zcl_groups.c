@@ -145,6 +145,8 @@ void zb_zcl_handle_group_request(zb_uint8_t param)
         ZB_SCHEDULE_CALLBACK(zb_apsde_data_request, param);
 
     } else if (zcl_hdr->cmd == 0x0) { /* add group */
+        LOG_INFO("add group\n");
+
         zcl_add_group_hdr_t *req_hdr = (zcl_add_group_hdr_t *)(zcl +
                                                             sizeof(zcl_hdr_t));
         uint16_t group_id;
@@ -200,6 +202,8 @@ void zb_zcl_handle_group_request(zb_uint8_t param)
         ZB_SCHEDULE_CALLBACK(zb_apsde_data_request, param);
 
     } else if (zcl_hdr->cmd == 0x3) { /* remove group */
+        LOG_INFO("remove group\n");
+
         zcl_remove_group_t *req_hdr = (zcl_remove_group_t *)(zcl +
         sizeof(zcl_hdr_t));
         uint16_t group_id;

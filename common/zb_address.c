@@ -468,7 +468,7 @@ zb_ret_t zb_address_update(zb_ieee_addr_t ieee_address,
         ret = addr_add(&ieee_compressed, short_address, &ref);
     }
     if (ret == RET_OK) {
-        *ref_p = ref;
+        memcpy(ref_p, &ref, sizeof(ref));
 
         if (lock) {
             zb_address_lock(ref);

@@ -373,6 +373,8 @@ ZB_SDCC_REENTRANT
     /* pan coord bit is set to 0 already */
 #endif
 
+    MAC_PIB().mac_association_permit = 1;
+
     ZB_SUPERFRAME_SET_ASS_PERMIT(ptr, MAC_PIB().mac_association_permit);
 
     TRACE_MSG(TRACE_MAC3, "superframe %x ass perm %hd",

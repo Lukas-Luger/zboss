@@ -67,8 +67,8 @@ void nwk_permit_timeout(zb_uint8_t param) ZB_CALLBACK
     ZVUNUSED(param);
     TRACE_MSG(TRACE_NWK1, ">>nwk_permit_timeout %hd", (FMT__H, param));
 
-    ZG->mac.pib.mac_association_permit = 0;
-    ZG->nwk.handle.permit_join = 0;
+//     ZG->mac.pib.mac_association_permit = 0;
+//     ZG->nwk.handle.permit_join = 0;
 
     TRACE_MSG(TRACE_NWK1, "<<nwk_permit_timeout", (FMT__0));
 }
@@ -103,9 +103,9 @@ void zb_nlme_permit_joining_request(zb_uint8_t param) ZB_CALLBACK
                 MAC_PIB().mac_association_permit = 0;
                 break;
 
-            case 0xff:
-                MAC_PIB().mac_association_permit = 1;
-                break;
+//             case 0xff:
+//                 MAC_PIB().mac_association_permit = 1;
+//                 break;
 
             default:
                 ZG->nwk.handle.permit_join = 1;

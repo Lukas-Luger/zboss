@@ -402,7 +402,7 @@ asdf
    Scheduler callbacks queue size. Ususlly not need to change it.
  */
 #define ZB_SCHEDULER_Q_SIZE 16
-#define ZB_MAC_QUEUE_SIZE 4
+#define ZB_MAC_QUEUE_SIZE 8
 
 /**
    Size of queue for wait for free packet buffer
@@ -414,12 +414,12 @@ asdf
 
    Be sure keep it multiple of 4 to exclude alignment problems at ARM
  */
-#define ZB_IO_BUF_SIZE 128
+#define ZB_IO_BUF_SIZE 256
 
 /**
    Number of packet buffers. More buffers - more memory. Less buffers - risk to be blocked due to buffer absence.
  */
-#define ZB_IOBUF_POOL_SIZE 32
+#define ZB_IOBUF_POOL_SIZE 24
 
 /* MAC */
 
@@ -441,7 +441,7 @@ asdf
    MAC: max time to wait for a response command frame, range 2-64
    Default is 32, 64 set for better compatibility
  */
-#define ZB_MAC_RESPONSE_WAIT_TIME 64
+#define ZB_MAC_RESPONSE_WAIT_TIME 128
 
 /* Make all MAC PIB attributes configurable */
 //#define ZB_CONFIGURABLE_MAC_PIB

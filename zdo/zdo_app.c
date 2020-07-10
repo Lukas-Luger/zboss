@@ -62,6 +62,9 @@
 static void send_data();
 #endif
 
+extern od_hex_dump(uint8_t *buf, uint16_t len, uint8_t width);
+
+
 void zdo_send_device_annce(zb_uint8_t param) ZB_CALLBACK;
 void zdo_join_done(zb_uint8_t param) ZB_CALLBACK;
 void zb_zdo_force_child_leave(zb_uint8_t param,
@@ -294,6 +297,7 @@ void zb_nlme_permit_joining_confirm(zb_uint8_t param) ZB_CALLBACK
 
 void zb_nlme_join_indication(zb_uint8_t param) ZB_CALLBACK
 {
+    printf("JJOINED\n");
 #ifdef ZB_TRACE_LEVEL
     zb_nlme_join_indication_t *ind = ZB_GET_BUF_PARAM(ZB_BUF_FROM_REF(
                                                           param),
@@ -315,7 +319,8 @@ void zb_nlme_join_indication(zb_uint8_t param) ZB_CALLBACK
         /* Authenticate device: send network key to it */
         /* FIXME ZLL */
 //         ZB_SCHEDULE_CALLBACK(secur_authenticate_child, param);
-    }
+        zb_free_buf(ZB_BUF_FROM_REF(param));
+}
     else
 #endif
     {
@@ -364,6 +369,10 @@ void zb_nlme_network_discovery_confirm(zb_uint8_t param) ZB_CALLBACK
     }
 #endif
 
+
+//     zb_buf_t *b = ZB_BUF_FROM_REF(param);
+//     od_hex_dump((uint8_t *)b, sizeof(zb_buf_t), 16);
+
     req = ZB_GET_BUF_PARAM(ZB_BUF_FROM_REF(param), zb_nlme_join_request_t);
     dsc = (zb_nlme_network_descriptor_t *)(cnf + 1);
 
@@ -404,6 +413,10 @@ void zb_nlme_network_discovery_confirm(zb_uint8_t param) ZB_CALLBACK
         }
     } /* for */
     if (i == cnf->network_count) {
+        char a[24];
+        zb_pretty_long_address(a, sizeof(a), ZB_AIB().aps_use_extended_pan_id);
+        LOG_WARNING("couldn't find PAN to connect to: %s\n", a);
+
         TRACE_MSG(TRACE_APS1, "Can't find PAN to join to!", (FMT__0));
         /* Indicate startup failure */
         ZB_BUF_FROM_REF(param)->u.hdr.status = ZB_NWK_STATUS_NOT_PERMITTED;

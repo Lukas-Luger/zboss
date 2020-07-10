@@ -552,6 +552,8 @@ void change_channel(zb_uint8_t param)
 {
     uint8_t channel = _new_channel;
     zb_transceiver_set_channel(channel);
+
+    zb_free_buf(ZB_BUF_FROM_REF(param));
 }
 
 void zdo_zll_start_network_resp(zb_uint8_t param) ZB_SDCC_REENTRANT

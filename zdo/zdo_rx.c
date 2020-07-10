@@ -333,6 +333,9 @@ void zb_zdo_data_indication(zb_uint8_t param) ZB_CALLBACK
             zdo_change_channel(param);
         }
     }
+    else if (ind->clusterid == ZDO_MGMT_NWK_UPDATE_NOTIFY_CLID) {
+
+    }
     else if (ind->clusterid == 0x1000) {
         zb_uint8_t zll_command = *(ZB_BUF_BEGIN(ZB_BUF_FROM_REF(param)) + 2);
         TRACE_MSG(TRACE_ZDO1, "received ZLL command: 0x%hx",
@@ -344,6 +347,7 @@ void zb_zdo_data_indication(zb_uint8_t param) ZB_CALLBACK
 
             case 0x6: /* identify request */
                 zdo_zll_identify_resp(param);
+                skip_free_buf = 0;
                 break;
 
             case 0x10: /* network start request */

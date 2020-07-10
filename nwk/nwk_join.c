@@ -1036,6 +1036,8 @@ void zb_mlme_comm_status_indication(zb_uint8_t param) ZB_CALLBACK
         ret = zb_nwk_neighbor_get(addr_ref, ZB_FALSE, &nent);
     }
 
+    printf("ret: %i\n", ret);
+
     if (ret == RET_OK) {
         if (request->status == MAC_SUCCESS) {
             /* Done. Issue NLME-JOIN.indication, update  */
@@ -1069,7 +1071,11 @@ void zb_mlme_comm_status_indication(zb_uint8_t param) ZB_CALLBACK
             /* Failed. Remove this device from address and neighbor tables. */
             zb_nwk_neighbor_delete(addr_ref);
             zb_address_delete(addr_ref);
+            zb_free_buf(ZB_BUF_FROM_REF(param));
         }
+    }
+    else {
+        zb_free_buf(ZB_BUF_FROM_REF(param));
     }
     TRACE_MSG(TRACE_NWK1, "<<mlme_comm_status_ind", (FMT__0));
 }

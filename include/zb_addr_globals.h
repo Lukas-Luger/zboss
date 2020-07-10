@@ -98,7 +98,7 @@ typedef struct zb_address_map_s {
     zb_uint16_t addr;                       /*!< 16 bit device address */
     zb_uint8_t aps_dup_counter;
     zb_bitfield_t used : 1;                 /*!< if 0, this entry is free (never used)  */
-    zb_bitfield_t lock_cnt : 4;             /*!< lock counter. not locked if 0  */
+    zb_bitfield_t lock_cnt : 6;             /*!< lock counter. not locked if 0  */
     zb_bitfield_t clock : 1;                /*!< clock value for the clock usage algorithm  */
     zb_bitfield_t aps_dup_clock : 2;
 } ZB_PACKED_STRUCT zb_address_map_t;

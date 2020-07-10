@@ -238,6 +238,7 @@ zb_ret_t zdo_af_resp(zb_uint8_t param)
             /* found - schedule it to execution */
             /* Really use zb_schedule_callback(), not ZB_SCHEDULE_CALLBACK(): no
              * effect in Keil but for sdcc ZB_SCHEDULE_CALLBACK constructs stub name. */
+            printf("zdo_cb 0x%lx\n", ZDO_CTX().zdo_cb[i].func);
             zb_schedule_callback(ZDO_CTX().zdo_cb[i].func, param);
 
             ZDO_CTX().zdo_cb[i].resp_counter--;

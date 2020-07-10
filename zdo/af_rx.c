@@ -110,6 +110,7 @@ void zb_af_set_data_indication(zb_callback_t cb)
 
 void zb_apsde_data_acknowledged(zb_uint8_t param) ZB_CALLBACK
 {
+    printf("acked\n");
     zb_aps_hdr_t aps_hdr;
     zb_buf_t *asdu = (zb_buf_t *)ZB_BUF_FROM_REF(param);
 

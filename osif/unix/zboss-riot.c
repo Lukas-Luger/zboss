@@ -3,6 +3,7 @@
 
 #include "od.h"
 #include "log.h"
+#include "luid.h"
 #include "xtimer.h"
 #include "memarray.h"
 #include "net/netif.h"
@@ -36,11 +37,11 @@ bool has_eeprom;
 #define ENABLE_DEBUG (0)
 #include "debug.h"
 
-#if ENABLE_DEBUG
+// #if ENABLE_DEBUG
 #include "od.h"
-#else
-#define od_hex_dump(...)
-#endif
+// #else
+// #define od_hex_dump(...)
+// #endif
 
 #ifndef ZB_IS_COORDINATOR
 #define ZB_IS_COORDINATOR (0)
@@ -95,6 +96,21 @@ static memarray_t _callback_memarray;
 static uint8_t _callback_memarray_buf[sizeof(callback_msg_t) *
                                       CALLBACK_BUF_SIZE];
 
+void sleep_radio(uint8_t arg)
+{
+    bool sleep = arg;
+    netopt_state_t state = NETOPT_STATE_IDLE;
+    if (sleep) {
+        state = NETOPT_STATE_SLEEP;
+    }
+    gnrc_netapi_set(_zb_iface_id, NETOPT_STATE, 0, &state, sizeof(netopt_state_t));
+}
+
+void extend_poll_timer(uint8_t arg)
+{
+    ZDO_CTX().conf_attr.nwk_indirect_poll_rate = ZB_TIME_ONE_SECOND * arg;
+}
+
 void zb_transceiver_set_pan_id(uint16_t pan_id)
 {
     gnrc_netapi_set(_zb_iface_id, NETOPT_NID, 0, &pan_id, sizeof(uint16_t));
@@ -112,7 +128,8 @@ void zb_uz2400_fifo_read(zb_uint8_t tx_fifo, zb_buf_t *buf, zb_uint8_t length)
 
     zb_buf_initial_alloc(buf, _packet_buf_size + 1);
 //  LOG_DEBUG("zb_uz2400_fifo_read()\n");
-    // od_hex_dump(_packet_buf, _packet_buf_size, 16);
+//     printf("in: ");
+//     od_hex_dump(_packet_buf, _packet_buf_size, 16);
     memcpy(ZB_BUF_BEGIN(buf) + 1, _packet_buf, _packet_buf_size);
 
     /* this tells the zigbee stack that the last ack had the data pending bit set
@@ -264,6 +281,7 @@ static zb_ret_t _zb_schedule_alarm(zb_callback_t func, zb_uint8_t param,
     callback->msg.type = ZB_MSG_FIRE_CALLBACK;
 
     uint64_t run_after_usec = run_after * 15360;
+    run_after_usec *= 30;
     xtimer_ticks64_t run_after_ticks = xtimer_ticks_from_usec64(run_after_usec);
 
     xtimer_set_msg64(&(callback->timer), run_after_ticks.ticks64,
@@ -276,7 +294,7 @@ zb_ret_t zb_schedule_callback(zb_callback_t func, zb_uint8_t param)
 {
     //     LOG_DEBUG("0x%lx(%u)\n", (uint32_t)func, param);
 
-    return zb_schedule_alarm(func, param, 1);
+    return zb_schedule_alarm(func, param, 0);
 
 
     // msg_t msg;
@@ -310,23 +328,17 @@ zb_ret_t zb_schedule_alarm_cancel(zb_callback_t func, zb_uint8_t param)
 
 static zb_ret_t _zb_schedule_alarm_cancel(zb_callback_t func, zb_uint8_t param)
 {
-    /* fuck. iterate _callback_memarray and find it */
-    (void)func;
-    (void)param;
-    //     LOG_DEBUG("0x%lx(%u)\n", (uint32_t)func, param);
-
     for (int i = 0; i < CALLBACK_BUF_SIZE; i++) {
         callback_msg_t *callback_msg = (void *)_callback_memarray_buf + i *
                                        sizeof(callback_msg_t);
-        if (callback_msg->func == func &&  callback_msg->arg == param) {
-            //             LOG_DEBUG("removing 0x%lx, %u, %u\n", (uint32_t)func, param, callback_msg->run_after);
+        if (callback_msg->func == func) {
+            DEBUG("removing one 0x%lx, %u, %u\n", (uint32_t)func, param, callback_msg->run_after);
             xtimer_remove(&callback_msg->timer);
             memset(callback_msg, 0, sizeof(callback_msg_t));
             memarray_free(&_callback_memarray, callback_msg);
         }
 
     }
-
     return RET_OK;
 }
 
@@ -349,31 +361,7 @@ static void *_zb_thread(void *arg)
         msg_receive(&msg);
 //         DEBUG("msg type 0x%x from pid %u\n", msg.type, msg.sender_pid);
 
-        if (msg.type == GNRC_NETAPI_MSG_TYPE_RCV) {
-            gnrc_pktsnip_t *pkt = msg.content.ptr;
-            _packet_buf_size = pkt->size;
-            memcpy(_packet_buf, pkt->data, _packet_buf_size);
-
-            /* get lqi and rssi */
-            gnrc_pktsnip_t *netif;
-            netif = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF);
-            gnrc_netif_hdr_t *netif_hdr = netif->data;
-            _packet_buf[_packet_buf_size] = netif_hdr->lqi;
-            _packet_buf[_packet_buf_size + 1] = netif_hdr->rssi;
-            _packet_buf_size += 2;
-
-            DEBUG("received packet len %u size %u snips %u\n",
-                        gnrc_pkt_len(pkt), pkt->size, gnrc_pkt_count(pkt));
-//             od_hex_dump(_packet_buf, _packet_buf_size, 16);
-
-            gnrc_pktbuf_release(pkt);
-
-            zb_buf_t *buf = zb_get_in_buf();
-            zb_mac_recv_data(ZB_REF_FROM_BUF(buf));
-//          LOG_INFO("finished receiving packet\n");
-            continue;
-        }
-        else if (msg.type == ZB_MSG_SCHEDULE_ALARM) {
+        if (msg.type == ZB_MSG_SCHEDULE_ALARM) {
             zb_callback_t func = msg.content.ptr;
             /* remaining paramaters are sent in a second msg */
             msg_receive(&msg);
@@ -409,6 +397,7 @@ static void *_zb_thread(void *arg)
                 printf("wtf not calling 0x%lx(%u)\n", (uint32_t)callback->func,
                        callback->arg);
                 printf("sender_pid %u\n", msg.sender_pid);
+                assert(0);
                 continue;
             }
             callback->func(callback->arg);
@@ -418,6 +407,30 @@ static void *_zb_thread(void *arg)
             // printf("running zb_mac_main_loop()\n");
             // zb_handle_data_request_cmd();
             zb_mac_main_loop();
+            continue;
+        }
+        else if (msg.type == GNRC_NETAPI_MSG_TYPE_RCV) {
+            gnrc_pktsnip_t *pkt = msg.content.ptr;
+            _packet_buf_size = pkt->size;
+            memcpy(_packet_buf, pkt->data, _packet_buf_size);
+
+            /* get lqi and rssi */
+            gnrc_pktsnip_t *netif;
+            netif = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF);
+            gnrc_netif_hdr_t *netif_hdr = netif->data;
+            _packet_buf[_packet_buf_size] = netif_hdr->lqi;
+            _packet_buf[_packet_buf_size + 1] = netif_hdr->rssi;
+            _packet_buf_size += 2;
+
+            DEBUG("received packet len %u size %u snips %u\n",
+                        gnrc_pkt_len(pkt), pkt->size, gnrc_pkt_count(pkt));
+//             od_hex_dump(_packet_buf, _packet_buf_size, 16);
+
+            gnrc_pktbuf_release(pkt);
+
+            zb_buf_t *buf = zb_get_in_buf();
+            zb_mac_recv_data(ZB_REF_FROM_BUF(buf));
+//          LOG_INFO("finished receiving packet\n");
             continue;
         }
     }
@@ -474,6 +487,7 @@ int zb_input_packet(int argc, char **argv)
 void send_packet(uint8_t *buf, uint32_t length)
 {
 //     LOG_DEBUG("sending packet with length %u\n", length);
+//     printf("out: ");
 //     od_hex_dump(buf, length, 16);
 
 //     memcpy(payload_buf, buf, length);
@@ -489,9 +503,19 @@ void send_packet(uint8_t *buf, uint32_t length)
 //     gnrc_pktsnip_t netif_hdr = gnrc_netif_hdr_build(src, src_len, dst, dst_len);
 //     netif_hdr.next = pkt;
 
+//     if (!ZB_PIB_RX_ON_WHEN_IDLE()) {
+        sleep_radio(false);
+//     }
+
     gnrc_netapi_send(netif->pid, pkt);
 //     gnrc_netapi_dispatch_send(GNRC_NETTYPE_NETIF, GNRC_NETREG_TYPE_DEFAULT,
 //                                                                 netif_hdr);
+
+    if (!ZB_PIB_RX_ON_WHEN_IDLE()) {
+        ZB_SCHEDULE_ALARM(sleep_radio, true,
+                                ZB_MILLISECONDS_TO_BEACON_INTERVAL(200));
+        ZB_SCHEDULE_ALARM(extend_poll_timer, 180, ZB_TIME_ONE_SECOND * 15);
+    }
 }
 
 int zb_inject_packet(int argc, char **argv)
@@ -603,7 +627,7 @@ LOG_INFO("using page %u of internal flash as nonvolatile storage\n",
     LOG_WARNING("compiled without eeprom/nvram support\n");
 #endif
 
-#if ENABLE_DEBUG
+#if 0
     /* print eeprom contents to console */
     if (has_eeprom) {
         uint8_t buf[255];
@@ -695,15 +719,31 @@ LOG_INFO("using page %u of internal flash as nonvolatile storage\n",
 //     ZB_EXTPANID_COPY(ZB_PIB_BEACON_PAYLOAD().extended_panid, extended_pan_id);
 //     ZB_EXTPANID_COPY(ZB_NIB_EXT_PAN_ID(), extended_pan_id);
 
-    if (ZB_IS_COORDINATOR || 1) {
-        /* let's always be coordinator */
-        ZB_AIB().aps_designated_coordinator = 1;
+//     if (ZB_IS_COORDINATOR || 1) {
+//         /* let's always be coordinator */
+//         ZB_AIB().aps_designated_coordinator = 1;
 //         MAC_PIB().mac_pan_id = 0x1aaa;
 //         MAC_PIB().mac_pan_id = 0x1417;
 //      zb_transceiver_update_short_addr(0x0002);
 
 //      zb_secur_setup_preconfigured_key(g_key, 0);
-    }
+//     }
+
+    uint8_t rand_seq;
+    luid_get(&rand_seq, 1);
+    ZB_NIB_SEQUENCE_NUMBER() = rand_seq;
+
+#if defined BOARD_OPENLABS_KW41Z_MINI || 1
+    ZG->nwk.handle.permit_join = 1;
+    MAC_PIB().mac_association_permit = 1;
+    ZB_AIB().aps_designated_coordinator = 1;
+//     ZG->nwk.handle.router_started = 1;
+#else
+    ZB_AIB().aps_designated_coordinator = 0;
+    ZB_PIB_RX_ON_WHEN_IDLE() = 0;
+#endif
+
+    ZG->aps.authenticated = 1;
 
     int res = zdo_dev_start();
     DEBUG("zdo_dev_start() returned %i\n", res);
@@ -719,7 +759,6 @@ int cmd_zconfig(int argc, char *argv[])
     printf("joined: \t\t %i\n", ZG->nwk.handle.joined);
     printf("joined pro: \t\t %i\n", ZG->nwk.handle.joined_pro);
     printf("trust center: \t\t %i\n", ZG->nwk.handle.is_tc);
-    printf("join untrusted: \t %i\n", ZG->aps.authenticated);
     printf("RX on while idle: \t %i\n", ZG->mac.pib.mac_rx_on_when_idle);
     printf("aps authenticated: \t %i\n", ZG->aps.authenticated);
     printf("designated coordinator:  %i\n", ZB_AIB().aps_designated_coordinator);
@@ -793,6 +832,33 @@ int cmd_zconfig(int argc, char *argv[])
 
     printf("ext neighbors: %i/%i used\n", ZG->nwk.neighbor.ext_neighbor_used,
            ZG->nwk.neighbor.ext_neighbor_size );
+
+    printf("\tlong_addr\t\text_panid\t\t\taddr\n");
+    printf("\t\tpermit_join\tpotential_parent\tdevice_type\trouter\t\n");
+
+    zb_ext_neighbor_tbl_ent_t *ext_neighbor = NULL;
+    for (int i = 0; i < ZG->nwk.neighbor.ext_neighbor_used; i++) {
+        ext_neighbor = &ZG->nwk.neighbor.ext_neighbor[i];
+
+        char long_addr[24];
+        zb_ieee_addr_t laddr;
+        ZB_ADDRESS_DECOMPRESS(laddr, ext_neighbor->long_addr);
+        zb_pretty_long_address(long_addr, sizeof(long_addr), laddr);
+
+        char pan_id[24];
+        zb_ieee_addr_t pan;
+        zb_address_ieee_by_ref(pan, ext_neighbor->panid_ref);
+        zb_pretty_long_address(pan_id, sizeof(pan_id), pan);
+
+        printf("\t%s\t%s\t0x%04x\n",
+               long_addr, pan_id, ext_neighbor->short_addr
+        );
+        printf("\t\t%i\t\t%i\t\t\t%i\t\t%i\n",
+               ext_neighbor->permit_joining, ext_neighbor->potential_parent,
+               ext_neighbor->device_type, ext_neighbor->router_capacity
+        );
+    }
+
     printf("neighbors: %i/%i used\n", ZG->nwk.neighbor.base_neighbor_used,
            ZG->nwk.neighbor.base_neighbor_size );
     printf("nwk neighbor table:\n");
