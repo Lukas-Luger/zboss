@@ -600,7 +600,7 @@ void zb_nlme_rejoin_scan_confirm(zb_uint8_t param) ZB_CALLBACK
                                            ZB_IEEE_ADDR_IS_ZERO(
                                                ieee_addr) ? NULL : ieee_addr,
                                            ZB_FALSE, secure, ZB_TRUE);
-            nwhdr->radius = (zb_uint8_t)(ZB_NIB_MAX_DEPTH() << 1);
+            nwhdr->radius = 1;//(zb_uint8_t)(ZB_NIB_MAX_DEPTH() << 1);
 #ifdef ZB_SECURITY
             if (secure) {
                 buf->u.hdr.encrypt_type = ZB_SECUR_NWK_ENCR;
@@ -952,7 +952,46 @@ void zb_mlme_orphan_indication(zb_uint8_t param)
     TRACE_MSG(TRACE_NWK1, "<< orphan_ind", (FMT__0));
 }
 #endif  /* ZB_LIMITED_FEATURES */
+void zb_nlme_direct_join_confirm(zb_uint8_t param) ZB_CALLBACK
+{
+    zb_nlme_direct_join_confirm_t *confirm = ZB_GET_BUF_PARAM((zb_buf_t *)ZB_BUF_FROM_REF(
+                                                                param),
+                                                            zb_nlme_direct_join_confirm_t);
+    TRACE_MSG(TRACE_APS2, "+direct_join_confirm status %d", (FMT__D, confirm->status));
+    printf("NLME-DIRECT-JOIN.confirm status 0x%x\n", confirm->status);
+    zb_free_buf(ZB_BUF_FROM_REF(param));
 
+}
+
+void zb_nlme_direct_join_request(zb_uint8_t param) ZB_CALLBACK
+{
+    // TODO: What shall we do with capability_information?
+    zb_nlme_direct_join_request_t *request = ZB_GET_BUF_PARAM((zb_buf_t *)ZB_BUF_FROM_REF(
+                                                                param),
+                                                            zb_nlme_direct_join_request_t);
+    zb_neighbor_tbl_ent_t *nbt;
+    zb_ieee_addr_t dev_addr;
+    ZB_IEEE_ADDR_COPY(dev_addr, request->device_address);
+    printf("NLME-DIRECT-JOIN.request addr: %02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x\n",
+        dev_addr[0], dev_addr[1], dev_addr[2], dev_addr[3], dev_addr[4], dev_addr[5], dev_addr[6], dev_addr[7]);
+    zb_ret_t ret = zb_nwk_neighbor_get(dev_addr, ZB_TRUE, &nbt);
+    zb_nlme_direct_join_confirm_t *resp = ZB_GET_BUF_PARAM((zb_buf_t *)ZB_BUF_FROM_REF(
+                                                                param),
+                                                            zb_nlme_direct_join_confirm_t);
+    switch(ret){
+        case RET_OK: 
+            resp->status = ZB_NWK_STATUS_SUCCESS;    
+            break; 
+        case RET_NO_MEMORY:
+            resp->status = ZB_NWK_STATUS_NEIGHBOR_TABLE_FULL;
+            break;
+        default:
+            resp->status = ZB_NWK_STATUS_ALREADY_PRESENT;
+            break;
+    }
+    ZB_IEEE_ADDR_COPY(resp->device_address, dev_addr);
+    ZB_SCHEDULE_CALLBACK(zb_nlme_direct_join_confirm, param);
+}
 
 void zb_nlme_join_request(zb_uint8_t param) ZB_CALLBACK
 {

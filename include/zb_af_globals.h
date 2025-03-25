@@ -296,7 +296,7 @@ typedef struct zb_af_node_power_desc_s {
 ZB_DECLARE_SIMPLE_DESC(1, 1);   /* General descriptor type */
 ZB_DECLARE_SIMPLE_DESC(7, 8);   /* ZDO descriptor type */
 
-#define ZB_MAX_EP_NUMBER 1      /* max supported EP number, increase if needed */
+#define ZB_MAX_EP_NUMBER 3      /* max supported EP number, increase if needed */
 
 /* Macro to set node descriptor, 2.3.2.3 Node Descriptor  */
 #define ZB_SET_NODE_DESCRIPTOR(logical_type_p, frequence_band_p, \

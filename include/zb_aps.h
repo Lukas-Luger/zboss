@@ -211,7 +211,13 @@ enum zb_apsde_tx_opt_e {
     ZB_APSDE_TX_OPT_FRAG_PERMITTED      = 8     /*!< 0x08 = Fragmentation permitted  */
 };
 
-
+typedef struct zb_intrp_data_req_params_s {
+    zb_uint8_t src_addr_mode; /* 0x00 no addr; 0x01 reserved; 0x02 16bit short addr; 0x03 64 bit extended addr */
+    zb_uint8_t dst_addr_mode; /* 0x01 16Bit group addr; 0x02 16bit NWK addr; 0x03 64Bit extended addr */
+    union zb_addr_u dst_addr;
+    zb_uint16_t profileid;
+    zb_uint16_t clusterid;
+} ZB_PACKED_STRUCT zb_intrp_data_req_params_t;
 /**
    NLDE-DATA.request primitive
 
@@ -533,6 +539,7 @@ void zb_apsde_data_acknowledged(zb_uint8_t param) ZB_CALLBACK;
 void zb_apsme_update_device_indication(zb_uint8_t param) ZB_CALLBACK;
 
 
+void zb_intrp_data_request(zb_uint8_t param) ZB_CALLBACK;
 /**
    Send APS command.
 

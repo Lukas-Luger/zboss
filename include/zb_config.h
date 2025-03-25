@@ -419,7 +419,7 @@ asdf
 /**
    Number of packet buffers. More buffers - more memory. Less buffers - risk to be blocked due to buffer absence.
  */
-#define ZB_IOBUF_POOL_SIZE 24
+#define ZB_IOBUF_POOL_SIZE 36//24
 
 /* MAC */
 
@@ -441,7 +441,7 @@ asdf
    MAC: max time to wait for a response command frame, range 2-64
    Default is 32, 64 set for better compatibility
  */
-#define ZB_MAC_RESPONSE_WAIT_TIME 128
+#define ZB_MAC_RESPONSE_WAIT_TIME 64
 
 /* Make all MAC PIB attributes configurable */
 //#define ZB_CONFIGURABLE_MAC_PIB

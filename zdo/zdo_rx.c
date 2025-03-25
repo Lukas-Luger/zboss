@@ -344,7 +344,15 @@ void zb_zdo_data_indication(zb_uint8_t param) ZB_CALLBACK
             case 0x0: /* scan request */
                 zdo_zll_scan_resp(param);
                 break;
-
+            case 0x1: /* scan response */
+                zdo_zll_handle_scan_resp(param);
+                break;
+            case 0x2: /* device info request */
+                zdo_zll_dev_info_resp(param);
+                break;
+            case 0x3: /* device info response */
+                zdo_zll_handle_dev_info_resp(param);
+                break;
             case 0x6: /* identify request */
                 zdo_zll_identify_resp(param);
                 skip_free_buf = 0;
@@ -354,7 +362,9 @@ void zb_zdo_data_indication(zb_uint8_t param) ZB_CALLBACK
                 printf("network start request\n");
                 zdo_zll_start_network_resp(param);
                 break;
-
+            case 0x11: /* network start response */
+                zdo_zll_handle_start_network_resp(param);
+                break;
             case 0x12: /* join router request */
                 printf("join router request\n");
                 zdo_zll_join_router_resp(param);

@@ -1151,6 +1151,12 @@ typedef struct zb_zdo_zll_scan_resp_s {
     zb_uint16_t network_address;
     zb_uint8_t subdevices;
     zb_uint8_t total_group_identifiers;
+ 
+}
+ZB_PACKED_STRUCT
+zb_zdo_zll_scan_resp_t;
+
+typedef struct zb_zdo_zll_scan_resp_ext_s{
     zb_uint8_t endpoint;
     zb_uint16_t profile_id;
     zb_uint16_t device_id;
@@ -1158,9 +1164,49 @@ typedef struct zb_zdo_zll_scan_resp_s {
     zb_uint8_t group_id_count;
 }
 ZB_PACKED_STRUCT
-zb_zdo_zll_scan_resp_t;
+zb_zdo_zll_scan_resp_ext_t;
 
+typedef struct zb_zdo_zll_dev_record_s {
+    zb_ieee_addr_t addr;
+    zb_uint8_t endpoint;
+    zb_uint16_t profileid;
+    zb_uint16_t deviceid;
+    zb_uint8_t version;
+    zb_uint8_t groupid_count;
+    zb_uint8_t sort;
+}
+ZB_PACKED_STRUCT
+zb_zdo_zll_dev_record_t;
 
+typedef struct zb_zdo_zll_dev_info_resp_s {
+    zb_uint8_t zcl_command;
+    zb_uint32_t transaction_id;
+    zb_uint8_t subdevices;
+    zb_uint8_t start; /* this should be equal to to the start index we receive */
+    zb_uint8_t count;
+}
+ZB_PACKED_STRUCT
+zb_zdo_zll_dev_info_resp_t;
+
+typedef struct __attribute__((packed)) {
+    uint8_t fcf;
+    uint8_t seq;
+    uint8_t cmd;
+    uint32_t transaction_id;
+    zb_ieee_addr_t ext_pan_id;
+    uint8_t key_index;
+    uint8_t enc_network_key[16];
+    uint8_t net_update_id;
+    uint8_t channel;
+    uint16_t pan_id;
+    uint16_t network_address;
+    uint16_t group_id_begin;
+    uint16_t group_id_end;
+    uint16_t free_addr_begin;
+    uint16_t free_addr_end;
+    uint16_t free_group_begin;
+    uint16_t free_group_end;
+} zb_zll_join_router_request_t;
 /* bits 0 - 1, mask 0x3 */
 #define ZB_ZDO_RECORD_SET_DEVICE_TYPE(var, type) (var &= ~3, var |= type)
 #define ZB_ZDO_RECORD_GET_DEVICE_TYPE(var) (var & 3)
@@ -1196,7 +1242,8 @@ typedef struct zb_zdo_neighbor_table_record_s {
 ZB_PACKED_STRUCT
 zb_zdo_neighbor_table_record_t;
 
-
+void zdo_zll_touchlink_scan() ZB_SDCC_REENTRANT;
+void zcl_onoff_toggle() ZB_SDCC_REENTRANT;
 /**
    Sends 2.4.3.3.2 Mgmt_Lqi_req
    @param param - index of buffer with Lqi request parameters. \see zb_zdo_mgmt_lqi_param_t

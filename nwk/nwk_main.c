@@ -241,28 +241,67 @@ void zb_nlde_data_request(zb_uint8_t param)   ZB_CALLBACK
     ZB_ASSERT(nldereq);
 
     TRACE_MSG(TRACE_NWK1, "+nlde_data_request %hd", (FMT__H, param));
+    /* interpan (not from zboss initially)*/
+    /* needs 6 addressing modes, only three bits available*/
+    if (nldereq->addr_mode & ZB_APS_ADDR_MODE_64_ENDP_NOT_PRESENT) {
+        // copy addresses, they get lost otherwise
+        zb_ieee_addr_t dst_addr_long;
+        ZB_IEEE_ADDR_COPY(dst_addr_long, nldereq->dst_addr_long);
+        zb_uint16_t dst_addr_short = nldereq->dst_addr;
+        zb_uint8_t src_mode = nldereq->addr_mode & 3;
+        zb_uint8_t dst_mode = (nldereq->addr_mode & 0x18) >> 3;
 
-    /* interpan */
-    if (nldereq->addr_mode == ZB_APS_ADDR_MODE_64_ENDP_NOT_PRESENT) {
         ZB_BUF_ALLOC_LEFT(nsdu, ZB_NWK_INTERPAN_HDR_SIZE, nwhdr);
         nwhdr->frame_control[0] = 0x0b;
         nwhdr->frame_control[1] = 0x00;
 
-        zb_ieee_addr_t dst_addr;
-        ZB_IEEE_ADDR_COPY(&dst_addr, nldereq->dst_addr_long);
-
-//       ZB_SCHEDULE_CALLBACK(zb_nwk_forward, ZB_REF_FROM_BUF(nsdu));
-
         zb_mcps_data_req_params_t *req = ZB_GET_BUF_PARAM(nsdu,
                                                           zb_mcps_data_req_params_t);
         ZB_BZERO(req, sizeof(zb_mcps_data_req_params_t));
-        req->src_addr_mode = ZB_ADDR_64BIT_DEV;
-        req->dst_addr_mode = ZB_ADDR_64BIT_DEV;
-        req->dst_pan_id = 0xffff;
-        req->tx_options = MAC_TX_OPTION_ACKNOWLEDGED_BIT;
+        //TODO find a way to insert destination pan through the layers
+        req->dst_pan_id = 0xffff;// no other way to set it, than here
+        req->tx_options = 0;// no ack //MAC_TX_OPTION_ACKNOWLEDGED_BIT;
 
-        ZB_IEEE_ADDR_COPY(req->dst_addr.addr_long, &dst_addr);
-        ZB_IEEE_ADDR_COPY(req->src_addr.addr_long, ZB_PIB_EXTENDED_ADDRESS());
+        /* going to steal some bits to extend interpan functionality here
+         * 000D D1SS => 0xDD = destination address mode
+         *           => 0xSS = source address mode
+         * TODO: find more elegant way to define it (9 extra enums seemed a bit much)
+         */
+         
+        switch(dst_mode){
+            case 0: //normally not implemented, this should actually be 0x03 (Table G-1)
+                req->dst_addr_mode = ZB_ADDR_64BIT_DEV;
+                ZB_IEEE_ADDR_COPY(&req->dst_addr.addr_long, &dst_addr_long);
+                break;
+            case 1:// 16Bit group addressing
+                req->dst_addr_mode = ZB_ADDR_16BIT_MULTICAST;
+                ZB_MEMCPY(&req->dst_addr.addr_short, &dst_addr_short, sizeof(zb_uint16_t));
+                break;
+            case 2: // 16Bit network addressing (0xffff)
+                req->dst_addr_mode = ZB_ADDR_16BIT_DEV_OR_BROADCAST;
+                req->dst_addr.addr_short = 0xffff;
+                break;
+            default:
+                printf("Wrong nwk dst address mode:0x%x", dst_mode);
+                break;
+        }
+        //printf("NWK Dest Addr mode: 0x%x\n", req->dst_addr_mode);
+        switch(src_mode){
+            case 0: // this should actually be 0x03 (Table G-1)
+                req->src_addr_mode = ZB_ADDR_64BIT_DEV;       
+                ZB_IEEE_ADDR_COPY(req->src_addr.addr_long, ZB_PIB_EXTENDED_ADDRESS());
+                break;
+            case 1: //normally reserved, should be 0
+                req->src_addr_mode = ZB_ADDR_NO_ADDR;
+                break;
+            case 2: // 16Bit short address
+                req->src_addr_mode = ZB_ADDR_16BIT_DEV_OR_BROADCAST;
+                ZB_MEMCPY(&req->src_addr.addr_short, &ZB_PIB_SHORT_ADDRESS(), sizeof(zb_uint16_t));
+                break;
+            default:
+                printf("Wrong nwk src address mode:0x%x", src_mode);
+                break;
+        }  
 
         ZB_SCHEDULE_CALLBACK(zb_mcps_data_request, ZB_REF_FROM_BUF(nsdu));
     }
@@ -402,7 +441,7 @@ ZB_SDCC_REENTRANT
             TRACE_MSG(TRACE_NWK1, "dst is neighb, rx_on %hd",
                       (FMT__D, nbh->rx_on_when_idle));
             if (!nbh->rx_on_when_idle) {
-                *indirect = ZB_TRUE;
+                //*indirect = ZB_TRUE;
             }
         }
 #ifdef ZB_NWK_MESH_ROUTING

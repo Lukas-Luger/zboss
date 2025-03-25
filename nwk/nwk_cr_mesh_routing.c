@@ -138,18 +138,13 @@ void zb_nwk_mesh_routing_init() ZB_SDCC_REENTRANT
     TRACE_MSG(TRACE_NWK1, ">> mesh_r_init", (FMT__0));
 
     /* Check for expired route discovery entries */
-    TRACE_MSG(TRACE_NWK1, "schd r disc expiry f %d", (FMT__D,
-                                                      ZB_SCHEDULE_ALARM(
-                                                          zb_nwk_mesh_expiry_route_disc,
-                                                          0,
-                                                          ZB_NWK_EXPIRY_ROUTE_DISCOVERY)));
+    zb_ret_t ret = ZB_SCHEDULE_ALARM(zb_nwk_mesh_expiry_route_disc, 0, ZB_NWK_EXPIRY_ROUTE_DISCOVERY);
+
+    TRACE_MSG(TRACE_NWK1, "schd r disc expiry f %d", (FMT__D, ret));
 
     /* Check for expired pending entries */
-    TRACE_MSG(TRACE_NWK1, "schd pend expiry f %d", (FMT__D,
-                                                    ZB_SCHEDULE_ALARM(
-                                                        zb_nwk_mesh_expiry_pending,
-                                                        0,
-                                                        ZB_NWK_EXPIRY_PENDING)));
+    ret = ZB_SCHEDULE_ALARM(zb_nwk_mesh_expiry_pending, 0, ZB_NWK_EXPIRY_PENDING);
+    TRACE_MSG(TRACE_NWK1, "schd pend expiry f %d", (FMT__D, ret));
 
     TRACE_MSG(TRACE_NWK1, "<< mesh_r_init", (FMT__0));
 }

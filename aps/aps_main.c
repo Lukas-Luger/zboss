@@ -261,10 +261,18 @@ void zb_apsde_data_request(zb_uint8_t param) ZB_CALLBACK
         case ZB_APS_ADDR_MODE_64_ENDP_PRESENT:
             ZB_APS_FC_SET_DELIVERY_MODE(fc, ZB_APS_DELIVERY_UNICAST);
             /* convert long (64) to short (16) address, then unicast */
-            nldereq.dst_addr = zb_address_short_by_ieee(apsreq->dst_addr_long);
+            zb_uint16_t dst_addr = zb_address_short_by_ieee(apsreq->dst_addr_long);
+            nldereq.dst_addr = dst_addr;
             apsreq->dst_addr = nldereq.dst_addr;
             TRACE_MSG(TRACE_APS3, "apsde_data unicast, dst %d, options 0x%hx",
                       (FMT__D_H, nldereq.dst_addr, apsreq->tx_options));
+            if((zb_uint16_t)-1 == dst_addr){
+                TRACE_MSG(TRACE_APS3,
+                          "no short addr found",
+                          (FMT__0));
+                //FIXME!
+                //ZB_SCHEDULE_CALLBACK(zb_apsde_data_confirm, param);
+            }
             break;
 
         case ZB_APS_ADDR_MODE_64_ENDP_NOT_PRESENT:
@@ -695,7 +703,8 @@ void zb_nlde_data_indication_continue(zb_uint8_t param) ZB_CALLBACK
 
     /* Detect and reject dup */
 #ifndef ZB_LIMITED_FEATURES
-    if (aps_check_dups(aps_hdr.src_addr, aps_hdr.aps_counter)) {
+    if (aps_check_dups(aps_hdr.src_addr, aps_hdr.aps_counter) &&
+                ZB_APS_FC_GET_FRAME_TYPE(aps_hdr.fc) != ZB_APS_FRAME_INTERPAN ) {
         TRACE_MSG(TRACE_APS2, "pkt #%d is a dup - drop",
                   (FMT__D, aps_hdr.aps_counter));
         zb_free_buf(packet);

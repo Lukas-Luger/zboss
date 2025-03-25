@@ -186,7 +186,7 @@ void zb_nlme_leave_request(zb_uint8_t param) ZB_CALLBACK
                          ZB_NWK_INTERNAL_LEAVE_CONFIRM_AT_DATA_CONFIRM_HANDLE,
                          zb_uint8_t);
 #ifdef ZB_ROUTER_ROLE
-        {
+        if(nbt){
             zb_uint16_t child_addr;
             zb_address_short_by_ref(&child_addr, nbt->addr_ref);
             /* if we removed last joined device, we could decrease number of child to */
