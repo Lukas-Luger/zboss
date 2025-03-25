@@ -283,7 +283,7 @@ static zb_ret_t _zb_schedule_alarm(zb_callback_t func, zb_uint8_t param,
     callback->msg.type = ZB_MSG_FIRE_CALLBACK;
 
     uint64_t run_after_usec = run_after * 15360;//ZB_BEACON_INTERVAL_USEC;
-
+    run_after *= 5;
     ztimer64_set_msg(ZTIMER64_USEC, &(callback->timer), run_after_usec,
                      &(callback->msg), _zb_pid);
 

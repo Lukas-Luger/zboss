@@ -56,6 +56,7 @@
 #include "zb_mac.h"
 #include "zdo_common.h"
 #include "zb_secur.h"
+#include "zb_zcl_groups.h"
 
 void aes128(zb_uint8_t *key, zb_uint8_t *msg, zb_uint8_t *c);
 void aes128d(const zb_uint8_t *c, const zb_uint8_t *key, zb_uint8_t *m);
@@ -797,7 +798,6 @@ void zdo_zll_start_network_resp(zb_uint8_t param) ZB_SDCC_REENTRANT
 
     printf("transaction_id: 0x%08lx\n", transaction_id);
     _transaction_id = transaction_id;
-    _response_id = response_id;
     set_enc_network_key(enc_network_key);
     zb_uint8_t key[33];
     zb_pretty_key(key, sizeof(key), enc_network_key);
@@ -1070,7 +1070,7 @@ void zdo_zll_dev_info_req(zb_uint8_t param) ZB_SDCC_REENTRANT
     intrp->src_addr_mode = ZB_ADDR_64BIT_DEV; //3
     intrp->dst_addr_mode = ZB_ADDR_64BIT_DEV; //3 we have a dst
     ZB_IEEE_ADDR_COPY(&intrp->dst_addr.addr_long, _opponent_addr);
-
+    puts("Do not remove this print. Zboss is fragile");
     ZB_SCHEDULE_CALLBACK(zb_intrp_data_request, ZB_REF_FROM_BUF(buf));
 }
 
@@ -1208,6 +1208,7 @@ void zdo_zll_handle_scan_resp(zb_uint8_t param) ZB_SDCC_REENTRANT
 
     }else{
         _opponent_ep = 1;
+        puts("sending dev info req");
         ZB_GET_OUT_BUF_DELAYED(zdo_zll_dev_info_req);
     }
     zb_free_buf(buf);

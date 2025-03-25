@@ -67,11 +67,11 @@
 /**
    Switch trace on/off on runtime, is useful in test purposes
  */
-static char g_trace_enabled = 1;
-void zb_set_trace_enabled(char val)
-{
-    g_trace_enabled = val;
-}
+// static char g_trace_enabled = 1;
+// void zb_set_trace_enabled(char val)
+// {
+//     g_trace_enabled = val;
+// }
 
 /*! @} */
 
