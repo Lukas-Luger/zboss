@@ -4,7 +4,7 @@
 #include "od.h"
 #include "log.h"
 #include "luid.h"
-#include "xtimer.h"
+#include "ztimer64.h"
 #include "memarray.h"
 #include "net/netif.h"
 #include "net/gnrc/netif.h"
@@ -85,7 +85,7 @@ __attribute__((weak)) void zb_data_indication(zb_uint8_t param)
 
 typedef struct {
     zb_callback_t func;
-    xtimer_t timer;
+    ztimer64_t timer;
     msg_t msg;
     uint8_t arg;
     uint16_t run_after;
@@ -177,7 +177,7 @@ void zb_set_pending_bit(int set)
 #define ZB_BEACON_INTERVAL_USEC 15360
 uint16_t zb_timer_get(void)
 {
-    return xtimer_now_usec() / ZB_BEACON_INTERVAL_USEC;
+   return (uint16_t) (ztimer64_now(ZTIMER64_USEC) / ZB_BEACON_INTERVAL_USEC);
 }
 
 void zb_trace_msg_riot(zb_char_t *format, zb_int_t level, zb_char_t *file_name,
@@ -281,10 +281,7 @@ static zb_ret_t _zb_schedule_alarm(zb_callback_t func, zb_uint8_t param,
     callback->msg.type = ZB_MSG_FIRE_CALLBACK;
 
     uint64_t run_after_usec = run_after * 15360;
-    run_after_usec *= 30;
-    xtimer_ticks64_t run_after_ticks = xtimer_ticks_from_usec64(run_after_usec);
-
-    xtimer_set_msg64(&(callback->timer), run_after_ticks.ticks64,
+    ztimer64_set_msg(ZTIMER64_USEC, &(callback->timer), run_after_usec,
                      &(callback->msg), _zb_pid);
 
     return RET_OK;
@@ -333,7 +330,7 @@ static zb_ret_t _zb_schedule_alarm_cancel(zb_callback_t func, zb_uint8_t param)
                                        sizeof(callback_msg_t);
         if (callback_msg->func == func) {
             DEBUG("removing one 0x%lx, %u, %u\n", (uint32_t)func, param, callback_msg->run_after);
-            xtimer_remove(&callback_msg->timer);
+            ztimer64_remove(ZTIMER64_USEC, &callback_msg->timer);
             memset(callback_msg, 0, sizeof(callback_msg_t));
             memarray_free(&_callback_memarray, callback_msg);
         }
@@ -555,7 +552,7 @@ zb_uint8_t zb_write_nvram (zb_uint8_t pos, void *buf, zb_uint8_t len)
 
     /* erase the flash page */
 //     printf("erase\n");
-    flashpage_write(_flash_page, NULL);
+    flashpage_erase(_flash_page);//, NULL);
 
     /* write the new page data */
 //     printf("write\n");
@@ -755,28 +752,65 @@ LOG_INFO("using page %u of internal flash as nonvolatile storage\n",
 int cmd_zconfig(int argc, char *argv[])
 {
     char addr[IPV6_ADDR_MAX_STR_LEN];
-
+    printf("manual ack:\t\t");
+#ifdef ZB_MANUAL_ACK
+    printf(" 1\n");
+#else
+    printf(" 0\n");
+#endif
+    printf("end device role:\t");
+#ifdef ZB_ED_ROLE
+    printf(" 1\n");
+#else
+    printf(" 0\n");
+#endif
+    printf("coordinator role:\t");
+#ifdef ZB_COORDINATOR_ROLE
+    printf(" 1\n");
+#else
+    printf(" 0\n");
+#endif
+    printf("router role:\t\t");
+#ifdef ZB_ROUTER_ROLE
+    printf(" 1\n");
+#else
+    printf(" 0\n");
+#endif
+    switch(ZB_NIB_DEVICE_TYPE()){
+        case ZB_NWK_DEVICE_TYPE_COORDINATOR:
+            printf("device type:\t\t COORDINATOR\n");
+            break;
+        case ZB_NWK_DEVICE_TYPE_ROUTER:
+            printf("device type:\t\t ROUTER\n");
+            break;
+        case ZB_NWK_DEVICE_TYPE_ED:
+            printf("device type:\t\t ED\n");
+            break;
+        default:
+            printf("device type:\t\t NONE\n");
+            break;
+    }
     printf("joined: \t\t %i\n", ZG->nwk.handle.joined);
     printf("joined pro: \t\t %i\n", ZG->nwk.handle.joined_pro);
-    printf("trust center: \t\t %i\n", ZG->nwk.handle.is_tc);
+    printf("trust center: \t %i\n", ZG->nwk.handle.is_tc);
     printf("RX on while idle: \t %i\n", ZG->mac.pib.mac_rx_on_when_idle);
     printf("aps authenticated: \t %i\n", ZG->aps.authenticated);
-    printf("designated coordinator:  %i\n", ZB_AIB().aps_designated_coordinator);
+    printf("designated coordinator:%i\n", ZB_AIB().aps_designated_coordinator);
     printf("nwk state:\t\t %i\n", ZG->nwk.handle.state);
     printf("router: \t\t %i\n", ZG->nwk.handle.router_started);
     printf("device type: \t\t %i\n", ZG->nwk.nib.device_type);
     printf("permit joining: \t %i\n", ZG->nwk.handle.permit_join);
-
+    printf("security level: \t %i\n", ZG->nwk.nib.security_level);
     printf("in buffers used: \t %i/%i\n", ZG->bpool.bufs_allocated[1],
                                             ZB_IOBUF_POOL_SIZE / 2);
     printf("out buffers used: \t %i/%i\n", ZG->bpool.bufs_allocated[0],
                                             ZB_IOBUF_POOL_SIZE / 2);
-
+    printf("channel: \t\t %d\n",  zb_transceiver_get_channel());
     printf("Group ID \t\t 0x%04x\n", g_group_id);
-
+#ifdef ZB_SECURITY
     uint8_t *network_key = ZG->nwk.nib.secur_material_set[0].key;
-
-    printf("PAN ID \t\t\t 0x%04x\n", MAC_PIB().mac_pan_id);
+#endif
+    printf("PAN ID \t\t 0x%04x\n", MAC_PIB().mac_pan_id);
     zb_pretty_long_address(addr, sizeof(addr),
                                             ZB_AIB().aps_use_extended_pan_id);
     printf("Extended Pan ID: \t %s\n", addr);
@@ -800,7 +834,7 @@ int cmd_zconfig(int argc, char *argv[])
     zb_pretty_long_address(addr, sizeof(addr),
                         ZG->mac.pib.mac_coord_extended_address);
     printf("Coordinator Long Address: \t %s\n", addr);
-
+#ifdef ZB_SECURITY
     printf(
         "Network Key: \t\t\t %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n",
         network_key[0], network_key[1], network_key[2], network_key[3],
@@ -808,6 +842,7 @@ int cmd_zconfig(int argc, char *argv[])
         network_key[8], network_key[9], network_key[10], network_key[11],
         network_key[12], network_key[13], network_key[14], network_key[15]
     );
+#endif
 
 #ifdef ZB_ROUTER_ROLE
     printf("nwk rebroadcast table:\n");
@@ -882,7 +917,43 @@ int cmd_zconfig(int argc, char *argv[])
                abuf
         );
     }
+    printf("source binding table:\n");
+    printf("\tsrc_addr\t\tsrc_endpoint\tcluster_id\n");
+    zb_aps_bind_src_table_t *src_bind = NULL;
+    for(int i = 0; i < ZG->aps.binding.src_n_elements; i++){
+        src_bind = &ZG->aps.binding.src_table[i];
 
+        char abuf[24];
+        zb_ieee_addr_t addr;
+        zb_address_ieee_by_ref(addr, src_bind->src_addr);
+        zb_pretty_long_address(abuf, sizeof(abuf), addr);
+        printf("\t%s\t% 02x\t\t% 04x \n", abuf, src_bind->src_end, src_bind->cluster_id);
+    }
+    printf("destination binding table:\n");
+    printf("\tdst_addr_mode\tdst_addr\t\tdst_endpoint\tsrc_table_index\n");
+    zb_aps_bind_dst_table_t *dst_bind = NULL;
+    for(int i = 0; i < ZG->aps.binding.dst_n_elements; i++){
+        dst_bind = &ZG->aps.binding.dst_table[i];
+        if(dst_bind->dst_addr_mode == 0){
+            printf("\t% 02x\t\t% 04x\t--\t\t% u\n", dst_bind->dst_addr_mode ,dst_bind->u.group_addr, dst_bind->src_table_index);
+        }else{
+            char abuf[24];
+            zb_ieee_addr_t addr;
+            zb_address_ieee_by_ref(addr, dst_bind->u.long_addr.dst_addr);
+            zb_pretty_long_address(abuf, sizeof(abuf), addr);
+            printf("\t% 02x\t\t% s\t% 02x\t\t% u\n", dst_bind->dst_addr_mode ,abuf,dst_bind->u.long_addr.dst_end ,dst_bind->src_table_index);
+        }
+    }
+    printf("simple descriptor table:\n");
+    printf("\tindex\tendpoint\tprofile id\tdevice id\tversion\tinput cl\toutput cl\n");
+    for(int i = 0; i < ZB_ZDO_SIMPLE_DESC_NUMBER(); i++){
+        printf("\t%d\t%02x\t\t%04x\t\t%04x\t\t%02x\t%02x\t\t%02x\n",i ,ZB_ZDO_SIMPLE_DESC_LIST()[i]->endpoint, 
+            ZB_ZDO_SIMPLE_DESC_LIST()[i]->app_profile_id, 
+            ZB_ZDO_SIMPLE_DESC_LIST()[i]->app_device_id,
+            ZB_ZDO_SIMPLE_DESC_LIST()[i]->app_device_version,
+            ZB_ZDO_SIMPLE_DESC_LIST()[i]->app_input_cluster_count,
+            ZB_ZDO_SIMPLE_DESC_LIST()[i]->app_output_cluster_count);
+    }
 
     return 0;
 }
