@@ -359,6 +359,10 @@ void zb_zdo_data_indication(zb_uint8_t param) ZB_CALLBACK
                 zdo_zll_start_network_resp(param);
                 break;
 
+            case 0x11: /* network start response */
+                zdo_zll_handle_start_network_resp(param);
+                break;
+
             case 0x12: /* join router request */
                 printf("join router request\n");
                 zdo_zll_join_router_resp(param);

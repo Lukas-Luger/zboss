@@ -608,6 +608,17 @@ void get_enc_network_key(zb_uint8_t* enc_network_key)
     printf("decrypted network key: %s\n", key);
 }
 
+void zb_mac_get_indirect_data_req(zb_uint8_t param) ZB_SDCC_REENTRANT
+{
+    zb_mlme_data_req_params_t req;
+    req.src_addr_mode = ZB_ADDR_16BIT_DEV_OR_BROADCAST;
+    req.dst_addr_mode = ZB_ADDR_16BIT_DEV_OR_BROADCAST;
+    req.src_addr.addr_short = 1;
+    req.dst_addr.addr_short = 4;
+    req.cb_type = MAC_POLL_REQUEST_CALLBACK;
+    zb_mac_get_indirect_data(&req);
+}
+
 void zdo_zll_dev_info_req(zb_uint8_t param) ZB_SDCC_REENTRANT
 {
     TRACE_MSG(TRACE_ZDO3, ">>zdo_dev_info_req %hd", (FMT__H, param));
@@ -841,6 +852,83 @@ void zdo_zll_handle_scan_resp(zb_uint8_t param) ZB_SDCC_REENTRANT
     zb_free_buf(buf);
     ZB_GET_OUT_BUF_DELAYED(zdo_zll_start_net_req);
     TRACE_MSG(TRACE_ZDO3, "<<zdo_handle_tl_scan_resp", (FMT__0));
+}
+
+void zdo_zll_handle_start_network_resp(zb_uint8_t param) ZB_SDCC_REENTRANT
+{
+    TRACE_MSG(TRACE_ZDO3, ">>zdo_handle_start_net_resp %hd", (FMT__H, param));
+
+    zb_buf_t *buf = ZB_BUF_FROM_REF(param);
+    zb_uint8_t *ptr =  ZB_BUF_BEGIN(buf);
+    ptr += 2; //skip fcf and seq
+    zb_zll_start_network_response_t *resp = (zb_zll_start_network_response_t *)ptr;
+    if(resp->status != 0){
+        puts("Target failed to start network");
+        return;
+    }
+    if(resp->logical_channel != zb_transceiver_get_channel()) {
+        uint8_t tsn = ZDO_CTX().tsn++;
+        printf("changing channel to %u", resp->logical_channel);
+        _new_channel = resp->logical_channel;
+        register_zdo_cb(tsn, change_channel, 1);
+    }
+    if(!ZB_IEEE_ADDR_CMP(resp->ext_pan_id, ZB_AIB().aps_use_extended_pan_id)){
+        ZB_IEEE_ADDR_COPY(&ZB_AIB().aps_use_extended_pan_id, resp->ext_pan_id);
+    }
+    if(resp->pan_id != ZB_PIB_SHORT_PAN_ID()){
+        ZB_PIB_SHORT_PAN_ID() = resp->pan_id;
+        zb_transceiver_set_pan_id(resp->pan_id);
+    }
+    ZG->nwk.nib.outgoing_frame_counter = 0;
+
+    zb_nwk_neighbor_clear();
+    zb_nwk_exneighbor_start();
+
+    zb_address_ieee_ref_t addr_ref;
+    zb_ieee_addr_t zeros;
+    ZB_IEEE_ADDR_ZERO(zeros);
+    zb_address_update(zeros, 4, ZB_FALSE, &addr_ref);
+
+    zb_neighbor_tbl_ent_t *ne;
+    zb_nwk_neighbor_get(addr_ref, ZB_TRUE, &ne);
+    ne->rx_on_when_idle = 1;
+
+    zb_address_pan_id_ref_t pan_ref;
+    zb_address_set_pan_id(ZB_PIB_SHORT_PAN_ID(), ZB_AIB().aps_use_extended_pan_id, &pan_ref);
+
+    zb_ext_neighbor_tbl_ent_t *nent;
+    zb_nwk_exneighbor_by_ieee(pan_ref, _opponent_addr, &nent);
+    nent->potential_parent = 1;
+    nent->short_addr = 4;
+    ZB_IEEE_ADDR_ZERO(&nent->long_addr);
+    nent->update_id = ZB_NIB_UPDATE_ID();
+    nent->logical_channel = resp->logical_channel;
+    nent->stack_profile = 1;
+    nent->permit_joining = 1;
+    nent->router_capacity = 1;
+    nent->end_device_capacity = 1;
+    nent->potential_parent = 1;
+
+    ZG->nwk.nib.security_level = 5;
+
+    ZB_BUF_REUSE(buf);
+    
+    ZG->nwk.nib.outgoing_frame_counter = -1;
+
+    zb_nlme_join_request_t *request = ZB_GET_BUF_PARAM(buf, zb_nlme_join_request_t);
+    ZB_IEEE_ADDR_COPY(request->extended_pan_id, ZB_AIB().aps_use_extended_pan_id);
+    request->scan_channels = 0x00000000;
+    request->capability_information = 0x80; // as seen on wireshark
+    request->rejoin_network = ZB_NLME_REJOIN_METHOD_REJOIN;//zb_nlme_rejoin_method
+    request->scan_duration = 0x00;
+    request->security_enabled = ZB_TRUE;
+    ZB_SCHEDULE_ALARM(zb_nlme_join_request, ZB_REF_FROM_BUF(buf), ZB_MILLISECONDS_TO_BEACON_INTERVAL(4000));
+
+    
+    ZB_SCHEDULE_ALARM(zb_mac_get_indirect_data_req, 0, ZB_MILLISECONDS_TO_BEACON_INTERVAL(4100));
+
+    zb_address_by_short(4, ZB_TRUE, ZB_FALSE, &ZG->nwk.handle.parent);
+    TRACE_MSG(TRACE_ZDO3, "<< zdo_handle_start_net_resp", (FMT__0));
 }
 
 void zdo_zll_start_network_resp(zb_uint8_t param) ZB_SDCC_REENTRANT
