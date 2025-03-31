@@ -1151,15 +1151,19 @@ typedef struct zb_zdo_zll_scan_resp_s {
     zb_uint16_t network_address;
     zb_uint8_t subdevices;
     zb_uint8_t total_group_identifiers;
-    zb_uint8_t endpoint;
-    zb_uint16_t profile_id;
-    zb_uint16_t device_id;
-    zb_uint8_t version;
-    zb_uint8_t group_id_count;
 }
 ZB_PACKED_STRUCT
 zb_zdo_zll_scan_resp_t;
 
+typedef struct zb_zdo_zll_scan_resp_ext_s{
+   zb_uint8_t endpoint;
+   zb_uint16_t profile_id;
+   zb_uint16_t device_id;
+   zb_uint8_t version;
+   zb_uint8_t group_id_count;
+}
+ZB_PACKED_STRUCT
+zb_zdo_zll_scan_resp_ext_t;
 
 /* bits 0 - 1, mask 0x3 */
 #define ZB_ZDO_RECORD_SET_DEVICE_TYPE(var, type) (var &= ~3, var |= type)

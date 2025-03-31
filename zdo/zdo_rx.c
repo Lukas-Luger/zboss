@@ -345,6 +345,10 @@ void zb_zdo_data_indication(zb_uint8_t param) ZB_CALLBACK
                 zdo_zll_scan_resp(param);
                 break;
 
+            case 0x1: /* scan response */
+                zdo_zll_handle_scan_resp(param);
+                break;
+
             case 0x6: /* identify request */
                 zdo_zll_identify_resp(param);
                 skip_free_buf = 0;

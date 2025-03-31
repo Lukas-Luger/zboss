@@ -476,13 +476,13 @@ void zdo_zll_scan_resp(zb_uint8_t param) ZB_SDCC_REENTRANT
     resp->pan_id = 0x356b;
 //     resp->network_address = ZB_PIB_SHORT_ADDRESS();
     resp->network_address = 0xffff;
-    resp->subdevices = 1;
+    resp->subdevices = 2;
     resp->total_group_identifiers = 0;
-    resp->endpoint = 1;
-    resp->profile_id = 0xc05e;
-    resp->device_id = 0x200;
-    resp->version = 2;
-    resp->group_id_count = 0;
+    // resp->endpoint = 1;
+    // resp->profile_id = 0xc05e;
+    // resp->device_id = 0x200;
+    // resp->version = 2;
+    // resp->group_id_count = 0;
 
     zb_uint16_t custer_id = 0x1000; /* FIXME ZLL */
 
@@ -495,6 +495,49 @@ void zdo_zll_scan_resp(zb_uint8_t param) ZB_SDCC_REENTRANT
 static zb_uint8_t _tl_info;
 static zb_uint8_t _zb_info;
 static zb_uint32_t _transaction_id;
+static zb_uint32_t _response_id;
+static zb_ieee_addr_t _opponent_addr;
+static zb_uint8_t _opponent_ep;
+static zb_address_pan_id_ref_t _opponent_pan_ref;
+
+typedef struct __attribute__((packed)) {
+    zb_uint8_t fcf;
+    zb_uint8_t seq;
+    zb_uint8_t cmd;
+    zb_uint32_t transaction_id;
+    zb_uint8_t zigbee_information;
+    zb_uint8_t touchlink_information;
+} zb_zll_touchlink_scan_req_t;
+
+typedef struct __attribute__((packed)) {
+    zb_uint8_t fcf;
+    zb_uint8_t seq;
+    zb_uint8_t cmd;
+    uint32_t transaction_id;
+    zb_ieee_addr_t ext_pan_id;
+    zb_uint8_t key_index;
+    zb_uint8_t enc_network_key[16];
+    zb_uint8_t channel;
+    zb_uint16_t pan_id;
+    zb_uint16_t network_address;
+    zb_uint16_t group_id_begin;
+    zb_uint16_t group_id_end;
+    zb_uint16_t free_addr_begin;
+    zb_uint16_t free_addr_end;
+    zb_uint16_t free_group_begin;
+    zb_uint16_t free_group_end;
+    zb_ieee_addr_t initiator_addr;
+    zb_uint16_t initiator_net_addr;
+
+} zb_zll_touchlink_start_net_req_t;
+
+typedef struct __attribute__((packed)) {
+    zb_uint8_t fcf;
+    zb_uint8_t seq;
+    zb_uint8_t cmd;
+    zb_uint32_t transaction_id;
+    zb_uint8_t start_index;
+} zb_zll_touchlink_dev_info_req_t;
 
 void set_zb_info()
 {
@@ -528,14 +571,72 @@ void set_tl_info(zb_bool_t new, zb_bool_t addr_ass, zb_bool_t initiator)
 
 }
 
-typedef struct __attribute__((packed)) {
-    zb_uint8_t fcf;
-    zb_uint8_t seq;
-    zb_uint8_t cmd;
-    zb_uint32_t transaction_id;
-    zb_uint8_t zigbee_information;
-    zb_uint8_t touchlink_information;
-} zb_zll_touchlink_scan_req_t;
+void get_enc_network_key(zb_uint8_t* enc_network_key)
+{
+    zb_uint8_t zll_master_key[16] =
+    { 0x9F, 0x55, 0x95, 0xF1, 0x02, 0x57, 0xC8, 0xA4, 0x69, 0xCB, 0xF4, 0x2B,
+      0xC9, 0x3F, 0xEE, 0x31 };
+
+    zb_uint8_t nonce[16];
+    nonce[3] = (_transaction_id) & 0xff;
+    nonce[2] = (_transaction_id >> 8) & 0xff;
+    nonce[1] = (_transaction_id >> 16) & 0xff;
+    nonce[0] = (_transaction_id >> 24) & 0xff;
+    memcpy(nonce + 4, nonce + 0, 4);
+    
+    nonce[11] = (_response_id) & 0xff;
+    nonce[10] = (_response_id >> 8) & 0xff;
+    nonce[9]  = (_response_id >> 16) & 0xff;
+    nonce[8]  = (_response_id >> 24) & 0xff;
+    memcpy(nonce + 12, nonce + 8, 4);
+
+    /* encrypt the network key */
+    zb_uint8_t exchange_key[16];
+    aes128(zll_master_key, nonce, exchange_key);
+    aes128(exchange_key, ZG->nwk.nib.secur_material_set[0].key, enc_network_key);
+
+    zb_uint8_t key[33];
+    zb_pretty_key(key, sizeof(key), enc_network_key);
+    printf("encrypted network key: %s\n", key);
+    zb_pretty_key(key, sizeof(key), zll_master_key);
+    printf("ZLL master key: %s\n", key);
+    zb_pretty_key(key, sizeof(key), nonce);
+    printf("nonce: %s\n", key);
+    zb_pretty_key(key, sizeof(key), exchange_key);
+    printf("exchange key: %s\n", key);
+    zb_pretty_key(key, sizeof(key), ZG->nwk.nib.secur_material_set[0].key);
+    printf("decrypted network key: %s\n", key);
+}
+
+void zdo_zll_dev_info_req(zb_uint8_t param) ZB_SDCC_REENTRANT
+{
+    TRACE_MSG(TRACE_ZDO3, ">>zdo_dev_info_req %hd", (FMT__H, param));
+    zb_buf_t *buf = ZB_BUF_FROM_REF(param);
+   
+    zb_uint8_t *ptr = NULL;
+    zb_zll_touchlink_dev_info_req_t *req;
+    ZB_BUF_INITIAL_ALLOC(buf, sizeof(zb_zll_touchlink_dev_info_req_t), ptr);
+    req = (zb_zll_touchlink_dev_info_req_t *)ptr;
+
+    req->fcf = 0x11; //Cluster specific, disable default response
+    //seq num: not the same as nwk, and we do not have access to zcl_seq found in zcl_groups
+    req->seq = ZDO_CTX().tsn;//ZB_NIB_SEQUENCE_NUMBER() + 5;
+    req->cmd = 0x02; //dev info request
+    req->transaction_id = _transaction_id;
+    req->start_index = 0; // needs to be determined from internal state
+    
+    zb_intrp_data_req_params_t *intrp;
+    intrp = ZB_GET_BUF_TAIL(buf, sizeof(zb_intrp_data_req_params_t));
+    intrp->clusterid = 0x1000; //ZLL Commissioning
+    intrp->profileid = 0xc05e; //ZLL
+    intrp->src_addr_mode = ZB_ADDR_64BIT_DEV;
+    intrp->dst_addr_mode = ZB_ADDR_64BIT_DEV;
+    ZB_IEEE_ADDR_COPY(&intrp->dst_addr.addr_long, _opponent_addr);
+
+    ZB_SCHEDULE_CALLBACK(zb_intrp_data_request, ZB_REF_FROM_BUF(buf));
+    
+    TRACE_MSG(TRACE_ZDO3, "<< zdo_dev_info_req", (FMT__0));
+}
 
 void zdo_zll_touchlink_scan() ZB_SDCC_REENTRANT
 {
@@ -571,6 +672,59 @@ void zdo_zll_touchlink_scan() ZB_SDCC_REENTRANT
 
     TRACE_MSG(TRACE_ZDO3, "<< zdo_zll_scan_q", (FMT__0));
 }
+
+void zdo_zll_start_net_req(param) ZB_SDCC_REENTRANT
+{
+    TRACE_MSG(TRACE_ZDO3, ">>zdo_start_net_req %hd", (FMT__H, param));
+    zb_buf_t *buf = ZB_BUF_FROM_REF(param);
+   
+    zb_uint8_t *ptr = NULL;
+    zb_zll_touchlink_start_net_req_t *req;
+    ZB_BUF_INITIAL_ALLOC(buf, sizeof(zb_zll_touchlink_start_net_req_t), ptr);
+    req = (zb_zll_touchlink_start_net_req_t *)ptr;
+
+    req->fcf = 0x11; //Cluster specific, disable default response
+    //seq num: not the same as nwk, and we do not have access to zcl_seq found in zcl_groups
+    req->seq = ZDO_CTX().tsn;//ZB_NIB_SEQUENCE_NUMBER() + 5;
+    req->cmd = 0x10; //start net request
+    req->transaction_id = _transaction_id;
+    //set it to zero; opponent has to choose
+    ZB_IEEE_ADDR_ZERO(&req->ext_pan_id);
+
+    req->key_index = 4; /* master key */
+    zb_uint8_t enc_key[16];
+    get_enc_network_key(enc_key);
+    ZB_MEMCPY(&req->enc_network_key, &enc_key, sizeof(enc_key));
+
+    // TODO: set this dynamically
+    req->channel = zb_transceiver_get_channel();
+    req->pan_id = 0x0000;
+    req->network_address = 4;
+    req->group_id_begin = 0;
+    req->group_id_end= 0;
+    req->free_addr_begin = 0x7ffc;
+    req->free_addr_end = 0xfff7;
+    req->free_group_begin = 0x7f80;
+    req->free_group_end = 0xfeff;
+    ZB_IEEE_ADDR_COPY(req->initiator_addr, ZB_PIB_EXTENDED_ADDRESS());
+    req->initiator_net_addr = 1;
+    
+    ZB_PIB_SHORT_ADDRESS() = 0x0001;
+    zb_transceiver_update_short_addr(0x0001);
+
+    zb_intrp_data_req_params_t *intrp;
+    intrp = ZB_GET_BUF_TAIL(buf, sizeof(zb_intrp_data_req_params_t));
+    intrp->clusterid = 0x1000; //ZLL Commissioning
+    intrp->profileid = 0xc05e; //ZLL
+    intrp->src_addr_mode = ZB_ADDR_64BIT_DEV;
+    intrp->dst_addr_mode = ZB_ADDR_64BIT_DEV;
+    ZB_IEEE_ADDR_COPY(&intrp->dst_addr.addr_long, _opponent_addr);
+    
+    ZB_SCHEDULE_CALLBACK(zb_intrp_data_request, ZB_REF_FROM_BUF(buf));
+    TRACE_MSG(TRACE_ZDO3, "<< zdo_start_net_req", (FMT__0));
+}
+
+
 
 void zdo_zll_identify_resp(zb_uint8_t param) ZB_SDCC_REENTRANT
 {
@@ -634,6 +788,59 @@ void change_channel(zb_uint8_t param)
     zb_transceiver_set_channel(channel);
 
     zb_free_buf(ZB_BUF_FROM_REF(param));
+}
+
+void zdo_zll_handle_scan_resp(zb_uint8_t param) ZB_SDCC_REENTRANT
+{
+    TRACE_MSG(TRACE_ZDO3, ">>zdo_handle_tl_scan_resp %hd", (FMT__H, param));
+    zb_buf_t *buf = ZB_BUF_FROM_REF(param);
+    zb_mac_mhr_t mac_hdr;
+    zb_parse_mhr(&mac_hdr, buf->buf + buf->u.hdr.mac_hdr_offset);
+    ZB_IEEE_ADDR_COPY(_opponent_addr, mac_hdr.src_addr.addr_long);
+    
+    //scan_resp starts at ZCL FCF | SeqN | CMD | 4Byte Transaction ID
+    zb_uint8_t *resp_ptr = ZB_BUF_BEGIN(buf);
+    resp_ptr ++;//skip fcf
+    resp_ptr ++;//skip seq number
+    zb_zdo_zll_scan_resp_t *resp = (zb_zdo_zll_scan_resp_t *)resp_ptr;
+
+    uint8_t tsn = ZDO_CTX().tsn++;
+    if(resp->logical_channel != zb_transceiver_get_channel()) {
+        printf("changing channel to %u", resp->logical_channel);
+        _new_channel = resp->logical_channel;
+        register_zdo_cb(tsn, change_channel, 1);
+    }
+    // adding opponent to neighbor tables
+    zb_nwk_exneighbor_start();
+    zb_address_set_pan_id(resp->pan_id, resp->extended_pan_id, &_opponent_pan_ref);
+    zb_ext_neighbor_tbl_ent_t *nent;
+    zb_nwk_exneighbor_by_short(_opponent_pan_ref, resp->network_address , &nent);
+    
+    nent->potential_parent = 1;
+    nent->lqi = 240; // gets set internally - very good
+    nent->update_id = ZB_NIB_UPDATE_ID();
+    nent->logical_channel = resp->logical_channel;
+    nent->stack_profile = 1;
+    nent->permit_joining = 1;
+    nent->router_capacity = 1;
+    nent->end_device_capacity = 1;
+    nent->potential_parent = 1;
+
+    ZB_MEMCPY(&_response_id, &resp->response_id, sizeof(zb_uint32_t));
+
+    if(resp->subdevices == 1){
+        resp_ptr += sizeof(zb_zdo_zll_scan_resp_t);
+        zb_zdo_zll_scan_resp_ext_t *ext_resp = (zb_zdo_zll_scan_resp_ext_t *)resp_ptr;
+        _opponent_ep = ext_resp->endpoint;
+
+    }else{
+        _opponent_ep = 1;
+        ZB_GET_OUT_BUF_DELAYED(zdo_zll_dev_info_req);
+    }
+
+    zb_free_buf(buf);
+    ZB_GET_OUT_BUF_DELAYED(zdo_zll_start_net_req);
+    TRACE_MSG(TRACE_ZDO3, "<<zdo_handle_tl_scan_resp", (FMT__0));
 }
 
 void zdo_zll_start_network_resp(zb_uint8_t param) ZB_SDCC_REENTRANT
