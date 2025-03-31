@@ -492,6 +492,86 @@ void zdo_zll_scan_resp(zb_uint8_t param) ZB_SDCC_REENTRANT
     TRACE_MSG(TRACE_ZDO3, "<< zdo_zll_scan_resp", (FMT__0));
 }
 
+static zb_uint8_t _tl_info;
+static zb_uint8_t _zb_info;
+static zb_uint32_t _transaction_id;
+
+void set_zb_info()
+{
+    zb_nwk_set_device_type(ZB_NWK_DEVICE_TYPE_COORDINATOR);
+    _zb_info = (zb_uint8_t) 0;
+    switch(ZB_NIB_DEVICE_TYPE()){
+        case ZB_NWK_DEVICE_TYPE_COORDINATOR:
+            _zb_info = 0x0;
+            break;
+        case ZB_NWK_DEVICE_TYPE_ROUTER:
+            _zb_info = 0x1; 
+            break;
+        case ZB_NWK_DEVICE_TYPE_ED:
+            _zb_info = 0x2;
+            break;
+        default:
+            _zb_info = 0x2;
+            break;
+    }
+    _zb_info |= (0x1 & ZB_PIB_RX_ON_WHEN_IDLE()) << 2;
+}
+
+void set_tl_info(zb_bool_t new, zb_bool_t addr_ass, zb_bool_t initiator)
+{
+    _tl_info = (zb_uint8_t) 0;
+    if(new) _tl_info = 0x1;
+    if(addr_ass) _tl_info |= 0x2;
+    if(initiator) _tl_info |= 0x10;
+    //Profile interop. = ZB 3.0
+    _tl_info |= 0x80;
+
+}
+
+typedef struct __attribute__((packed)) {
+    zb_uint8_t fcf;
+    zb_uint8_t seq;
+    zb_uint8_t cmd;
+    zb_uint32_t transaction_id;
+    zb_uint8_t zigbee_information;
+    zb_uint8_t touchlink_information;
+} zb_zll_touchlink_scan_req_t;
+
+void zdo_zll_touchlink_scan() ZB_SDCC_REENTRANT
+{
+    TRACE_MSG(TRACE_ZDO3, ">>zdo_zll_scan_req %hd", (FMT__H, param));
+    zb_buf_t *buf = zb_get_out_buf();
+
+    set_zb_info();
+    // fac. new, addr ass = 1, not initiator
+    set_tl_info(ZB_TRUE, ZB_TRUE, ZB_TRUE);
+
+    zb_uint8_t *ptr = NULL;
+    zb_zll_touchlink_scan_req_t *req;
+    ZB_BUF_INITIAL_ALLOC(buf, sizeof(zb_zll_touchlink_scan_req_t), ptr);
+    req = (zb_zll_touchlink_scan_req_t *)ptr;
+    ZDO_CTX().tsn++;
+    req->fcf = 0x11; //Cluster specific, disable default response
+    //seq num: not the same as nwk, and we do not have access to zcl_seq found in zcl_groups
+    req->seq = ZDO_CTX().tsn;//ZB_NIB_SEQUENCE_NUMBER() + 5;
+    req->cmd = 0x00; //scan request
+    _transaction_id = 0x12345678; // should be random
+    req->transaction_id = _transaction_id;
+    req->zigbee_information = _zb_info;
+    req->touchlink_information = _tl_info;
+
+    zb_intrp_data_req_params_t *intrp;
+    intrp = ZB_GET_BUF_TAIL(buf, sizeof(zb_intrp_data_req_params_t));
+    intrp->clusterid = 0x1000; //ZLL Commissioning
+    intrp->profileid = 0xc05e; //ZLL
+    intrp->src_addr_mode = ZB_ADDR_64BIT_DEV;
+    intrp->dst_addr_mode = ZB_ADDR_16BIT_DEV_OR_BROADCAST;
+    intrp->dst_addr.addr_short = 0xffff;
+    ZB_SCHEDULE_CALLBACK(zb_intrp_data_request, ZB_REF_FROM_BUF(buf));
+
+    TRACE_MSG(TRACE_ZDO3, "<< zdo_zll_scan_q", (FMT__0));
+}
+
 void zdo_zll_identify_resp(zb_uint8_t param) ZB_SDCC_REENTRANT
 {
     zb_buf_t *buf = ZB_BUF_FROM_REF(param);

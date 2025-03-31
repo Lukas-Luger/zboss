@@ -1196,7 +1196,7 @@ typedef struct zb_zdo_neighbor_table_record_s {
 ZB_PACKED_STRUCT
 zb_zdo_neighbor_table_record_t;
 
-
+void zdo_zll_touchlink_scan() ZB_SDCC_REENTRANT;
 /**
    Sends 2.4.3.3.2 Mgmt_Lqi_req
    @param param - index of buffer with Lqi request parameters. \see zb_zdo_mgmt_lqi_param_t

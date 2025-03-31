@@ -692,7 +692,7 @@ LOG_INFO("using page %u of internal flash as nonvolatile storage\n",
 
     zb_init("omg", "3", "3");
 
-    // ZG->nwk.nib.security_level = 0;
+    ZG->nwk.nib.security_level = 0;
 
     ZB_IEEE_ADDR_COPY(ZB_PIB_EXTENDED_ADDRESS(), &g_zc_addr);
 

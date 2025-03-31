@@ -155,6 +155,26 @@ typedef struct zb_apsde_data_req_s {
                                      */
 } zb_apsde_data_req_t;
 
+/**
+   APSDE interpan request structure.
+
+   This data structure passed to zb_intrp_data_request() in the packet buffer
+   (at its tail).
+ */
+typedef struct zb_intrp_data_req_params_s {
+    zb_uint8_t src_addr_mode;         /*!< 0x00 no addr;
+                                            0x01 reserved;
+                                            0x02 16bit short addr;
+                                            0x03 64 bit extended addr */
+    zb_uint8_t dst_addr_mode;         /*   0x01 16Bit group addr;
+                                            0x02 16bit NWK addr;
+                                            0x03 64Bit extended addr */
+    union zb_addr_u dst_addr;         /*!< Destination address */
+    zb_uint16_t profileid;            /*!< The identifier of the profile for which this
+                                            frame is intended.  */
+    zb_uint16_t clusterid;            /*!< The identifier of the object for which this
+                                            frame is intended.  */
+} zb_intrp_data_req_params_t;
 
 /**
    APSME binding structure.
@@ -250,6 +270,40 @@ enum zb_apsde_tx_opt_e {
  */
 void zb_apsde_data_request(zb_uint8_t param) ZB_CALLBACK;
 
+/**
+   INTRP-DATA.request primitive
+
+   This function can be called via scheduler, returns immediatly.
+   Later zb_intrp_data_confirm will be called to pass INTRP-DATA.request result up.
+
+   @param apsdu - packet to send (@see zb_buf_t) and parameters at buffer tail
+          \see zb_intrp_data_req_params_t
+
+   @b Example:
+   @code
+   {
+    zb_intrp_data_req_params_t *req;
+    zb_ushort_t i;
+
+    buf = ZB_BUF_FROM_REF(param);
+    ZB_BUF_INITIAL_ALLOC(buf, 10, ptr);
+    for (i = 0 ; i < 10 ; ++i)
+    {
+      ptr[i] = i % 32 + '0';
+    }
+
+    req = ZB_GET_BUF_TAIL(buf, sizeof(zb_intrp_data_req_params_t));
+    intrp->clusterid = 0x1000; //ZLL Commissioning
+    intrp->profileid = 0xc05e; //ZLL
+    intrp->src_addr_mode = ZB_ADDR_64BIT_DEV;
+    intrp->dst_addr_mode = ZB_ADDR_16BIT_DEV_OR_BROADCAST;
+    intrp->dst_addr.addr_short = 0xffff;
+    TRACE_MSG(TRACE_APS3, "Sending apsde_data.request", (FMT__0));
+    ZB_SCHEDULE_CALLBACK(zb_intrp_data_request, ZB_REF_FROM_BUF(buf));
+   }
+   @endcode
+ */
+void zb_intrp_data_request(zb_uint8_t param) ZB_CALLBACK;
 
 /**
    Remove APS header from the packet
