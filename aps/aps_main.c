@@ -695,7 +695,8 @@ void zb_nlde_data_indication_continue(zb_uint8_t param) ZB_CALLBACK
 
     /* Detect and reject dup */
 #ifndef ZB_LIMITED_FEATURES
-    if (aps_check_dups(aps_hdr.src_addr, aps_hdr.aps_counter)) {
+    if (aps_check_dups(aps_hdr.src_addr, aps_hdr.aps_counter) &&
+            ZB_APS_FC_GET_FRAME_TYPE(aps_hdr.fc) != ZB_APS_FRAME_INTERPAN) {
         TRACE_MSG(TRACE_APS2, "pkt #%d is a dup - drop",
                   (FMT__D, aps_hdr.aps_counter));
         zb_free_buf(packet);
