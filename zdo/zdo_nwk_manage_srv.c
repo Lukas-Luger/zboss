@@ -55,6 +55,7 @@
 #include "zb_zdo.h"
 #include "zdo_common.h"
 #include "zb_secur.h"
+#include "zb_zcl_groups.h"
 
 void aes128(zb_uint8_t *key, zb_uint8_t *msg, zb_uint8_t *c);
 void aes128d(const zb_uint8_t *c, const zb_uint8_t *key, zb_uint8_t *m);
@@ -929,6 +930,36 @@ void zdo_zll_handle_start_network_resp(zb_uint8_t param) ZB_SDCC_REENTRANT
 
     zb_address_by_short(4, ZB_TRUE, ZB_FALSE, &ZG->nwk.handle.parent);
     TRACE_MSG(TRACE_ZDO3, "<< zdo_handle_start_net_resp", (FMT__0));
+}
+
+void zcl_onoff_toggle()
+{
+    TRACE_MSG(TRACE_ZDO3, ">>zdo_toggle_opponent %hd", (FMT__H, param));
+
+    zb_buf_t *buf = zb_get_out_buf();
+    zb_uint8_t *ptr;
+    ZB_BUF_INITIAL_ALLOC(buf, sizeof(zcl_hdr_t), ptr);
+    zcl_hdr_t *req;
+    req = (zcl_hdr_t *)ptr;
+
+    req->fcf = 0x01; //cluster specific
+    req->sequence_number = ZDO_CTX().tsn;
+    req->cmd = 0x02; // toggles
+    zb_apsde_data_req_t *dreq = ZB_GET_BUF_TAIL(buf,
+                                            sizeof(zb_apsde_data_req_t));
+    ZB_BZERO(dreq, sizeof(*dreq));
+    dreq->dst_addr = 0x4;
+    dreq->dst_endpoint = _opponent_ep;
+    dreq->src_endpoint = 1;
+    dreq->clusterid = 6;
+    dreq->profileid = 0x0104;
+    dreq->tx_options = 3;
+    dreq->addr_mode = ZB_APS_ADDR_MODE_16_ENDP_PRESENT;
+
+    ZB_SCHEDULE_CALLBACK(zb_apsde_data_request, ZB_REF_FROM_BUF(buf));
+
+    TRACE_MSG(TRACE_ZDO3, "<< zdo_toggle_opponent", (FMT__0));
+    
 }
 
 void zdo_zll_start_network_resp(zb_uint8_t param) ZB_SDCC_REENTRANT
