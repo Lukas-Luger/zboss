@@ -402,7 +402,7 @@ ZB_SDCC_REENTRANT
             TRACE_MSG(TRACE_NWK1, "dst is neighb, rx_on %hd",
                       (FMT__D, nbh->rx_on_when_idle));
             if (!nbh->rx_on_when_idle) {
-                *indirect = ZB_TRUE;
+                //*indirect = ZB_TRUE;
             }
         }
 #ifdef ZB_NWK_MESH_ROUTING
