@@ -650,29 +650,6 @@ void zdo_zll_dev_info_req(zb_uint8_t param) ZB_SDCC_REENTRANT
     TRACE_MSG(TRACE_ZDO3, "<< zdo_dev_info_req", (FMT__0));
 }
 
-void zdo_zll_handle_dev_info_resp(zb_uint8_t param)
-{
-    TRACE_MSG(TRACE_ZDO3, ">>zdo_handle_dev_info_resp %hd", (FMT__H, param));
-    zb_buf_t *buf = ZB_BUF_FROM_REF(param);
-    zb_uint8_t *ptr = ZB_BUF_BEGIN(buf);
-
-    ptr++; //fcf
-    ptr++; //snum
-    
-    zb_zdo_zll_dev_info_resp_t *resp = (zb_zdo_zll_dev_info_resp_t *)ptr;
-    ptr += sizeof(zb_zdo_zll_dev_info_resp_t);
-    zb_zdo_zll_dev_record_t *record;
-    _opponent_ep = 1;
-    for(zb_uint8_t i = 0; i < resp->count; i++){
-        record = (zb_zdo_zll_dev_record_t *)ptr;
-        if(record->profileid == 0x104){ // found ha profile
-            _opponent_ep = record->endpoint;
-        }
-        ptr += sizeof(zb_zdo_zll_dev_record_t);
-    }
-    TRACE_MSG(TRACE_ZDO3, "<< zdo_handle_dev_info_resp", (FMT__0));
-}
-
 void zdo_zll_touchlink_scan() ZB_SDCC_REENTRANT
 {
     TRACE_MSG(TRACE_ZDO3, ">>zdo_zll_scan_req %hd", (FMT__H, param));
@@ -759,7 +736,29 @@ void zdo_zll_start_net_req(param) ZB_SDCC_REENTRANT
     TRACE_MSG(TRACE_ZDO3, "<< zdo_start_net_req", (FMT__0));
 }
 
+void zdo_zll_handle_dev_info_resp(zb_uint8_t param)
+{
+    TRACE_MSG(TRACE_ZDO3, ">>zdo_handle_dev_info_resp %hd", (FMT__H, param));
+    zb_buf_t *buf = ZB_BUF_FROM_REF(param);
+    zb_uint8_t *ptr = ZB_BUF_BEGIN(buf);
 
+    ptr++; //fcf
+    ptr++; //snum
+    
+    zb_zdo_zll_dev_info_resp_t *resp = (zb_zdo_zll_dev_info_resp_t *)ptr;
+    ptr += sizeof(zb_zdo_zll_dev_info_resp_t);
+    zb_zdo_zll_dev_record_t *record;
+    _opponent_ep = 1;
+    for(zb_uint8_t i = 0; i < resp->count; i++){
+        record = (zb_zdo_zll_dev_record_t *)ptr;
+        if(record->profileid == 0x104){ // found ha profile
+            _opponent_ep = record->endpoint;
+        }
+        ptr += sizeof(zb_zdo_zll_dev_record_t);
+    }
+    ZB_GET_OUT_BUF_DELAYED(zdo_zll_start_net_req);
+    TRACE_MSG(TRACE_ZDO3, "<< zdo_handle_dev_info_resp", (FMT__0));
+}
 
 void zdo_zll_identify_resp(zb_uint8_t param) ZB_SDCC_REENTRANT
 {
@@ -867,14 +866,13 @@ void zdo_zll_handle_scan_resp(zb_uint8_t param) ZB_SDCC_REENTRANT
         resp_ptr += sizeof(zb_zdo_zll_scan_resp_t);
         zb_zdo_zll_scan_resp_ext_t *ext_resp = (zb_zdo_zll_scan_resp_ext_t *)resp_ptr;
         _opponent_ep = ext_resp->endpoint;
-
+        ZB_GET_OUT_BUF_DELAYED(zdo_zll_start_net_req);
     }else{
         _opponent_ep = 1;
         ZB_GET_OUT_BUF_DELAYED(zdo_zll_dev_info_req);
     }
 
     zb_free_buf(buf);
-    ZB_GET_OUT_BUF_DELAYED(zdo_zll_start_net_req);
     TRACE_MSG(TRACE_ZDO3, "<<zdo_handle_tl_scan_resp", (FMT__0));
 }
 
