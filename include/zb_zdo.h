@@ -1165,6 +1165,28 @@ typedef struct zb_zdo_zll_scan_resp_ext_s{
 ZB_PACKED_STRUCT
 zb_zdo_zll_scan_resp_ext_t;
 
+typedef struct zb_zdo_zll_dev_record_s {
+   zb_ieee_addr_t addr;
+   zb_uint8_t endpoint;
+   zb_uint16_t profileid;
+   zb_uint16_t deviceid;
+   zb_uint8_t version;
+   zb_uint8_t groupid_count;
+   zb_uint8_t sort;
+}
+ZB_PACKED_STRUCT
+zb_zdo_zll_dev_record_t;
+
+typedef struct zb_zdo_zll_dev_info_resp_s {
+   zb_uint8_t zcl_command;
+   zb_uint32_t transaction_id;
+   zb_uint8_t subdevices;
+   zb_uint8_t start; /* this should be equal to to the start index we receive */
+   zb_uint8_t count;
+}
+ZB_PACKED_STRUCT
+zb_zdo_zll_dev_info_resp_t;
+
 /* bits 0 - 1, mask 0x3 */
 #define ZB_ZDO_RECORD_SET_DEVICE_TYPE(var, type) (var &= ~3, var |= type)
 #define ZB_ZDO_RECORD_GET_DEVICE_TYPE(var) (var & 3)
