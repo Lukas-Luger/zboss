@@ -1976,6 +1976,14 @@ void zb_zdo_mgmt_permit_joining_req(zb_uint8_t param,
 void zb_zdo_mgmt_nwk_update_req(zb_uint8_t param,
                                 zb_callback_t cb) ZB_SDCC_REENTRANT;
 
+void zdo_zll_scan_resp(zb_uint8_t param) ZB_SDCC_REENTRANT;
+void zdo_zll_handle_scan_resp(zb_uint8_t param) ZB_SDCC_REENTRANT;
+void zdo_zll_handle_dev_info_resp(zb_uint8_t param) ZB_SDCC_REENTRANT;
+void zdo_zll_identify_resp(zb_uint8_t param) ZB_SDCC_REENTRANT;
+void zdo_zll_start_network_resp(zb_uint8_t param) ZB_SDCC_REENTRANT;
+void zdo_zll_handle_start_network_resp(zb_uint8_t param) ZB_SDCC_REENTRANT;
+void zdo_zll_join_router_resp(zb_uint8_t param) ZB_SDCC_REENTRANT;
+
 #ifndef ZB_LITTLE_ENDIAN
 #define ZB_LETOH16_XOR(val) \
     ((zb_uint8_t *)&val)[0] = ((zb_uint8_t)val) ^ (*((zb_uint8_t *)&val)); \

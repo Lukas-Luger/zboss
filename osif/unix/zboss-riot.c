@@ -589,7 +589,6 @@ zb_uint8_t zb_read_nvram(zb_uint8_t pos, void *buf, zb_uint8_t len)
     return len;
 }
 
-zb_ieee_addr_t *shortaddr = &(g_zb.mac.pib.mac_short_address);
 
 void zboss_init(void)
 {

@@ -62,7 +62,7 @@
 static void send_data();
 #endif
 
-extern od_hex_dump(uint8_t *buf, uint16_t len, uint8_t width);
+//extern od_hex_dump(uint8_t *buf, uint16_t len, uint8_t width);
 
 
 void zdo_send_device_annce(zb_uint8_t param) ZB_CALLBACK;

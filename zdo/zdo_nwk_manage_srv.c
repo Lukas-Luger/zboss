@@ -55,6 +55,7 @@
 #include "zb_zdo.h"
 #include "zdo_common.h"
 #include "zb_secur.h"
+#include "zb_secur_api.h"
 #include "zb_zcl_groups.h"
 
 void aes128(zb_uint8_t *key, zb_uint8_t *msg, zb_uint8_t *c);
@@ -685,7 +686,7 @@ void zdo_zll_touchlink_scan() ZB_SDCC_REENTRANT
     TRACE_MSG(TRACE_ZDO3, "<< zdo_zll_scan_q", (FMT__0));
 }
 
-void zdo_zll_start_net_req(param) ZB_SDCC_REENTRANT
+void zdo_zll_start_net_req(zb_uint8_t param) ZB_SDCC_REENTRANT
 {
     TRACE_MSG(TRACE_ZDO3, ">>zdo_start_net_req %hd", (FMT__H, param));
     zb_buf_t *buf = ZB_BUF_FROM_REF(param);
@@ -736,7 +737,7 @@ void zdo_zll_start_net_req(param) ZB_SDCC_REENTRANT
     TRACE_MSG(TRACE_ZDO3, "<< zdo_start_net_req", (FMT__0));
 }
 
-void zdo_zll_handle_dev_info_resp(zb_uint8_t param)
+void zdo_zll_handle_dev_info_resp(zb_uint8_t param) ZB_SDCC_REENTRANT
 {
     TRACE_MSG(TRACE_ZDO3, ">>zdo_handle_dev_info_resp %hd", (FMT__H, param));
     zb_buf_t *buf = ZB_BUF_FROM_REF(param);

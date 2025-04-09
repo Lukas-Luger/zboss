@@ -66,7 +66,7 @@
  */
 void zb_abort(char *caller_file, int caller_line);
 
-#if defined DEBUG || defined USE_ASSERT
+#if defined DEBUG || defined USE_ASSERT || defined ZB_PLATFORM_RIOT_ARM
 
 
 char *zb_pretty_long_address(char *address_str, unsigned address_str_len,

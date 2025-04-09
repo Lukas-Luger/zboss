@@ -692,7 +692,7 @@ void nwk_broadcast_transmition(zb_uint8_t param) ZB_CALLBACK
 
             TRACE_MSG(TRACE_NWK2, "unicast transmition", (FMT__0));
 
-            zb_address_short_by_ref(&data_req->dst_addr, nent->addr_ref);
+            zb_address_short_by_ref(&data_req->dst_addr.addr_short, nent->addr_ref);
             TRACE_MSG(TRACE_NWK2, "addr %d", (FMT__D, data_req->dst_addr));
 
             /* unicast packet */
