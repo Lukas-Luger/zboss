@@ -280,9 +280,13 @@ static zb_ret_t _zb_schedule_alarm(zb_callback_t func, zb_uint8_t param,
     callback->msg.content.ptr = callback;
     callback->msg.type = ZB_MSG_FIRE_CALLBACK;
 
-    uint32_t run_after_usec = run_after * 15360;
-    ztimer_set_msg(ZTIMER_USEC, &(callback->timer), run_after_usec,
-                     &(callback->msg), _zb_pid);
+    if(run_after == 0){
+        msg_try_send(&(callback->msg), _zb_pid);
+    }else{
+        uint32_t run_after_usec = run_after * 15360;
+        ztimer_set_msg(ZTIMER_USEC, &(callback->timer), run_after_usec,
+                         &(callback->msg), _zb_pid);
+    }
 
     return RET_OK;
 }
