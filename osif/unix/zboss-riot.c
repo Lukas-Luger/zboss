@@ -4,7 +4,7 @@
 #include "od.h"
 #include "log.h"
 #include "luid.h"
-#include "ztimer64.h"
+#include "ztimer.h"
 #include "memarray.h"
 #include "net/netif.h"
 #include "net/gnrc/netif.h"
@@ -85,7 +85,7 @@ __attribute__((weak)) void zb_data_indication(zb_uint8_t param)
 
 typedef struct {
     zb_callback_t func;
-    ztimer64_t timer;
+    ztimer_t timer;
     msg_t msg;
     uint8_t arg;
     uint16_t run_after;
@@ -177,7 +177,7 @@ void zb_set_pending_bit(int set)
 #define ZB_BEACON_INTERVAL_USEC 15360
 uint16_t zb_timer_get(void)
 {
-   return (uint16_t) (ztimer64_now(ZTIMER64_USEC) / ZB_BEACON_INTERVAL_USEC);
+   return (uint16_t) (ztimer_now(ZTIMER_USEC) / ZB_BEACON_INTERVAL_USEC);
 }
 
 void zb_trace_msg_riot(zb_char_t *format, zb_int_t level, zb_char_t *file_name,
@@ -280,8 +280,8 @@ static zb_ret_t _zb_schedule_alarm(zb_callback_t func, zb_uint8_t param,
     callback->msg.content.ptr = callback;
     callback->msg.type = ZB_MSG_FIRE_CALLBACK;
 
-    uint64_t run_after_usec = run_after * 15360;
-    ztimer64_set_msg(ZTIMER64_USEC, &(callback->timer), run_after_usec,
+    uint32_t run_after_usec = run_after * 15360;
+    ztimer_set_msg(ZTIMER_USEC, &(callback->timer), run_after_usec,
                      &(callback->msg), _zb_pid);
 
     return RET_OK;
@@ -330,7 +330,7 @@ static zb_ret_t _zb_schedule_alarm_cancel(zb_callback_t func, zb_uint8_t param)
                                        sizeof(callback_msg_t);
         if (callback_msg->func == func) {
             DEBUG("removing one 0x%lx, %u, %u\n", (uint32_t)func, param, callback_msg->run_after);
-            ztimer64_remove(ZTIMER64_USEC, &callback_msg->timer);
+            ztimer_remove(ZTIMER_USEC, &callback_msg->timer);
             memset(callback_msg, 0, sizeof(callback_msg_t));
             memarray_free(&_callback_memarray, callback_msg);
         }
