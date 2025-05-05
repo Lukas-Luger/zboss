@@ -302,7 +302,7 @@ void zb_set_default_ffd_descriptor_values(zb_logical_type_t device_type)
 ZB_SDCC_REENTRANT
 {
     TRACE_MSG(TRACE_ZDO3, "zb_set_default_ffd_descriptor_values", (FMT__0));
-    zb_set_node_descriptor(device_type, 0, 1, 0);
+    zb_set_node_descriptor(device_type, 0, 1, 1);
 
     zb_set_node_power_descriptor(ZB_POWER_MODE_SYNC_ON_WHEN_IDLE,
                                  ZB_POWER_SRC_CONSTATNT | ZB_POWER_SRC_RECHARGEABLE_BATTERY | ZB_POWER_SRC_DISPOSABLE_BATTERY,
