@@ -759,6 +759,11 @@ void zb_aps_hdr_parse(zb_buf_t *packet, zb_aps_hdr_t *aps_hdr,
         aps_hdr->dst_addr = nwk_hdr->dst_addr;
         /* Remove NWK header from the packet */
         ZB_NWK_HDR_CUT(packet, apshdr);
+        /** TODO
+         * 2.2.4.1.3.2: attempt to map src addr of frame to 64 Bit IEEE using nwkAddrMap
+         * If IEEE ADDR found-> set src addr mode to 0x03 & 64Bit addr to the found one
+         * If not found: set src addr mode to 0x02 & 16 bit addr to current one
+         */
     }
     else {
         /* src and dst addr are not available in this case */
