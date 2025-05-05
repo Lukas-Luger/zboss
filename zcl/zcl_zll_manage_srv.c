@@ -379,17 +379,6 @@ void zll_handle_net_join_resp(zb_uint8_t param)
     /* todo */
     (void)param;
 }
-void zb_mac_get_indirect_data_req(zb_uint8_t param) ZB_SDCC_REENTRANT
-{
-    // use mac_poll_request instead (no need to set params)
-    zb_mlme_data_req_params_t req;
-    req.src_addr_mode = ZB_ADDR_16BIT_DEV_OR_BROADCAST;
-    req.dst_addr_mode = ZB_ADDR_16BIT_DEV_OR_BROADCAST;
-    req.src_addr.addr_short = ZB_PIB_SHORT_ADDRESS();
-    req.dst_addr.addr_short = APL_CTX().addr_in_use;
-    req.cb_type = MAC_POLL_REQUEST_CALLBACK;
-    zb_mac_get_indirect_data(&req);
-}
 
 void zll_nwk_rejoin()
 {
@@ -483,12 +472,19 @@ void zb_zcl_zll_initiator_setup()
         break;
     }
     ZLL_COMM().zigbee_info |= (0x1 & ZB_PIB_RX_ON_WHEN_IDLE()) << 2;
-    /**
-     * 0x02 addr assignment capable
-     * 0x10 we are initiator
-     * 0x80 we can do ZB 3.0
-     */
-    ZLL_COMM().touchlink_info = ZB_TOUCHLINK_FACT_NEW | 0x02 | 0x10 | 0x80;
+    /* 0x10 we are initiator */
+    ZLL_COMM().touchlink_info = 0x10;
+    if (ZB_TOUCHLINK_FACT_NEW) {
+        ZLL_COMM().touchlink_info |= 1;
+    }
+    /* 0x02 addr assignment capable */
+    if (ZB_MAC_CAP_GET_ALLOCATE_ADDRESS(ZB_ZDO_NODE_DESC()->mac_capability_flags)) {
+        ZLL_COMM().touchlink_info |= 2;
+    }
+    /* 0x80 we can do ZB 3.0 (correct?) */
+    if (ZB_PROTOCOL_VERSION > 1) {
+        ZLL_COMM().touchlink_info |= 0x80;
+    }
     ZG->aps.transaction_id = (zb_uint32_t)ZB_RANDOM() | (ZB_RANDOM() << 16);
     ZB_BZERO(&ZLL_COMM().scan_response, sizeof(ZLL_COMM().scan_response));
     ZLL_COMM().remaining_channels = PRIMARY_CHANNEL_MASK;
