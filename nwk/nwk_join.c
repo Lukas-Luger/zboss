@@ -687,8 +687,9 @@ void zb_nlme_rejoin_scan_confirm(zb_uint8_t param) ZB_CALLBACK
             /* we might want to check if the base neighbor already exists to avoid
              * wrong default information (i.e. via dev annce)
              */
-            zb_nwk_neighbor_ext_to_base_tmp(best_parent);
-
+            if (!ZB_NWK_NEIGHBOR_GET_EXISTING(addr_ref)) {
+                zb_nwk_neighbor_ext_to_base_tmp(best_parent);
+            }
             /* join response timer will be started inside confirm callback */
         }
     }
