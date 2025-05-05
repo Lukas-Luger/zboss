@@ -1,0 +1,143 @@
+/*
+    PURPOSE: ZCL ZLL internals
+*/
+#ifndef ZCL_ZLL_INTERNAL_H
+#define ZCL_ZLL_INTERNAL_H              1
+
+/*! \addgroup ZB_ZCL */
+/*! @{ */
+/**
+ * bdbPrimaryChannelMask
+ */
+#define PRIMARY_CHANNEL_MASK            ((zb_uint32_t)0x02108800)
+/**
+ * ZLL Profile ID
+ */
+#define ZB_ZLL_PROFILE_ID               0xc05e
+
+#define ZB_ZLL_CLUSTER_ID               0x1000
+/**
+ * sets the default factory new status, can be reset using factory reset command
+ * 00 = False; 01 = True
+ */
+#define ZB_TOUCHLINK_FACT_NEW           0x01
+/**
+ * parse ZigBee Information field
+ * Bit 0-1: Logical device type
+ * Bit 3: Rx-on-when-idle
+ */
+#define ZB_ZCL_ZB_DEV_TYPE_COORD        0
+#define ZB_ZCL_ZB_DEV_TYPE_ROUTER       1
+#define ZB_ZCL_ZB_DEV_TYPE_ED           2
+
+#define ZB_ZCL_GET_ZB_DEV_TYPE(info)    (info & 3)
+
+#define ZB_ZCL_GET_ADDR_ASS_CAP(tl_cap) (tl_cap & 2)
+
+#define ZB_IEEE_ADDR_BROADCAST          ((zb_ieee_addr_t){ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff })
+typedef struct zb_zll_scan_req_s {
+    zb_uint32_t transaction_id;
+    zb_uint8_t zigbee_information;
+    zb_uint8_t touchlink_information;
+} ZB_PACKED_STRUCT
+    zb_zll_scan_req_t;
+
+/**
+ * Data structure for dev info
+ */
+typedef struct zb_zll_dev_info_req_s {
+    zb_uint32_t transaction_id;
+    zb_uint8_t start_index;
+} ZB_PACKED_STRUCT
+    zb_zll_dev_info_req_t;
+
+typedef struct zb_zll_dev_record_s {
+    zb_ieee_addr_t addr;
+    zb_uint8_t endpoint;
+    zb_uint16_t profileid;
+    zb_uint16_t deviceid;
+    zb_uint8_t version;
+    zb_uint8_t groupid_count;
+    zb_uint8_t sort;
+} ZB_PACKED_STRUCT
+    zb_zll_dev_record_t;
+
+typedef struct zb_zll_dev_info_resp_s {
+    zb_uint32_t transaction_id;
+    zb_uint8_t subdevices;
+    zb_uint8_t start; /* this should be equal to to the start index we receive */
+    zb_uint8_t count;
+} ZB_PACKED_STRUCT
+    zb_zll_dev_info_resp_t;
+/**
+ * Data structure for network start req and resp
+ */
+typedef struct zb_zll_net_start_req_s {
+    zb_uint32_t transaction_id;
+    zb_ieee_addr_t ext_pan_id;
+    zb_uint8_t key_index;
+    zb_uint8_t enc_network_key[16];
+    zb_uint8_t channel;
+    zb_uint16_t pan_id;
+    zb_uint16_t network_address;
+    zb_uint16_t group_id_begin;
+    zb_uint16_t group_id_end;
+    zb_uint16_t free_addr_begin;
+    zb_uint16_t free_addr_end;
+    zb_uint16_t free_group_begin;
+    zb_uint16_t free_group_end;
+    zb_ieee_addr_t initiator_addr;
+    zb_uint16_t initiator_net_addr;
+} ZB_PACKED_STRUCT
+    zb_zll_net_start_req_t;
+
+typedef struct zb_zll_net_start_resp_s {
+    zb_uint32_t transaction_id;
+    zb_uint8_t status;
+    zb_ieee_addr_t ext_pan_id;
+    zb_uint8_t net_update_id;
+    zb_uint8_t channel;
+    zb_uint16_t pan_id;
+} ZB_PACKED_STRUCT
+    zb_zll_net_start_resp_t;
+
+/**
+ * Data structure for network join router and end device req and resp
+ */
+typedef struct zb_zll_touchlink_net_join_req_s {
+    zb_uint32_t transaction_id;
+    zb_ieee_addr_t ext_pan_id;
+    zb_uint8_t key_index;
+    zb_uint8_t enc_network_key[16];
+    zb_uint8_t net_update_id;
+    zb_uint8_t channel;
+    zb_uint16_t pan_id;
+    zb_uint16_t network_address;
+    zb_uint16_t group_id_begin;
+    zb_uint16_t group_id_end;
+    zb_uint16_t free_addr_begin;
+    zb_uint16_t free_addr_end;
+    zb_uint16_t free_group_begin;
+    zb_uint16_t free_group_end;
+} ZB_PACKED_STRUCT
+    zb_zll_touchlink_net_join_req_t;
+
+typedef struct zb_zll_touchlink_net_join_resp_s {
+    zb_uint32_t transaction_id;
+    zb_uint8_t status;
+} ZB_PACKED_STRUCT
+    zb_zll_touchlink_net_join_resp_t;
+
+void zb_zcl_zll_initiator_setup();
+/**
+ * returns true if no device information is present in scan response aka need to send dev info req
+ */
+#define ZB_ZLL_TL_DEV_INFO_REQ_REQUIRED(frame) (((zb_zll_scan_resp_t *)frame)->subdevices != 1)
+
+/**
+ * returns size of scan response
+ */
+#define ZB_ZLL_TL_GET_SCAN_RESP_SIZE(frame)    (ZB_ZLL_TL_DEV_INFO_REQ_REQUIRED(frame) ? \
+                                                 sizeof(zb_zll_scan_resp_t) - 7 :        \
+                                                 sizeof(zb_zll_scan_resp_t))
+#endif /* ZCL_ZLL_H */
