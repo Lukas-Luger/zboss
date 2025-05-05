@@ -53,6 +53,7 @@
 #include "zb_nwk.h"
 #include "zb_aps.h"
 #include "zb_zdo.h"
+#include "zb_zcl.h"
 #include "zdo_common.h"
 
 #include "zb_bank_8.h"
@@ -336,48 +337,6 @@ void zb_zdo_data_indication(zb_uint8_t param) ZB_CALLBACK
     else if (ind->clusterid == ZDO_MGMT_NWK_UPDATE_NOTIFY_CLID) {
 
     }
-    else if (ind->clusterid == 0x1000) {
-        zb_uint8_t zll_command = *(ZB_BUF_BEGIN(ZB_BUF_FROM_REF(param)) + 2);
-        TRACE_MSG(TRACE_ZDO1, "received ZLL command: 0x%hx",
-                  (FMT__H, zll_command));
-        switch (zll_command) {
-            case 0x0: /* scan request */
-                zdo_zll_scan_resp(param);
-                break;
-
-            case 0x1: /* scan response */
-                zdo_zll_handle_scan_resp(param);
-                break;
-
-            case 0x3: /* device info response*/
-                zdo_zll_handle_dev_info_resp(param);
-                break;
-
-            case 0x6: /* identify request */
-                zdo_zll_identify_resp(param);
-                skip_free_buf = 0;
-                break;
-
-            case 0x10: /* network start request */
-                printf("network start request\n");
-                zdo_zll_start_network_resp(param);
-                break;
-
-            case 0x11: /* network start response */
-                zdo_zll_handle_start_network_resp(param);
-                break;
-
-            case 0x12: /* join router request */
-                printf("join router request\n");
-                zdo_zll_join_router_resp(param);
-                break;
-
-            default:
-                printf("unhandled ZLL command 0x%x\n", zll_command);
-                break;
-        }
-
-    }
     else
 #endif  /* ZB_LIMITED_FEATURES */
     {
@@ -434,6 +393,9 @@ static void zdo_device_annce_srv(zb_uint8_t param, void *dt) ZB_SDCC_REENTRANT
         }
         if (ne->device_type == ZB_NWK_DEVICE_TYPE_ED) {
             ne->permit_joining = 0;
+        }
+        if(ZLL_COMM().state == ZB_ZLL_COMM_REJOIN) {
+            zll_nwk_rejoin();
         }
         TRACE_MSG(TRACE_ZDO3,
                   "DEV_ANNCE: upd addr " TRACE_FORMAT_64 "/%d ne %p dev_t %hd, rx.o.i %hd rel %hd",
