@@ -692,6 +692,8 @@ void zb_nlme_rejoin_scan_confirm(zb_uint8_t param) ZB_CALLBACK
             }
             /* join response timer will be started inside confirm callback */
             /* lets be nice and do a poll request after 2 Beacon Intervals */
+            /* lets pretend to know that we await something (rejoin response) */
+            ZB_MAC_SET_PENDING_DATA();
             zb_buf_t *buf2 = zb_get_out_buf();
             zb_mlme_poll_request_t *req = ZB_GET_BUF_PARAM(buf2, zb_mlme_poll_request_t);
 
