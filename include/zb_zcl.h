@@ -53,6 +53,54 @@
 /*! @{ */
 
 /**
+   Response for ZLL scan request
+ */
+typedef struct zb_zll_scan_resp_s {
+    zb_uint32_t transaction_id;
+    zb_uint8_t rssi_correction;
+    zb_uint8_t zigbee_information;
+    zb_uint8_t touchlink_information;
+    zb_uint16_t key_bitmask;
+    zb_uint32_t response_id;
+    zb_ieee_addr_t extended_pan_id;
+    zb_uint8_t network_update_id;
+    zb_uint8_t logical_channel;
+    zb_uint16_t pan_id;
+    zb_uint16_t network_address;
+    zb_uint8_t subdevices;
+    zb_uint8_t total_group_identifiers;
+    zb_uint8_t endpoint;
+    zb_uint16_t profile_id;
+    zb_uint16_t device_id;
+    zb_uint8_t version;
+    zb_uint8_t group_id_count;
+} ZB_PACKED_STRUCT
+zb_zll_scan_resp_t;
+
+/**
+ * Commissioning state
+ */
+typedef enum zb_zll_comm_state_e {
+    ZB_ZLL_COMM_SCAN,
+    ZB_ZLL_COMM_INIT_NET,
+    ZB_ZLL_COMM_REJOIN,
+    ZB_ZLL_COMM_FAIL,
+    ZB_ZLL_COMM_SUCCESS,
+} zb_zll_comm_state_t;
+
+/**
+ * Commissioning attributes
+ */
+typedef struct zb_zll_comm_attr_s {
+    zb_uint8_t zigbee_info;
+    zb_uint8_t touchlink_info;
+    zb_uint32_t remaining_channels;
+    zb_zll_comm_state_t state;
+    zb_ieee_addr_t responder_addr;
+    zb_zll_scan_resp_t scan_response;
+} zb_zll_comm_attr_t;
+
+/**
    Used to define the end of the list
  */
 #define ZB_ZCL_END_MARKER 0xffff
@@ -74,7 +122,16 @@ typedef enum zb_zcl_cmd_e {
     ZB_ZCL_CMD_REPORT_ATTRIB        = 0x0a,     /*!< Report attribute command */
     ZB_ZCL_CMD_DEFAULT_RESP         = 0x0b,     /*!< Default response command */
     ZB_ZCL_CMD_DISC_ATTRIB          = 0x0c,     /*!< Discover attributes command */
-    ZB_ZCL_CMD_DISC_ATTRIB_RESP     = 0x0d      /*!< Discover attributes response command */
+    ZB_ZCL_CMD_DISC_ATTRIB_RESP     = 0x0d,     /*!< Discover attributes response command */
+    ZB_ZCL_CMD_READ_ATTRIB_STRUCT   = 0x0e,     /*!< Read Attributes Structured command */
+    ZB_ZCL_CMD_WRITE_ATTRIB_STRUCT  = 0x0f,     /*!< Write Attributes Structured command */
+    ZB_ZCL_CMD_WRITE_ATTRIB_STRUCT_RESP = 0x10, /*!< Write Attributes Structured response command */
+    ZB_ZCL_CMD_DISC_CMDS_REC        = 0x11,     /*!< Discover Commands Received command */
+    ZB_ZCL_CMD_DISC_CMDS_REC_RESP   = 0x12,     /*!< Discover Commands Received Response command */
+    ZB_ZCL_CMD_DISC_CMDS_GEN        = 0x13,     /*!< Discover Commands Generated command */
+    ZB_ZCL_CMD_DISC_CMDS_GEN_RESP   = 0x14,     /*!< Discover Commands Generated Response command */
+    ZB_ZCL_CMD_DISC_ATTRIB_EXT      = 0x15,     /*!< Discover Attributes Extended command */
+    ZB_ZCL_CMD_DISC_ATTRIB_EXT_RESP = 0x16      /*!< Discover Attributes Extended Response command */
 } zb_zcl_cmd_t;
 
 /**
@@ -207,23 +264,23 @@ zb_zcl_frame_ctrl_t;
 /**
    ZCL frame header with manufacturer code
  */
-typedef struct zb_zcl_frame_header_full_s {
-    zb_zcl_frame_ctrl_t frame_ctrl; /*!< Frame control filed @see zb_zcl_frame_ctrl_t */
+typedef struct zb_zcl_hdr_full_s {
+    zb_zcl_frame_ctrl_t frame_control; /*!< Frame control filed @see zb_zcl_frame_ctrl_t */
     zb_uint16_t manufacturer_code;  /*!< Manufacturer Code */
     zb_uint8_t seq_number;          /*!< Transaction Sequence Number */
     zb_uint8_t command_id;          /*!< Command Identifier Field */
 } ZB_PACKED_STRUCT
-zb_zcl_frame_full_t;
+zb_zcl_hdr_full_t;
 
 /**
    ZCL frame header without manufacturer code
  */
-typedef struct zb_zcl_frame_header_short_s {
-    zb_zcl_frame_ctrl_t frame_ctrl; /*!< Frame control filed @see zb_zcl_frame_ctrl_t */
+typedef struct zb_zcl_hdr_s {
+    zb_zcl_frame_ctrl_t frame_control; /*!< Frame control filed @see zb_zcl_frame_ctrl_t */
     zb_uint8_t seq_number;          /*!< Transaction Sequence Number */
     zb_uint8_t command_id;          /*!< Command Identifier Field */
 } ZB_PACKED_STRUCT
-zb_zcl_frame_short_t;
+zb_zcl_hdr_t;
 
 /**
    Get ZCL frame type
@@ -252,8 +309,8 @@ zb_zcl_frame_short_t;
    Caclulate ZCL frame header size
  */
 #define ZB_ZCL_FRAME_HDR_GET_SIZE(p) (ZB_ZCL_FCTL_GET_MANUFACTURER(p) ? \
-                                      sizeof(zb_zcl_frame_header_full_t) : \
-                                      sizeof(zb_zcl_frame_header_short_t))
+                                      sizeof(zb_zcl_hdr_full_t) : \
+                                      sizeof(zb_zcl_hdr_t))
 
 /**
    Get ZCL frame manufacturer code
@@ -282,7 +339,7 @@ zb_zcl_frame_short_t;
 /**
    Return next sequence number for ZCL frame
  */
-#define ZB_ZCL_GET_SEQ_NUM() (ZCL_CTX()->seq_number++)
+#define ZB_ZCL_GET_SEQ_NUM() (ZCL_CTX().seq_number++)
 
 
 /**
@@ -388,6 +445,10 @@ void zb_zcl_handle_group_request(zb_uint8_t param);
    DeInitialize Zigbee cluster library
  */
 void zb_zcl_deinit();
+
+void zll_start_tl_scan();
+
+void zll_nwk_rejoin();
 
 /*! @} */
 

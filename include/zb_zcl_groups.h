@@ -31,10 +31,5 @@ typedef struct {
     uint8_t group_count;
 } ZB_PACKED_STRUCT zcl_get_group_membership_hdr_t;
 
-typedef struct {
-    uint8_t fcf;
-    uint8_t sequence_number;
-    uint8_t cmd;
-} ZB_PACKED_STRUCT zcl_hdr_t;
 
 #endif /* ZB_ZCL_GROUPS_H */

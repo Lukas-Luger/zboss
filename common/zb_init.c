@@ -54,6 +54,7 @@
 #include "zb_scheduler.h"
 #include "zb_mac_transport.h"
 #include "zb_aps.h"
+#include "zb_zcl.h"
 
 /*! \addtogroup ZB_BASE */
 /*! @{ */
@@ -131,6 +132,7 @@ void zb_init() ZB_CALLBACK
 
     zb_aps_init();
     zb_zdo_init();
+    zb_zcl_init();
 }
 
 

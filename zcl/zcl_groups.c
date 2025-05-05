@@ -20,6 +20,14 @@ extern uint16_t g_group_id;
 
 static uint8_t zcl_seq = 0;
 
+const zb_zcl_frame_ctrl_t default_fcf = {
+    .frame_type = ZB_ZCL_FRAME_TYPE_CLUSTER_SPECIFIED,
+    .manufacturer = 0,
+    .direction = ZB_ZCL_FRAME_DIRECTION_TO_CLI,
+    .disable_def_resp = 0,
+    .reserved = 0
+};
+
 void group_add_confirmation(zb_uint8_t param)
 {
     (void)param;
@@ -43,21 +51,21 @@ void zb_zcl_handle_group_request(zb_uint8_t param)
     /* pointer to beginning of zcl header */
     uint8_t *zcl = aps + zb_aps_full_hdr_size(aps);
     /* zcl header type */
-    zcl_hdr_t *zcl_hdr = (zcl_hdr_t *)zcl;
+    zb_zcl_hdr_t *zcl_hdr = (zb_zcl_hdr_t *)zcl;
 
-    if (zcl_hdr->fcf == 0x00) { /* profile-wide */
-        LOG_DEBUG("unhandled profile-wide FCF 0x%x\n", zcl_hdr->fcf);
+    if (zcl_hdr->frame_control.frame_type == ZB_ZCL_FRAME_TYPE_COMMON ) { /* profile-wide */
+        LOG_DEBUG("unhandled profile-wide frame_control 0x%x\n", zcl_hdr->frame_control);
         zb_free_buf(zbbuf);
         return;
     }
 
-    if (zcl_hdr->fcf != 0x01) { /* cluster-specific */
-        LOG_WARNING("unhandled ZCL FCF 0x%x\n", zcl_hdr->fcf);
+    if (zcl_hdr->frame_control.frame_type != ZB_ZCL_FRAME_TYPE_CLUSTER_SPECIFIED) { /* cluster-specific */
+        LOG_WARNING("unhandled ZCL frame_control 0x%x\n", zcl_hdr->frame_control);
         zb_free_buf(zbbuf);
         return;
     }
 
-    if (zcl_hdr->cmd == 0x2) { /* get group membership */
+    if (zcl_hdr->command_id == 0x2) { /* get group membership */
 
         LOG_INFO("get group membership\n");
 
@@ -65,7 +73,7 @@ void zb_zcl_handle_group_request(zb_uint8_t param)
         zb_free_buf(zbbuf);
         return;
 
-        uint8_t *req = zcl + sizeof(zcl_hdr_t);
+        uint8_t *req = zcl + sizeof(zb_zcl_hdr_t);
         zcl_get_group_membership_hdr_t *req_hdr =
                                     (zcl_get_group_membership_hdr_t *)req;
 
@@ -103,12 +111,12 @@ void zb_zcl_handle_group_request(zb_uint8_t param)
         ZB_BUF_INITIAL_ALLOC(zbbuf, resp_size, resp);
         ZB_BZERO(resp, sizeof(zcl_get_group_membership_resp_t));
 
-        zcl_hdr_t *resp_zcl;
+        zb_zcl_hdr_t *resp_zcl;
         ZB_BUF_ALLOC_LEFT(zbbuf, sizeof(*resp_zcl), resp_zcl);
         ZB_BZERO(resp_zcl, sizeof(*resp_zcl));
-        resp_zcl->fcf = 0x19;
-        resp_zcl->sequence_number = zcl_seq++;
-        resp_zcl->cmd = 0x02; /* get group membership response */
+        resp_zcl->frame_control = default_fcf;
+        resp_zcl->seq_number = zcl_seq++;
+        resp_zcl->command_id = 0x02; /* get group membership response */
 
         resp->group_count = group_count;
         resp->group_capacity = 255 - resp->group_count;
@@ -144,11 +152,11 @@ void zb_zcl_handle_group_request(zb_uint8_t param)
         dreq->addr_mode = ZB_APS_ADDR_MODE_16_ENDP_PRESENT;
         ZB_SCHEDULE_CALLBACK(zb_apsde_data_request, param);
 
-    } else if (zcl_hdr->cmd == 0x0) { /* add group */
+    } else if (zcl_hdr->command_id == 0x0) { /* add group */
         LOG_INFO("add group\n");
 
         zcl_add_group_hdr_t *req_hdr = (zcl_add_group_hdr_t *)(zcl +
-                                                            sizeof(zcl_hdr_t));
+                                                            sizeof(zb_zcl_hdr_t));
         uint16_t group_id;
         memcpy(&group_id, &req_hdr->group_id, sizeof(uint16_t));
 
@@ -175,12 +183,12 @@ void zb_zcl_handle_group_request(zb_uint8_t param)
         ZB_BUF_INITIAL_ALLOC(zbbuf, sizeof(zcl_add_group_resp_t), resp);
         ZB_BZERO(resp, sizeof(zcl_add_group_resp_t));
 
-        zcl_hdr_t *resp_zcl;
+        zb_zcl_hdr_t *resp_zcl;
         ZB_BUF_ALLOC_LEFT(zbbuf, sizeof(*resp_zcl), resp_zcl);
         ZB_BZERO(resp_zcl, sizeof(*resp_zcl));
-        resp_zcl->fcf = 0x19;
-        resp_zcl->sequence_number = zcl_seq++;
-        resp_zcl->cmd = 0x0; /* add group response */
+        resp_zcl->frame_control = default_fcf;
+        resp_zcl->seq_number = zcl_seq++;
+        resp_zcl->command_id = 0x0; /* add group response */
 
         resp->group_id = group_id;
         resp->status = 0; /* STATUS_OK */
@@ -201,11 +209,11 @@ void zb_zcl_handle_group_request(zb_uint8_t param)
         dreq->addr_mode = ZB_APS_ADDR_MODE_16_ENDP_PRESENT;
         ZB_SCHEDULE_CALLBACK(zb_apsde_data_request, param);
 
-    } else if (zcl_hdr->cmd == 0x3) { /* remove group */
+    } else if (zcl_hdr->command_id == 0x3) { /* remove group */
         LOG_INFO("remove group\n");
 
         zcl_remove_group_t *req_hdr = (zcl_remove_group_t *)(zcl +
-        sizeof(zcl_hdr_t));
+        sizeof(zb_zcl_hdr_t));
         uint16_t group_id;
         memcpy(&group_id, &req_hdr->group_id, sizeof(uint16_t));
 
@@ -217,12 +225,12 @@ void zb_zcl_handle_group_request(zb_uint8_t param)
         ZB_BUF_INITIAL_ALLOC(zbbuf, sizeof(zcl_remove_group_resp_t), resp);
         ZB_BZERO(resp, sizeof(zcl_remove_group_resp_t));
 
-        zcl_hdr_t *resp_zcl;
+        zb_zcl_hdr_t *resp_zcl;
         ZB_BUF_ALLOC_LEFT(zbbuf, sizeof(*resp_zcl), resp_zcl);
         ZB_BZERO(resp_zcl, sizeof(*resp_zcl));
-        resp_zcl->fcf = 0x19;
-        resp_zcl->sequence_number = zcl_seq++;
-        resp_zcl->cmd = 0x3; /* remove group response */
+        resp_zcl->frame_control = default_fcf;
+        resp_zcl->seq_number = zcl_seq++;
+        resp_zcl->command_id = 0x3; /* remove group response */
 
         resp->group_id = group_id;
 
@@ -258,7 +266,7 @@ void zb_zcl_handle_group_request(zb_uint8_t param)
         ZB_SCHEDULE_CALLBACK(zb_apsde_data_request, param);
 
     } else {
-        LOG_WARNING("unhandled group request 0x%x\n", zcl_hdr->cmd);
+        LOG_WARNING("unhandled group request 0x%x\n", zcl_hdr->command_id);
         zb_free_buf(zbbuf);
         return;
     }
