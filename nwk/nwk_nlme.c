@@ -323,12 +323,15 @@ void zb_mlme_poll_confirm(zb_uint8_t param) ZB_CALLBACK
         TRACE_MSG(TRACE_NWK1, "status %hd",
                   (FMT__H, ZB_BUF_FROM_REF(param)->u.hdr.status));
         if (ZB_BUF_FROM_REF(param)->u.hdr.status != MAC_SUCCESS) {
-            /* do not choose this parent again */
-            remove_parent_from_potential_parents(
-                ZG->nwk.handle.tmp.rejoin.parent);
+            /* this is redundant; see nwk_join.c:741 
+             * zb_nlme_rejoin_response_timeout
+             */
+            // /* do not choose this parent again */
+            // remove_parent_from_potential_parents(
+            //     ZG->nwk.handle.tmp.rejoin.parent);
 
-            /* try to choose another parent and send join request again */
-            ZB_SCHEDULE_CALLBACK(zb_nlme_rejoin_scan_confirm, param);
+            // /* try to choose another parent and send join request again */
+            // ZB_SCHEDULE_CALLBACK(zb_nlme_rejoin_scan_confirm, param);
         }
         else {
             /* do nothing */

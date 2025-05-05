@@ -691,6 +691,16 @@ void zb_nlme_rejoin_scan_confirm(zb_uint8_t param) ZB_CALLBACK
                 zb_nwk_neighbor_ext_to_base_tmp(best_parent);
             }
             /* join response timer will be started inside confirm callback */
+            /* lets be nice and do a poll request after 2 Beacon Intervals */
+            zb_buf_t *buf2 = zb_get_out_buf();
+            zb_mlme_poll_request_t *req = ZB_GET_BUF_PARAM(buf2, zb_mlme_poll_request_t);
+
+            req->coord_addr_mode = ZB_ADDR_16BIT_DEV_OR_BROADCAST;
+            req->coord_addr.addr_short =
+                ZG->nwk.handle.tmp.rejoin.parent->short_addr;
+            req->coord_pan_id = ZB_PIB_SHORT_PAN_ID();
+
+            ZB_SCHEDULE_ALARM(zb_handle_poll_request, ZB_REF_FROM_BUF(buf2), 2);
         }
     }
 

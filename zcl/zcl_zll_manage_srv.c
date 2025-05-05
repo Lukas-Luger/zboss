@@ -88,7 +88,8 @@ void send_net_start_req(zb_uint8_t param)
     (void)zcl_alloc_and_fill_hdr(buf, ZB_ZCL_FRAME_TYPE_CLUSTER_SPECIFIED,
                                  ZB_ZCL_FRAME_DIRECTION_TO_SRV, ZB_TRUE, ZB_ZCL_CMD_WRITE_ATTRIB_STRUCT_RESP);
     /* Update address map */
-    zb_address_update(ZLL_COMM().responder_addr, APL_CTX().addr_in_use, ZB_FALSE, &ZG->nwk.handle.parent);
+    zb_address_ieee_ref_t addr_ref;
+    zb_address_update(ZLL_COMM().responder_addr, APL_CTX().addr_in_use, ZB_FALSE, &addr_ref);
 
     zb_intrp_data_req_params_t *intrp;
     intrp = ZB_GET_BUF_TAIL(buf, sizeof(zb_intrp_data_req_params_t));
@@ -404,9 +405,6 @@ void zll_nwk_rejoin()
     request->scan_duration = 0x00;
     request->security_enabled = ZB_TRUE;
     ZB_SCHEDULE_CALLBACK(zb_nlme_join_request, ZB_REF_FROM_BUF(buf));
-    /* initiate MAC polling */
-    ZB_GET_OUT_BUF_DELAYED(zb_poll_request);
-    ZB_SCHEDULE_ALARM(zb_poll_request, 0, ZB_MAC_PIB_RESPONSE_WAIT_TIME);
     /* continue Step 26 */
 }
 // nice to have but useless right now

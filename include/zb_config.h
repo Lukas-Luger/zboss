@@ -439,7 +439,7 @@ asdf
 
 /**
    MAC: max time to wait for a response command frame, range 2-64
-   Default is 32, 64 set for better compatibility
+   Default is 32, 64 set for better compatibility, default = 32
  */
 #define ZB_MAC_RESPONSE_WAIT_TIME 128
 
