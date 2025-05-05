@@ -213,6 +213,7 @@ typedef struct zb_aps_globals_s {
     zb_uint8_t authenticated;           /* if 1, we are authenticated in the network */
     zb_uint8_t flags;
     zb_uint8_t dups_alarm_running;
+    zb_uint32_t transaction_id;         /*!< aka vIPTransID used for Inter-PAN transactions */
 } zb_aps_globals_t;
 
 /**

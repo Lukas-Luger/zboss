@@ -62,9 +62,12 @@ typedef struct zb_zcl_globals_s {
 
     zb_uint8_t cluster_num;                         /*!< Number of registered clusters */
     zb_zcl_cluster_t cluster[ZB_ZCL_CLUSTER_NUM];   /*!< Cluster array */
+    zb_zll_comm_attr_t comm;                        /*!< Commissioning attributes*/
 } zb_zcl_globals_t;
 
 #define ZCL_CTX() ZG->zcl
+
+#define ZLL_COMM() ZG->zcl.comm
 
 /*! @} */
 
