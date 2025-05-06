@@ -55,8 +55,10 @@
 #include "zb_aps_globals.h"
 #include "zb_osif.h"
 #include "zb_debug.h"
-
+#include "zb_g_context.h"
+#include "zb_nwk_nib.h"
 #include "zb_bank_common.h"
+#include <zb_types.h>
 
 #if defined ZB_USE_NVRAM
 
@@ -67,7 +69,7 @@ typedef struct __attribute__((packed)) {
     uint16_t        magic; /* always "ZB" 0x425a */
     uint8_t         designated_coordinator : 1;
     uint8_t         insecure_join : 1;
-    zb_ieee_addr_t  extended_address;
+   // zb_ieee_addr_t  extended_address;
 } zb_config_t;
 
 zb_ret_t zb_save_nvram_config(void)
@@ -80,7 +82,7 @@ zb_ret_t zb_save_nvram_config(void)
     config.magic = 0x425a;
     config.designated_coordinator = ZB_AIB().aps_designated_coordinator;
     config.insecure_join = ZB_AIB().aps_insecure_join;
-    ZB_IEEE_ADDR_COPY(config.extended_address, MAC_PIB().mac_extended_address);
+    //ZB_IEEE_ADDR_COPY(config.extended_address, MAC_PIB().mac_extended_address);
 
     zb_write_nvram(ZB_CONFIG_PAGE, &config, sizeof(config));
 
@@ -119,7 +121,13 @@ typedef struct __attribute__((packed)) {
     uint16_t            pan_id;
     zb_ext_pan_id_t     ext_pan_id;
     uint16_t            short_addr;
+    zb_ieee_addr_t      long_addr;
     uint16_t            group_id;
+    zb_bool_t           bdb_node_on_net;
+    uint8_t             nwk_update_id;
+    uint8_t             nwk_security_level;
+    uint8_t             nwk_active_key_snum;
+    zb_ieee_addr_t      aps_tc_addr;
 } zb_formdesc_data_t;
 
 zb_ret_t zb_save_formdesc_data(void)
@@ -151,6 +159,12 @@ zb_ret_t zb_save_formdesc_data(void)
     ZB_IEEE_ADDR_COPY(data.long_parent_addr, long_parent_addr);
     ZB_IEEE_ADDR_COPY(data.ext_pan_id, ZB_AIB().aps_use_extended_pan_id);
 
+    memcpy(&data.bdb_node_on_net, &BDB_CTX().node_is_on_net, sizeof(zb_bool_t));
+    ZB_IEEE_ADDR_COPY(data.long_addr, ZB_PIB_EXTENDED_ADDRESS());
+    data.nwk_update_id = ZB_NIB_UPDATE_ID();
+    data.nwk_security_level = (uint8_t) ZB_NIB_SECURITY_LEVEL();
+    data.nwk_active_key_snum = ZG->nwk.nib.active_key_seq_number;
+    ZB_IEEE_ADDR_COPY(data.aps_tc_addr, ZB_AIB().trust_center_address);
     zb_write_nvram(ZB_CONFIG_PAGE + sizeof(zb_config_t), &data, sizeof(data));
 
     return RET_OK;
@@ -181,10 +195,22 @@ zb_ret_t zb_read_formdesc_data(void)
     ZB_UPDATE_SHORT_ADDR();
     ZB_IEEE_ADDR_COPY(ZB_AIB().aps_use_extended_pan_id, data.ext_pan_id);
     ZB_IEEE_ADDR_COPY(ZB_PIB_BEACON_PAYLOAD().extended_panid, data.ext_pan_id);
-
-    /* parent short addr */
-    /* parent long addr */
-
+    ZB_IEEE_ADDR_COPY(ZB_PIB_EXTENDED_ADDRESS(), data.long_addr);
+    ZB_UPDATE_LONGMAC();
+    /* parent short & long addr */
+    zb_address_update(data.long_parent_addr, data.short_parent_addr, ZB_FALSE, 
+            &ZG->nwk.handle.parent);
+    zb_neighbor_tbl_ent_t *nbt;
+    zb_nwk_neighbor_get(ZG->nwk.handle.parent, ZB_TRUE, &nbt);
+    nbt->relationship = ZB_NWK_RELATIONSHIP_PARENT;
+    nbt->device_type = ZB_NWK_DEVICE_TYPE_COORDINATOR;
+    nbt->rx_on_when_idle = ZB_TRUE;
+    nbt->addr_ref = ZG->nwk.handle.parent;
+    memcpy(&BDB_CTX().node_is_on_net, &data.bdb_node_on_net, sizeof(zb_bool_t));
+    ZB_NIB_UPDATE_ID() = data.nwk_update_id;
+    ZB_NIB_SECURITY_LEVEL() = data.nwk_security_level;
+    ZG->nwk.nib.active_key_seq_number = data.nwk_active_key_snum;
+    ZB_IEEE_ADDR_COPY(ZB_AIB().trust_center_address, data.aps_tc_addr);
     char addr[24];
     LOG_DEBUG("restoring extended pan id %s\n", zb_pretty_long_address(
         addr, sizeof(addr), ZB_AIB().aps_use_extended_pan_id));
@@ -204,6 +230,7 @@ zb_ret_t zb_read_formdesc_data(void)
 typedef struct {
     uint16_t magic;  /* always "ZB" 0x425a */
     uint8_t key[ZB_CCM_KEY_SIZE];
+    uint8_t key_seq_number;
 } zb_secur_material_t;
 
 zb_ret_t zb_write_security_key()
@@ -219,6 +246,7 @@ zb_ret_t zb_write_security_key()
         keys[i].magic = 0x425a;
         memcpy(keys[i].key, ZG->nwk.nib.secur_material_set[i].key,
                                                         sizeof(keys[i].key));
+        keys[i].key_seq_number = ZG->nwk.nib.secur_material_set[i].key_seq_number;
     }
 
     zb_write_nvram(ZB_CONFIG_PAGE + sizeof(zb_config_t) +
@@ -231,16 +259,18 @@ zb_ret_t zb_read_security_key()
     if (!has_eeprom) {
         return RET_OK;
     }
+    zb_secur_material_t keys[ZB_SECUR_N_SECUR_MATERIAL];
+
+    zb_read_nvram(ZB_CONFIG_PAGE + sizeof(zb_config_t) +
+                                   sizeof(zb_formdesc_data_t),
+                                   &keys, sizeof(keys));
 
     for (int i = 0; i < ZB_SECUR_N_SECUR_MATERIAL; i++) {
 
-        zb_secur_material_t key;
-        zb_read_nvram(ZB_CONFIG_PAGE +
-                        sizeof(zb_config_t) + sizeof(zb_formdesc_data_t),
-                        &key, sizeof(key));
-        if (key.magic == 0x425a) {
-            memcpy(ZG->nwk.nib.secur_material_set[i].key, key.key,
-                                                            sizeof(key.key));
+        if (keys[i].magic == 0x425a) {
+            memcpy(ZG->nwk.nib.secur_material_set[i].key, keys[i].key,
+                                                            sizeof(keys[i].key));
+            ZG->nwk.nib.secur_material_set[i].key_seq_number = keys[i].key_seq_number;
         }
     }
 
