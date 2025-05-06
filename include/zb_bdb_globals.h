@@ -43,41 +43,92 @@
  * ClarIDy/UBEC/DSR.                                                        *
  *                                                                          *
  ****************************************************************************
-   PURPOSE: Zigbee application layer globals definition
+   PURPOSE: Zigbee base device behaviour globals definition
  */
 
+#include "zb_types.h"
 #ifndef ZB_BDB_GLOBALS_H
 #define ZB_BDB_GLOBALS_H              1
 
 /*! \addtogroup ZB_BDB */
 /*! @{ */
 /**
- * bdbcTLPrimaryChannelSet 
+ * bdbcMaxSameNetworkRetryAttempts
  */
-#define BDB_TL_PRIMARY_CHANNEL_SET    (0)
+#define BDB_MAX_SAME_NET_RETRIES       (10)
 /**
- * bdbcRxWindowDuration
+ * bdbcMinCommissioningTime 180s
  */
-#define BDB_RX_WINDOW_DURATION        (0)
+#define BDB_MIN_COMM_TIME              (180 * ZB_TIME_ONE_SECOND)
+/**
+ * bdbcRecSameNetworkRetryAttempts (Recommended)
+ */
+#define BDB_REC_SAME_NET_RETRIES       (3)
+/**
+ * bdbcTCLinkKeyExchangeTimeout 5s
+ */
+#define BDB_TC_LINK_KEY_EX_TIMEOUT     (5 * ZB_TIME_ONE_SECOND)
+/**
+ * bdbcTLInterPANTransIdLifetime
+ */
+#define BDB_TL_INTRP_TRANS_ID_LIFETIME (8 * ZB_TIME_ONE_SECOND)
 /**
  * bdbcTLMinStartupDelayTime
  */
-#define BDB_TL_MIN_STARTUP_DELAY_TIME (0)
+#define BDB_TL_MIN_STARTUP_DELAY_TIME  (2 * ZB_TIME_ONE_SECOND)
+/**
+ * bdbcTLPrimaryChannelSet 
+ */
+#define BDB_TL_PRIMARY_CHANNEL_SET     (0x02108800)
+/**
+ * bdbcRxWindowDuration
+ */
+#define BDB_RX_WINDOW_DURATION         (5 * ZB_TIME_ONE_SECOND)
+/**
+ * bdbcTLScanTimeBaseDuration
+ */
+#define BDB_TL_SCAN_TIME_DURATION      (ZB_MILLISECONDS_TO_BEACON_INTERVAL(250))
+/**
+ * bdbcTLSecondaryChannelSet
+ */
+ #define BDB_TL_SECONDARY_CHANNEL_SET  (0x05ef7000)
 /* 
     bdbdCommissioningStatus
 */
 typedef enum bdb_comm_status_e {
-    NOT_PERMITTED,
+    SUCCESS,
+    IN_PROGRESS,
     NOT_AA_CAPABLE,
-    NO_NETWORK
+    NO_NETWORK,
+    TARGET_FAILURE,
+    FORMATION_FAILURE,
+    NO_IDENTIFY_QUERY_RESPONSE,
+    BINDING_TABLE_FULL,
+    NO_SCAN_RESPONSE,
+    NOT_PERMITTED,
+    TCLK_EX_FAILURE
 } bdb_comm_status_t;
 /*
    Global ZCL structure
  */
 typedef struct zb_bdb_globals_s {
-    bdb_comm_status_t comm_status;
-    zb_bool_t node_is_on_net;
-    zb_uint16_t scan_duration;
+    zb_uint16_t comm_group_id;              /*!< bdbCommissioningGroupID */
+    zb_uint8_t comm_mode;                   /*!< bdbCommissioningMode */
+    bdb_comm_status_t comm_status;          /*!< bdbCommissioningStatus */
+    zb_ieee_addr_t joining_node;            /*!< bdbJoiningNodeEui64 */
+    zb_uint8_t new_tc_key[ZB_CCM_KEY_SIZE]; /*!< bdbJoiningNodeNewTCLinkKey */
+    zb_bool_t use_install_code;             /*!< bdbJoinUsesInstallCodeKey */
+    zb_uint8_t comm_capability;             /*!< bdbNodeCommissioningCapability*/
+    zb_bool_t node_is_on_net;               /*!< bdbNodeIsOnANetwork */
+    zb_uint8_t node_join_linkkey_type;      /*!< bdbNodeJoinLinkKeyType */
+    zb_uint32_t primary_channel_set;        /*!< bdbPrimaryChannelSet */
+    zb_uint8_t scan_duration;               /*!< bdbScanDuration */
+    zb_uint32_t secondary_channel_set;      /*!< bdbSecondaryChannelSet */
+    zb_uint8_t tc_linkkey_ex_attempts;      /*!< bdbTCLinkKeyExchangeAttempts */
+    zb_uint8_t tc_linkkey_ex_attempts_max;  /*!< bdbTCLinkKeyExchangeAttemptsMax */
+    zb_uint8_t tc_linkkey_ex_method;        /*!< bdbTCLinkKeyExchangeMethod */
+    zb_uint8_t tc_node_join_timeout;        /*!< bdbTrustCenterNodeJoinTimeout */
+    zb_bool_t tc_require_key_ex;            /*!< bdbTrustCenterRequireKeyExchange */
 } zb_bdb_globals_t;
 
 #define BDB_CTX() ZG->bdb
