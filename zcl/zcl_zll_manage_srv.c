@@ -120,11 +120,12 @@ void zll_initiate_network()
     if (!ZB_MEMCMP(ZLL_COMM().scan_response.extended_pan_id, ZB_AIB().aps_use_extended_pan_id,
                    sizeof(zb_ieee_addr_t))) {
         /** 
-         * BDB TL Init Step 9 TODO
-         * check upd_id: may request net_update
-         * goto Step 26
+         * BDB TL Init Step 9
+         * TODO check upd_id: may request net_update
          */
         puts("responder is on the same pan");
+        /* continue Step 26 */
+        zll_finish_procedure();
         return;
     }
     /* BDB TL Init Step 10 check for centralized network */
@@ -362,7 +363,8 @@ void zll_handle_net_start_resp(zb_uint8_t param, zb_ieee_addr_t source)
     /* TODO Step 18 schedule "start network" timeout */
     /* BDB TL Init Step 19 */
     if (ZB_GET_NODE_DESC_LOGICAL_TYPE(ZB_ZDO_NODE_DESC()) == ZB_END_DEVICE) {
-        /* TODO continue Step 26 */
+        /* continue Step 26 */
+        zll_finish_procedure();
         return;
     }
     /* prepare rejoin */
@@ -420,6 +422,7 @@ void zll_nwk_rejoin()
     request->security_enabled = ZB_TRUE;
     ZB_SCHEDULE_CALLBACK(zb_nlme_join_request, ZB_REF_FROM_BUF(buf));
     /* continue Step 26 */
+    zll_finish_procedure();
 }
 // nice to have but useless right now
 // void zll_comm_signal(zb_zll_comm_state_t state, zb_uint8_t param)
@@ -440,7 +443,18 @@ void zll_nwk_rejoin()
 //     }
 //     return;
 // }
-
+void zll_finish_procedure()
+{
+    /** BDB TL Init Step 26 
+     * TODO: binding links
+     */
+    BDB_CTX().node_is_on_net = ZB_TRUE;
+    BDB_CTX().comm_status = SUCCESS;
+    /* save everything now */
+    zb_write_security_key();
+    zb_save_formdesc_data();
+    zb_save_nvram_config();
+}
 void handle_zll(zb_uint16_t src_addr, zb_uint8_t src_ep,
                 zb_uint16_t profile_id, zb_uint8_t param,
                 zb_zcl_cluster_t *cluster)
