@@ -104,13 +104,13 @@ void send_net_start_req(zb_uint8_t param)
 
 void send_net_join_ed(zb_uint8_t param)
 {
-    /* todo */
+    /* TODO */
     (void)param;
 }
 
 void send_net_join_r(zb_uint8_t param)
 {
-    /* todo */
+    /* TODO */
     (void)param;
 }
 
@@ -143,7 +143,7 @@ void zll_initiate_network()
     /* BDB TL Init Step 12 */
     if (BDB_CTX().node_is_on_net) {
         puts("we are already on a network");
-        /* TODO continue from step 23 */
+        /* TODO continue from Step 23 */
         return;
     }
     /* BDB TL Init Step 13 */
@@ -199,20 +199,25 @@ void zll_send_dev_info_req(zb_uint8_t param)
     intrp->profileid = ZB_ZLL_PROFILE_ID;
     intrp->src_addr_mode = ZB_ADDR_64BIT_DEV;
     intrp->dst_addr_mode = ZB_ADDR_64BIT_DEV;
-    ZB_IEEE_ADDR_COPY(&intrp->dst_addr.addr_long, ZLL_COMM().responder_addr);
+    ZB_IEEE_ADDR_COPY(intrp->dst_addr.addr_long, ZLL_COMM().responder_addr);
 
     ZB_SCHEDULE_CALLBACK(zb_intrp_data_request, param);
 }
 
 void zll_finish_scan()
 {
-    /* BDB TL Init Step 7*/
-    ZLL_COMM().remaining_channels = PRIMARY_CHANNEL_MASK;
-    if (ZLL_COMM().scan_response.transaction_id == NULL) {
+    /* BDB TL Init Step 5 */
+    if (ZLL_COMM().scan_response.transaction_id != ZG->aps.transaction_id) {
         puts("no device found during tl scan");
         ZLL_COMM().state = ZB_ZLL_COMM_FAIL;
+        BDB_CTX().comm_status = NO_SCAN_RESPONSE;
         return;
     }
+    /**
+     *  BDB TL Init Step 6 - choose a target
+     * omitted, only take one response, terminate scan, ignore others
+     */
+    /* BDB TL Init Step 7 */
     if (ZB_ZLL_TL_DEV_INFO_REQ_REQUIRED(&(ZLL_COMM().scan_response))) {
         ZB_GET_OUT_BUF_DELAYED(zll_send_dev_info_req);
         return;
@@ -260,7 +265,14 @@ void zll_scan_step(zb_uint8_t param)
     if (ZLL_COMM().state != ZB_ZLL_COMM_SCAN) {
         return;
     }
-    if (ZLL_COMM().remaining_channels == 0x00000000) {
+    if (ZLL_COMM().v_scan_channels == 0x00000000) {
+        /* cBDB TL Init Step 4 */
+        if (ZLL_COMM().v_do_prim_scan && BDB_CTX().secondary_channel_set != 0x00000000) {
+            ZLL_COMM().v_do_prim_scan = ZB_FALSE;
+            ZLL_COMM().v_scan_channels = BDB_CTX().secondary_channel_set;
+            ZB_SCHEDULE_CALLBACK(zll_scan_step, 0);
+            return;
+        }
         zll_finish_scan();
         return;
     }
@@ -268,17 +280,30 @@ void zll_scan_step(zb_uint8_t param)
     /* find next channel */
     for (channel = ZB_MAC_START_CHANNEL_NUMBER; channel <= ZB_MAC_MAX_CHANNEL_NUMBER;
          channel++) {
-        if (ZLL_COMM().remaining_channels & (1l << channel)) {
+        if (ZLL_COMM().v_scan_channels & (1l << channel)) {
             break;
         }
     }
-    ZLL_COMM().remaining_channels &= ~(1l << channel);
+    /* BDB TL Init Step 3 (incomplete)*/
+    ZLL_COMM().v_scan_channels &= ~(1l << channel);
     ZB_TRANSCEIVER_SET_CHANNEL(channel);
+    if (ZLL_COMM().v_is_first_ch) {
+        ZLL_COMM().v_is_first_ch = ZB_FALSE;
+        for (zb_ushort i = 0; i < 4; i++) {
+            ZB_GET_OUT_BUF_DELAYED(zll_send_scan_req);
+        }
+    }
     ZB_GET_OUT_BUF_DELAYED(zll_send_scan_req);
-    ZB_SCHEDULE_ALARM(zll_scan_step, 0, SCAN_TIME_BASE_DURATION);
+    ZB_SCHEDULE_ALARM(zll_scan_step, 0, BDB_TL_SCAN_TIME_DURATION);
 }
 void zll_start_tl_scan()
 {
+    /* BDB TL Init Step 1 */
+    BDB_CTX().comm_status = IN_PROGRESS;
+    /* BDB TL Init Step 2 */
+    ZG->aps.transaction_id = (zb_uint32_t)ZB_RANDOM() | (ZB_RANDOM() << 16);
+    ZLL_COMM().v_scan_channels = BDB_CTX().primary_channel_set;
+    ZLL_COMM().v_is_first_ch = ZB_TRUE;
     ZLL_COMM().state = ZB_ZLL_COMM_SCAN;
     ZB_SCHEDULE_CALLBACK(zll_scan_step, 0);
 }
@@ -289,7 +314,7 @@ void zll_handle_scan_resp(zb_uint8_t param, zb_ieee_addr_t source)
     zb_ushort_t frame_size = ZB_ZLL_TL_GET_SCAN_RESP_SIZE(resp);
     ZB_MEMCPY(&ZLL_COMM().scan_response, resp, frame_size);
     ZB_IEEE_ADDR_COPY(ZLL_COMM().responder_addr, source);
-    ZB_BZERO(&ZLL_COMM().remaining_channels, sizeof(zb_uint32_t));
+    ZB_BZERO(&ZLL_COMM().v_scan_channels, sizeof(zb_uint32_t));
 }
 void zll_handle_dev_info_resp(zb_uint8_t param)
 {
@@ -376,7 +401,7 @@ void zll_handle_net_start_resp(zb_uint8_t param, zb_ieee_addr_t source)
 
 void zll_handle_net_join_resp(zb_uint8_t param)
 {
-    /* todo */
+    /* TODO */
     (void)param;
 }
 
@@ -485,9 +510,8 @@ void zb_zcl_zll_initiator_setup()
     if (ZB_PROTOCOL_VERSION > 1) {
         ZLL_COMM().touchlink_info |= 0x80;
     }
-    ZG->aps.transaction_id = (zb_uint32_t)ZB_RANDOM() | (ZB_RANDOM() << 16);
+    
     ZB_BZERO(&ZLL_COMM().scan_response, sizeof(ZLL_COMM().scan_response));
-    ZLL_COMM().remaining_channels = PRIMARY_CHANNEL_MASK;
     ZLL_COMM().state = ZB_ZLL_COMM_SCAN;
     /**
      * Lets assign ourelves the address of 1
@@ -496,5 +520,12 @@ void zb_zcl_zll_initiator_setup()
     zb_transceiver_update_short_addr(0x0001);
     (void)zb_zcl_register_cluster(1 /* EP 1 */, ZB_ZLL_CLUSTER_ID /* TL Cluster */,
                                   NULL /* attr list */, handle_zll, NULL /* action */);
+    /**
+     * from BDB 10.2.2: if TC is not known - commissionig process should set it to broadcast
+     * TODO: move this to BDB logic when possible 
+     */
+    if (ZB_IEEE_ADDR_IS_ZERO(ZB_AIB().trust_center_address)) {
+        ZB_IEEE_ADDR_COPY(ZB_AIB().trust_center_address, ZB_IEEE_ADDR_BROADCAST);
+    }
 }
 #endif /* ZB_LIMITED_FEATURES */
