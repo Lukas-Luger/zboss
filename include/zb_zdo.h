@@ -1133,60 +1133,6 @@ typedef struct zb_zdo_mgmt_lqi_resp_s {
 ZB_PACKED_STRUCT
 zb_zdo_mgmt_lqi_resp_t;
 
-/**
-   Response for ZLL scan request
- */
-typedef struct zb_zdo_zll_scan_resp_s {
-    zb_uint8_t zcl_command;
-    zb_uint32_t transaction_id;
-    zb_uint8_t rssi_correction;
-    zb_uint8_t zigbee_information;
-    zb_uint8_t touchlink_information;
-    zb_uint16_t key_bitmask;
-    zb_uint32_t response_id;
-    zb_ieee_addr_t extended_pan_id;
-    zb_uint8_t network_update_id;
-    zb_uint8_t logical_channel;
-    zb_uint16_t pan_id;
-    zb_uint16_t network_address;
-    zb_uint8_t subdevices;
-    zb_uint8_t total_group_identifiers;
-}
-ZB_PACKED_STRUCT
-zb_zdo_zll_scan_resp_t;
-
-typedef struct zb_zdo_zll_scan_resp_ext_s{
-   zb_uint8_t endpoint;
-   zb_uint16_t profile_id;
-   zb_uint16_t device_id;
-   zb_uint8_t version;
-   zb_uint8_t group_id_count;
-}
-ZB_PACKED_STRUCT
-zb_zdo_zll_scan_resp_ext_t;
-
-typedef struct zb_zdo_zll_dev_record_s {
-   zb_ieee_addr_t addr;
-   zb_uint8_t endpoint;
-   zb_uint16_t profileid;
-   zb_uint16_t deviceid;
-   zb_uint8_t version;
-   zb_uint8_t groupid_count;
-   zb_uint8_t sort;
-}
-ZB_PACKED_STRUCT
-zb_zdo_zll_dev_record_t;
-
-typedef struct zb_zdo_zll_dev_info_resp_s {
-   zb_uint8_t zcl_command;
-   zb_uint32_t transaction_id;
-   zb_uint8_t subdevices;
-   zb_uint8_t start; /* this should be equal to to the start index we receive */
-   zb_uint8_t count;
-}
-ZB_PACKED_STRUCT
-zb_zdo_zll_dev_info_resp_t;
-
 /* bits 0 - 1, mask 0x3 */
 #define ZB_ZDO_RECORD_SET_DEVICE_TYPE(var, type) (var &= ~3, var |= type)
 #define ZB_ZDO_RECORD_GET_DEVICE_TYPE(var) (var & 3)
@@ -1222,8 +1168,7 @@ typedef struct zb_zdo_neighbor_table_record_s {
 ZB_PACKED_STRUCT
 zb_zdo_neighbor_table_record_t;
 
-void zdo_zll_touchlink_scan() ZB_SDCC_REENTRANT;
-void zcl_onoff_toggle() ZB_SDCC_REENTRANT;
+
 /**
    Sends 2.4.3.3.2 Mgmt_Lqi_req
    @param param - index of buffer with Lqi request parameters. \see zb_zdo_mgmt_lqi_param_t
@@ -1975,14 +1920,6 @@ void zb_zdo_mgmt_permit_joining_req(zb_uint8_t param,
 
 void zb_zdo_mgmt_nwk_update_req(zb_uint8_t param,
                                 zb_callback_t cb) ZB_SDCC_REENTRANT;
-
-void zdo_zll_scan_resp(zb_uint8_t param) ZB_SDCC_REENTRANT;
-void zdo_zll_handle_scan_resp(zb_uint8_t param) ZB_SDCC_REENTRANT;
-void zdo_zll_handle_dev_info_resp(zb_uint8_t param) ZB_SDCC_REENTRANT;
-void zdo_zll_identify_resp(zb_uint8_t param) ZB_SDCC_REENTRANT;
-void zdo_zll_start_network_resp(zb_uint8_t param) ZB_SDCC_REENTRANT;
-void zdo_zll_handle_start_network_resp(zb_uint8_t param) ZB_SDCC_REENTRANT;
-void zdo_zll_join_router_resp(zb_uint8_t param) ZB_SDCC_REENTRANT;
 
 #ifndef ZB_LITTLE_ENDIAN
 #define ZB_LETOH16_XOR(val) \
