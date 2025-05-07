@@ -94,7 +94,9 @@ typedef enum zb_zll_comm_state_e {
 typedef struct zb_zll_comm_attr_s {
     zb_uint8_t zigbee_info;
     zb_uint8_t touchlink_info;
-    zb_uint32_t remaining_channels;
+    zb_uint32_t v_scan_channels; /*!< vScanChannels */
+    zb_bool_t v_is_first_ch;     /*!< vIsFirstChannel */
+    zb_bool_t v_do_prim_scan;    /*!< vDoPrimaryScan */
     zb_zll_comm_state_t state;
     zb_ieee_addr_t responder_addr;
     zb_zll_scan_resp_t scan_response;

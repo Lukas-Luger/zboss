@@ -127,7 +127,7 @@ typedef struct zb_bdb_globals_s {
     zb_uint8_t tc_linkkey_ex_attempts;      /*!< bdbTCLinkKeyExchangeAttempts */
     zb_uint8_t tc_linkkey_ex_attempts_max;  /*!< bdbTCLinkKeyExchangeAttemptsMax */
     zb_uint8_t tc_linkkey_ex_method;        /*!< bdbTCLinkKeyExchangeMethod */
-    zb_uint8_t tc_node_join_timeout;        /*!< bdbTrustCenterNodeJoinTimeout */
+    zb_uint8_t tc_node_join_timeout;        /*!< bdbTrustCenterNodeJoinTimeout (seconds!)*/
     zb_bool_t tc_require_key_ex;            /*!< bdbTrustCenterRequireKeyExchange */
 } zb_bdb_globals_t;
 
