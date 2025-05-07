@@ -778,7 +778,7 @@ asdf
 /**
    SECUR: security level. Now fixed to be 5
  */
-#define ZB_SECURITY_LEVEL 5
+#define ZB_SECURITY_LEVEL 0
 
 /**
    SECUR: CCM L parameter. Fixed to 2 for security level 5

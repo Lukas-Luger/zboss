@@ -694,8 +694,8 @@ LOG_INFO("using page %u of internal flash as nonvolatile storage\n",
     zb_transceiver_update_short_addr(addr_short);
 
     zb_init("omg", "3", "3");
-
-    ZG->nwk.nib.security_level = 0;
+    //should be set in zb-ib.c:119 via zb_config.h!
+    //ZG->nwk.nib.security_level = 0;
 
     ZB_IEEE_ADDR_COPY(ZB_PIB_EXTENDED_ADDRESS(), &g_zc_addr);
 

@@ -7,10 +7,6 @@
 /*! \addgroup ZB_ZCL */
 /*! @{ */
 /**
- * bdbPrimaryChannelMask
- */
-#define PRIMARY_CHANNEL_MASK            ((zb_uint32_t)0x02108800)
-/**
  * ZLL Profile ID
  */
 #define ZB_ZLL_PROFILE_ID               0xc05e
