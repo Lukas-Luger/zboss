@@ -289,7 +289,7 @@ void zll_scan_step(zb_uint8_t param)
     ZB_TRANSCEIVER_SET_CHANNEL(channel);
     if (ZLL_COMM().v_is_first_ch) {
         ZLL_COMM().v_is_first_ch = ZB_FALSE;
-        for (zb_ushort i = 0; i < 4; i++) {
+        for (zb_ushort_t i = 0; i < 4; i++) {
             ZB_GET_OUT_BUF_DELAYED(zll_send_scan_req);
         }
     }
