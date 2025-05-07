@@ -52,6 +52,7 @@
 #include "zb_nwk.h"
 #include "zb_aps.h"
 #include "zb_zdo.h"
+#include "zb_zcl.h"
 #include "zb_secur.h"
 #include "zb_secur_api.h"
 
@@ -427,7 +428,7 @@ void zb_nlme_network_discovery_confirm(zb_uint8_t param) ZB_CALLBACK
 void zdo_join_done(zb_uint8_t param) ZB_CALLBACK
 {
     TRACE_MSG(TRACE_NWK1, ">>join_done %hd", (FMT__H, param));
-
+    puts("we reached final destination");
     /* Not sure this is right, but let's send annonce after authentication complete */
 #ifdef ZB_SECURITY
     if (ZG->nwk.nib.security_level != 0) {
@@ -438,7 +439,10 @@ void zdo_join_done(zb_uint8_t param) ZB_CALLBACK
     {
         ZB_SCHEDULE_CALLBACK(zdo_send_device_annce, param);
     }
-
+    /* inform ZLL */
+    if (ZLL_COMM().state == ZB_ZLL_COMM_REJOIN) {
+        zll_nwk_rejoin_cb();
+    }
     /* clear poll retry count */
     ZDO_CTX().parent_threshold_retry = 0;
     TRACE_MSG(TRACE_NWK1, "mac_rx_on_when_idle %hd",

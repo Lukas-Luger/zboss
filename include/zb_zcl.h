@@ -82,6 +82,7 @@ zb_zll_scan_resp_t;
  */
 typedef enum zb_zll_comm_state_e {
     ZB_ZLL_COMM_SCAN,
+    ZB_ZLL_COMM_SCAN_DONE,
     ZB_ZLL_COMM_INIT_NET,
     ZB_ZLL_COMM_REJOIN,
     ZB_ZLL_COMM_FAIL,
@@ -452,6 +453,7 @@ void zll_start_tl_scan();
 
 void zll_nwk_rejoin();
 
+void zll_nwk_rejoin_cb();
 /*! @} */
 
 #endif /* ZB_ZCL_H */
