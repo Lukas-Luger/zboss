@@ -589,6 +589,13 @@ zb_uint8_t zb_read_nvram(zb_uint8_t pos, void *buf, zb_uint8_t len)
     return len;
 }
 
+void zb_erase_nvram(zb_uint8_t page)
+{
+    (void)page;
+#ifdef MODULE_PERIPH_FLASHPAGE
+    flashpage_erase(_flash_page);
+#endif
+}
 
 void zboss_init(void)
 {

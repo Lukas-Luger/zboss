@@ -59,6 +59,7 @@
 #include "zb_nwk_nib.h"
 #include "zb_bank_common.h"
 #include <zb_types.h>
+#include "periph/pm.h"
 
 #if defined ZB_USE_NVRAM
 
@@ -283,26 +284,15 @@ zb_ret_t zb_write_up_counter()
         return RET_OK;
     }
 
-//    zb_uint8_t buf[ZB_SCRATCHPAD_PAGE_SIZE];
-//    zb_uint8_t i;
-//
-//    zb_read_nvram(ZB_VOLATILE_PAGE, buf, ZB_SCRATCHPAD_PAGE_SIZE);
-//    if (buf[ZB_SCRATCHPAD_PAGE_SIZE-3]!=0xFF)
-//       {
-// //              zb_erase_nvram(1);
-//              zb_write_nvram(ZB_VOLATILE_PAGE, (zb_uint8_t *) &ZG->nwk.nib.outgoing_frame_counter, sizeof(ZG->nwk.nib.outgoing_frame_counter));
-//       }
-//    else
-//    {
-//     for (i = ZB_SCRATCHPAD_PAGE_SIZE; i>=0; i--)
-//     {
-//         if (((buf[i]!=0xFF)&&(i<ZB_SCRATCHPAD_PAGE_SIZE))||(i == 0))
-//         {
-//           zb_write_nvram(ZB_VOLATILE_PAGE+i+1*(i&0x01), (zb_uint8_t *) &ZG->nwk.nib.outgoing_frame_counter, sizeof(ZG->nwk.nib.outgoing_frame_counter));
-//           break;
-//         }
-//     }
-//    }
+    zb_uint32_t counter[2];
+    
+    counter[0] = 0x425a;
+    counter[1] = ZG->nwk.nib.outgoing_frame_counter;
+
+    zb_write_nvram(ZB_CONFIG_PAGE + sizeof(zb_config_t) +
+                                    sizeof(zb_formdesc_data_t) +
+                                    sizeof(zb_secur_material_t) * ZB_SECUR_N_SECUR_MATERIAL,
+                                    &counter, sizeof(counter));
 
     return RET_OK;
 }
@@ -313,18 +303,27 @@ zb_ret_t zb_read_up_counter()
         return RET_OK;
     }
 
-//    zb_uint8_t i;
-//    zb_uint8_t buf[ZB_SCRATCHPAD_PAGE_SIZE];
-//    zb_read_nvram(ZB_VOLATILE_PAGE, buf, ZB_SCRATCHPAD_PAGE_SIZE);
-//    for (i = ZB_SCRATCHPAD_PAGE_SIZE-1; i>=0; i--)
-//    {
-//       if ((buf[i]!=0xFF)&&(i>3)) /* i>3 just check if some garbage in nvram, because we always put an 4bytes value*/
-//       {
-//         ZG->nwk.nib.outgoing_frame_counter = *(zb_uint32_t*) (buf+i-3);
-//         break;
-//       }
-//    }
+    zb_uint32_t counter[2];
 
+    zb_read_nvram(ZB_CONFIG_PAGE + sizeof(zb_config_t) +
+                                    sizeof(zb_formdesc_data_t) +
+                                    sizeof(zb_secur_material_t) * ZB_SECUR_N_SECUR_MATERIAL,
+                                    &counter, sizeof(counter));
+
+    if (counter[0] != 0x425a) {
+        return RET_OK;
+    }
+
+    ZG->nwk.nib.outgoing_frame_counter = counter[1];
+
+    return RET_OK;
+}
+
+zb_ret_t reset()
+{
+    zb_erase_nvram(0);
+    zb_write_up_counter();
+    pm_reboot();
     return RET_OK;
 }
 #endif

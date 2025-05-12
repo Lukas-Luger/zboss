@@ -120,6 +120,8 @@ zb_ret_t zb_write_up_counter();
 
 zb_ret_t zb_read_up_counter();
 
+zb_ret_t reset();
+
 zb_uint8_t zb_read_nvram(zb_uint8_t pos, void *buf, zb_uint8_t len);
 zb_uint8_t zb_write_nvram(zb_uint8_t pos, void *buf, zb_uint8_t len);
 
