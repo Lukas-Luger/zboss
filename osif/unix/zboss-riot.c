@@ -967,3 +967,21 @@ int cmd_zconfig(int argc, char *argv[])
 
     return 0;
 }
+
+int cmd_dev_info(int argc, char *argv[])
+{
+    zb_apl_dev_info_ent_t *ent;
+    zb_address_ieee_ref_t addr;
+    zb_uint16_t short_addr;
+    printf("available devices:\n\tshort addr\tendpoint\tprofile id\tdevice id\tversion\tgroup_id_count\n");
+    for (zb_uint8_t i = 0; i < APL_CTX().dev_info_used; i++) {
+        ent = &APL_CTX().dev_info_tbl[i];
+        short_addr = 0xffff;
+        if (RET_OK == zb_address_by_ieee(ent->long_addr, ZB_FALSE, ZB_FALSE, &addr)) {
+            zb_address_short_by_ref(&short_addr, addr);
+        }
+        printf("\t%04x\t\t%d\t\t%04x\t\t%04x\t\t%d\t%d\n", short_addr, ent->endpoint, ent->profile_id,
+            ent->device_id, ent->version, ent->group_id_count);
+    }
+    return 0;
+}
