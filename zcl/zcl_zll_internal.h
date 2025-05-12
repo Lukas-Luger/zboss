@@ -6,12 +6,7 @@
 
 /*! \addgroup ZB_ZCL */
 /*! @{ */
-/**
- * ZLL Profile ID
- */
-#define ZB_ZLL_PROFILE_ID               0xc05e
 
-#define ZB_ZLL_CLUSTER_ID               0x1000
 /**
  * sets the default factory new status, can be reset using factory reset command
  * 00 = False; 01 = True
@@ -136,4 +131,8 @@ void zb_zcl_zll_initiator_setup();
 #define ZB_ZLL_TL_GET_SCAN_RESP_SIZE(frame)    (ZB_ZLL_TL_DEV_INFO_REQ_REQUIRED(frame) ? \
                                                  sizeof(zb_zll_scan_resp_t) - 7 :        \
                                                  sizeof(zb_zll_scan_resp_t))
+/**
+ * returns true if touchlink info has initiator set
+ */
+#define ZB_ZLL_TL_INFO_GET_LINK_INITIATOR(info) (info & 0x10)
 #endif /* ZCL_ZLL_H */
