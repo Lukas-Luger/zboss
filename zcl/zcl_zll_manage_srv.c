@@ -177,22 +177,83 @@ void zll_send_net_update(zb_uint8_t param)
     (void)param;
 }
 
-void zll_send_net_join_ed(zb_uint8_t param)
+void zll_send_net_join(zb_uint8_t param)
 {
-    /* TODO */
-    (void)param;
-}
+    /* BDB TL Init Step 23  */
+    zb_buf_t *buf = ZB_BUF_FROM_REF(param);
 
-void zll_send_net_join_r(zb_uint8_t param)
-{
-    /* TODO */
-    (void)param;
+    zb_zll_net_join_req_t *req;
+    ZB_BUF_INITIAL_ALLOC(buf, sizeof(zb_zll_net_join_req_t), req);
+    req->transaction_id = ZG->aps.transaction_id;
+    ZB_EXTPANID_COPY(req->ext_pan_id, ZB_NIB_EXT_PAN_ID());
+    req->key_index = 4;
+    get_enc_network_key(req->enc_network_key);
+    req->net_update_id = ZB_NIB_UPDATE_ID();
+    req->channel = zb_transceiver_get_channel();
+    req->pan_id = ZB_NIB_PAN_ID();
+    APL_CTX().addr_in_use++;
+    req->network_address = APL_CTX().addr_in_use;
+    req->group_id_begin = 0;
+    req->group_id_end = 0;
+    
+    if (ZB_ZCL_GET_ADDR_ASS_CAP(ZLL_COMM().scan_response.touchlink_information)) {
+        req->free_addr_begin = APL_CTX().free_addr_range_begin;
+        req->free_addr_end = APL_CTX().free_addr_range_end;
+        req->free_group_begin = APL_CTX().free_gr_id_range_begin;
+        req->free_group_end = APL_CTX().free_gr_id_range_end;
+    }
+    else {
+        req->free_addr_begin = 0;
+        req->free_addr_end = 0;
+        req->free_group_begin = 0;
+        req->free_group_end = 0;
+    }
+
+    zb_zcl_cmd_t cmd = ZB_ZCL_GET_ZB_DEV_TYPE(ZLL_COMM().scan_response.zigbee_information) == 
+        ZB_ZCL_ZB_DEV_TYPE_ED ? ZB_ZCL_CMD_DISC_CMDS_GEN_RESP : ZB_ZCL_CMD_DISC_CMDS_REC_RESP;
+
+    (void)zcl_alloc_and_fill_hdr(buf, ZB_ZCL_FRAME_TYPE_CLUSTER_SPECIFIED,
+        ZB_ZCL_FRAME_DIRECTION_TO_SRV, ZB_TRUE, cmd);
+    /* Update address map */
+    zb_address_ieee_ref_t addr_ref;
+    zb_address_update(ZLL_COMM().responder_addr, APL_CTX().addr_in_use, ZB_FALSE, &addr_ref);
+
+    zb_intrp_data_req_params_t *intrp;
+    intrp = ZB_GET_BUF_TAIL(buf, sizeof(zb_intrp_data_req_params_t));
+    intrp->clusterid = ZB_ZLL_CLUSTER_ID;
+    intrp->profileid = ZB_ZLL_PROFILE_ID;
+    intrp->src_addr_mode = ZB_ADDR_64BIT_DEV;
+    intrp->dst_addr_mode = ZB_ADDR_64BIT_DEV;
+    ZB_IEEE_ADDR_COPY(&intrp->dst_addr.addr_long, &ZLL_COMM().responder_addr);
+
+    ZB_SCHEDULE_CALLBACK(zb_intrp_data_request, ZB_REF_FROM_BUF(buf));
+ 
+    /* BDB TL Init Step 24 */
+    ZB_SCHEDULE_ALARM(zll_timeout, 1, BDB_RX_WINDOW_DURATION);
+  
 }
 
 void zll_handle_net_join_resp(zb_uint8_t param)
 {
-    /* TODO */
-    (void)param;
+    ZB_SCHEDULE_ALARM_CANCEL(zll_timeout, 1);
+
+    zb_buf_t *buf = ZB_BUF_FROM_REF(param);
+    zb_zll_net_join_resp_t *resp = (zb_zll_net_join_resp_t *)ZB_BUF_BEGIN(buf);
+    if (resp->transaction_id != ZG->aps.transaction_id) {
+        zb_free_buf(buf);
+        return;
+    }
+    if (resp->status != 0) {
+        BDB_CTX().comm_status = TARGET_FAILURE;
+        return;
+    }
+    /* correct or rejoin expected? BDB says no! */
+    zll_comm_signal(ZB_ZLL_COMM_SUCCESS);
+
+    /**
+     * TODO Step 25
+     *  - wait for network start
+     */
 }
 
 void zll_send_dev_info_req(zb_uint8_t param)
@@ -293,6 +354,7 @@ void zll_send_reset_fac_new_req(zb_uint8_t param)
     ZB_SCHEDULE_CALLBACK(zb_intrp_data_request, param);
 
 }
+
 void zll_nwk_rejoin()
 {
     /* BDB TL Init Step 20 */
@@ -426,29 +488,20 @@ void zll_initiate_network()
     /* BDB TL Init Step 12 */
     if (BDB_CTX().node_is_on_net) {
         puts("we are already on a network");
-        /* TODO continue from Step 23 */
+        /* continue from Step 23 */
+        ZB_GET_OUT_BUF_DELAYED(zll_send_net_join);
         return;
     }
     /* BDB TL Init Step 13 */
     if (ZB_GET_NODE_DESC_LOGICAL_TYPE(ZB_ZDO_NODE_DESC()) == ZB_ROUTER) {
+        puts("we must do router things");
         /** 
          * TODO Step 21 
          *  - NLME-NETWORK-DISCOVERY.request
          * TODO Step 22
          *  - NLME-START_ROUTER.request
-         * TODO Step 23
-         *  - net_join_r/ed
-         *  if(ZB_ZCL_GET_ZB_DEV_TYPE(zb_info) == ZB_ZCL_ZB_DEV_TYPE_ED) {
-                ZB_GET_OUT_BUF_DELAYED(zll_send_net_join_ed);
-            } else {
-                ZB_GET_OUT_BUF_DELAYED(zll_send_net_join_r);
-            }
-         * TODO Step 24
-         *  - schedule timeout
-         * TODO Step 25
-         *  - wait for network start
-        */
-        puts("we must do router things");
+         */
+        ZB_GET_OUT_BUF_DELAYED(zll_send_net_join);
         return;
     }
 

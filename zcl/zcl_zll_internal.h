@@ -95,7 +95,7 @@ typedef struct zb_zll_net_start_resp_s {
 /**
  * Data structure for network join router and end device req and resp
  */
-typedef struct zb_zll_touchlink_net_join_req_s {
+typedef struct zb_zll_net_join_req_s {
     zb_uint32_t transaction_id;
     zb_ieee_addr_t ext_pan_id;
     zb_uint8_t key_index;
@@ -111,13 +111,13 @@ typedef struct zb_zll_touchlink_net_join_req_s {
     zb_uint16_t free_group_begin;
     zb_uint16_t free_group_end;
 } ZB_PACKED_STRUCT
-    zb_zll_touchlink_net_join_req_t;
+    zb_zll_net_join_req_t;
 
-typedef struct zb_zll_touchlink_net_join_resp_s {
+typedef struct zb_zll_net_join_resp_s {
     zb_uint32_t transaction_id;
     zb_uint8_t status;
 } ZB_PACKED_STRUCT
-    zb_zll_touchlink_net_join_resp_t;
+    zb_zll_net_join_resp_t;
 
 void zb_zcl_zll_initiator_setup();
 /**
