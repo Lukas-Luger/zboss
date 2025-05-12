@@ -19,12 +19,13 @@
  * unified state-change using function (less spaghetti)
  *  -> including BDB
  * implement ROUTER based network init functions
- * anyway to set information dynamically
- * use timeouts!
+ * anyway to set information dynamically - done
+ * use timeouts - done 
  * Followup procedure?
  */
 /* ----- HELPER FUNCTIONS -------*/
 void zll_comm_signal(zb_zll_comm_state_t state);
+void zll_timeout(zb_uint8_t param);
 void aes128(zb_uint8_t *key, zb_uint8_t *msg, zb_uint8_t *c);
 void aes128d(const zb_uint8_t *c, const zb_uint8_t *key, zb_uint8_t *m);
 
@@ -124,13 +125,19 @@ void zll_handle_net_start_resp(zb_uint8_t param, zb_ieee_addr_t source)
         ZB_PIB_SHORT_PAN_ID() = resp->pan_id;
         zb_transceiver_set_pan_id(resp->pan_id);
     }
-    /* TODO Step 18 schedule "start network" timeout */
+    ZB_SCHEDULE_ALARM_CANCEL(zll_timeout, 0);
     /* BDB TL Init Step 19 */
     if (ZB_GET_NODE_DESC_LOGICAL_TYPE(ZB_ZDO_NODE_DESC()) == ZB_END_DEVICE) {
         /* continue Step 26 */
         zll_comm_signal(ZB_ZLL_COMM_SUCCESS);
         return;
     }
+    /** 
+     * BDB TL Init Step 18 schedule "start network" timeout
+     * since we only have a rejoin callback and no other indication that a
+     * network has started, we do this after step 19
+     */
+    ZB_SCHEDULE_ALARM(zll_timeout, 1, BDB_TL_MIN_STARTUP_DELAY_TIME);
     /* prepare rejoin */
     zb_nwk_exneighbor_start();
 
@@ -162,6 +169,12 @@ void zll_handle_net_start_resp(zb_uint8_t param, zb_ieee_addr_t source)
         enbt->update_id = ZB_NIB_UPDATE_ID();
     }
     zll_comm_signal(ZB_ZLL_COMM_REJOIN);
+}
+
+void zll_send_net_update(zb_uint8_t param)
+{
+    /* TODO */
+    (void)param;
 }
 
 void zll_send_net_join_ed(zb_uint8_t param)
@@ -298,6 +311,7 @@ void zll_nwk_rejoin()
 
 void zll_nwk_rejoin_cb()
 {
+    ZB_SCHEDULE_ALARM_CANCEL(zll_timeout, 1);
     /* continue Step 26 */
     zll_comm_signal(ZB_ZLL_COMM_SUCCESS);
 }
@@ -383,10 +397,14 @@ void zll_initiate_network()
     /* BDB TL Init Step 8: check if he opponent is on our network*/
     if (!ZB_MEMCMP(ZLL_COMM().scan_response.extended_pan_id, ZB_AIB().aps_use_extended_pan_id,
                    sizeof(zb_ieee_addr_t))) {
-        /** 
-         * BDB TL Init Step 9
-         * TODO check upd_id: may request net_update
-         */
+        /* BDB TL Init Step 9 */
+        if (ZLL_COMM().scan_response.network_update_id < ZB_NIB_UPDATE_ID()) {
+            ZB_GET_OUT_BUF_DELAYED(zll_net_update);
+        }
+        if (ZLL_COMM().scan_response.network_update_id > ZB_NIB_UPDATE_ID()) {
+            ZB_NIB_UPDATE_ID() = ZLL_COMM().scan_response.network_update_id;
+            ZB_TRANSCEIVER_SET_CHANNEL(ZLL_COMM().scan_response.logical_channel);
+        }
         puts("responder is on the same pan");
         /* continue Step 26 */
         zll_comm_signal(ZB_ZLL_COMM_SUCCESS);
@@ -443,7 +461,20 @@ void zll_initiate_network()
     }
     /* BDB TL Init Step 16 */
     ZB_GET_OUT_BUF_DELAYED(zll_send_net_start_req);
-    /* TODO Schedule timeout using BDB_RX_WINDOW_DURATION */
+    ZB_SCHEDULE_ALARM(zll_timeout, 0, BDB_RX_WINDOW_DURATION);
+}
+
+void zll_timeout(zb_uint8_t param)
+{
+    switch (param) {
+        case 0:
+            BDB_CTX().comm_status = NO_NETWORK;
+            break;
+        case 1: 
+            BDB_CTX().comm_status = TARGET_FAILURE;
+            break;
+        default: break;
+    }
 }
 
 void zll_comm_signal(zb_zll_comm_state_t state)
