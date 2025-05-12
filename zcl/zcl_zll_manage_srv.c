@@ -387,7 +387,7 @@ void zll_finish_scan()
     ent->version = ZLL_COMM().scan_response.version;
     ent->group_id_count = ZLL_COMM().scan_response.group_id_count;
     ent->sort = 0;
-
+    APL_CTX().dev_info_used++;
     zll_comm_signal(ZB_ZLL_COMM_INIT_NET);
    
 }
@@ -399,7 +399,7 @@ void zll_initiate_network()
                    sizeof(zb_ieee_addr_t))) {
         /* BDB TL Init Step 9 */
         if (ZLL_COMM().scan_response.network_update_id < ZB_NIB_UPDATE_ID()) {
-            ZB_GET_OUT_BUF_DELAYED(zll_net_update);
+            ZB_GET_OUT_BUF_DELAYED(zll_send_net_update);
         }
         if (ZLL_COMM().scan_response.network_update_id > ZB_NIB_UPDATE_ID()) {
             ZB_NIB_UPDATE_ID() = ZLL_COMM().scan_response.network_update_id;
@@ -605,3 +605,4 @@ void zb_zcl_zll_initiator_setup()
     }
 }
 #endif /* ZB_LIMITED_FEATURES */
+/*! @} */

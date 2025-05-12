@@ -146,7 +146,8 @@ void zb_ib_set_defaults(zb_char_t *rx_pipe) ZB_CALLBACK
     BDB_CTX().tc_linkkey_ex_method = 0x00;
     BDB_CTX().tc_node_join_timeout = 0x0f;
     BDB_CTX().tc_require_key_ex = ZB_TRUE;
-
+    APL_CTX().dev_info_used = 0;
+    ZB_BZERO(&APL_CTX().dev_info_tbl, sizeof(zb_apl_dev_info_ent_t)*ZB_APL_MAX_DEV_ENTRIES);
 #ifdef ZB_ROUTER_ROLE
     MAC_PIB().mac_rx_on_when_idle = 1;
     ZG->nwk.nib.max_children = ZB_DEFAULT_MAX_CHILDREN;
