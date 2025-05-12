@@ -454,6 +454,13 @@ void zll_start_tl_scan();
 void zll_nwk_rejoin();
 
 void zll_nwk_rejoin_cb();
+
+/**
+ * On/Off Cluster functions
+ */
+void zb_zcl_send_on_off_toggle(zb_uint16_t addr, zb_uint8_t dst_ep, zb_uint8_t src_ep, zb_bool_t default_resp);
+void zb_zcl_send_on_off_on(zb_uint16_t addr, zb_uint8_t dst_ep, zb_uint8_t src_ep, zb_bool_t default_resp);
+void zb_zcl_send_on_off_off(zb_uint16_t addr, zb_uint8_t dst_ep, zb_uint8_t src_ep, zb_bool_t default_resp);
 /*! @} */
 
 #endif /* ZB_ZCL_H */
