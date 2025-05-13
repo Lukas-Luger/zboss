@@ -195,7 +195,7 @@ void zll_send_net_join(zb_uint8_t param)
     req->network_address = APL_CTX().addr_in_use;
     req->group_id_begin = 0;
     req->group_id_end = 0;
-    
+
     if (ZB_ZCL_GET_ADDR_ASS_CAP(ZLL_COMM().scan_response.touchlink_information)) {
         req->free_addr_begin = APL_CTX().free_addr_range_begin;
         req->free_addr_end = APL_CTX().free_addr_range_end;
@@ -209,11 +209,13 @@ void zll_send_net_join(zb_uint8_t param)
         req->free_group_end = 0;
     }
 
-    zb_zcl_cmd_t cmd = ZB_ZCL_GET_ZB_DEV_TYPE(ZLL_COMM().scan_response.zigbee_information) == 
-        ZB_ZCL_ZB_DEV_TYPE_ED ? ZB_ZCL_CMD_DISC_CMDS_GEN_RESP : ZB_ZCL_CMD_DISC_CMDS_REC_RESP;
+    zb_zcl_cmd_t cmd = ZB_ZCL_GET_ZB_DEV_TYPE(ZLL_COMM().scan_response.zigbee_information) ==
+                               ZB_ZCL_ZB_DEV_TYPE_ED ?
+                           ZB_ZCL_CMD_DISC_CMDS_GEN_RESP :
+                           ZB_ZCL_CMD_DISC_CMDS_REC_RESP;
 
     (void)zcl_alloc_and_fill_hdr(buf, ZB_ZCL_FRAME_TYPE_CLUSTER_SPECIFIED,
-        ZB_ZCL_FRAME_DIRECTION_TO_SRV, ZB_TRUE, cmd);
+                                 ZB_ZCL_FRAME_DIRECTION_TO_SRV, ZB_TRUE, cmd);
     /* Update address map */
     zb_address_ieee_ref_t addr_ref;
     zb_address_update(ZLL_COMM().responder_addr, APL_CTX().addr_in_use, ZB_FALSE, &addr_ref);
@@ -227,10 +229,9 @@ void zll_send_net_join(zb_uint8_t param)
     ZB_IEEE_ADDR_COPY(&intrp->dst_addr.addr_long, &ZLL_COMM().responder_addr);
 
     ZB_SCHEDULE_CALLBACK(zb_intrp_data_request, ZB_REF_FROM_BUF(buf));
- 
+
     /* BDB TL Init Step 24 */
     ZB_SCHEDULE_ALARM(zll_timeout, 1, BDB_RX_WINDOW_DURATION);
-  
 }
 
 void zll_handle_net_join_resp(zb_uint8_t param)
@@ -352,7 +353,6 @@ void zll_send_reset_fac_new_req(zb_uint8_t param)
     intrp->dst_addr_mode = ZB_ADDR_16BIT_DEV_OR_BROADCAST;
     intrp->dst_addr.addr_short = 0xffff;
     ZB_SCHEDULE_CALLBACK(zb_intrp_data_request, param);
-
 }
 
 void zll_nwk_rejoin()
@@ -451,7 +451,6 @@ void zll_finish_scan()
     ent->sort = 0;
     APL_CTX().dev_info_used++;
     zll_comm_signal(ZB_ZLL_COMM_INIT_NET);
-   
 }
 
 void zll_initiate_network()
@@ -462,6 +461,12 @@ void zll_initiate_network()
         /* BDB TL Init Step 9 */
         if (ZLL_COMM().scan_response.network_update_id < ZB_NIB_UPDATE_ID()) {
             ZB_GET_OUT_BUF_DELAYED(zll_send_net_update);
+        }
+        else {
+            /* updating addresses */
+            zb_address_ieee_ref_t addr_ref;
+            zb_address_update(ZLL_COMM().responder_addr, ZLL_COMM().scan_response.network_address,
+                              ZB_FALSE, &addr_ref);
         }
         if (ZLL_COMM().scan_response.network_update_id > ZB_NIB_UPDATE_ID()) {
             ZB_NIB_UPDATE_ID() = ZLL_COMM().scan_response.network_update_id;
@@ -520,53 +525,54 @@ void zll_initiate_network()
 void zll_timeout(zb_uint8_t param)
 {
     switch (param) {
-        case 0:
-            BDB_CTX().comm_status = NO_NETWORK;
-            break;
-        case 1: 
-            BDB_CTX().comm_status = TARGET_FAILURE;
-            break;
-        default: break;
+    case 0:
+        BDB_CTX().comm_status = NO_NETWORK;
+        break;
+    case 1:
+        BDB_CTX().comm_status = TARGET_FAILURE;
+        break;
+    default:
+        break;
     }
 }
 
 void zll_comm_signal(zb_zll_comm_state_t state)
 {
     ZLL_COMM().state = state;
-    switch(state) {
-        case ZB_ZLL_COMM_SCAN:
-            /* BDB TL Init Step 1 */
-            BDB_CTX().comm_status = IN_PROGRESS;
-            /* BDB TL Init Step 2 */
-            ZG->aps.transaction_id = (zb_uint32_t)ZB_RANDOM() | (ZB_RANDOM() << 16);
-            ZLL_COMM().v_scan_channels = BDB_CTX().primary_channel_set;
-            ZLL_COMM().v_is_first_ch = ZB_TRUE;
-            ZB_SCHEDULE_CALLBACK(zll_scan_step, 0);
-            return;
-        case ZB_ZLL_COMM_SCAN_DONE:
-            zll_finish_scan();
-            return;
-        case ZB_ZLL_COMM_INIT_NET:
-            zll_initiate_network();
-            return;
-        case ZB_ZLL_COMM_REJOIN:
-            return;
-        case ZB_ZLL_COMM_FAIL:
-            return;
-        case ZB_ZLL_COMM_SUCCESS:
-            puts("saving config");
-            /** BDB TL Init Step 26 
-             * TODO: binding links
-             */
-            BDB_CTX().node_is_on_net = ZB_TRUE;
-            BDB_CTX().comm_status = SUCCESS;
-            /* save everything now */
-            zb_write_security_key();
-            zb_save_formdesc_data();
-            zb_save_nvram_config();
-            return;
-        default:
-            return;
+    switch (state) {
+    case ZB_ZLL_COMM_SCAN:
+        /* BDB TL Init Step 1 */
+        BDB_CTX().comm_status = IN_PROGRESS;
+        /* BDB TL Init Step 2 */
+        ZG->aps.transaction_id = (zb_uint32_t)ZB_RANDOM() | (ZB_RANDOM() << 16);
+        ZLL_COMM().v_scan_channels = BDB_CTX().primary_channel_set;
+        ZLL_COMM().v_is_first_ch = ZB_TRUE;
+        ZB_SCHEDULE_CALLBACK(zll_scan_step, 0);
+        return;
+    case ZB_ZLL_COMM_SCAN_DONE:
+        zll_finish_scan();
+        return;
+    case ZB_ZLL_COMM_INIT_NET:
+        zll_initiate_network();
+        return;
+    case ZB_ZLL_COMM_REJOIN:
+        return;
+    case ZB_ZLL_COMM_FAIL:
+        return;
+    case ZB_ZLL_COMM_SUCCESS:
+        puts("saving config");
+        /** BDB TL Init Step 26 
+         * TODO: binding links
+         */
+        BDB_CTX().node_is_on_net = ZB_TRUE;
+        BDB_CTX().comm_status = SUCCESS;
+        /* save everything now */
+        zb_write_security_key();
+        zb_save_formdesc_data();
+        zb_save_nvram_config();
+        return;
+    default:
+        return;
     }
 }
 
@@ -639,7 +645,7 @@ void zb_zcl_zll_initiator_setup()
     if (ZB_PROTOCOL_VERSION > 1) {
         ZLL_COMM().touchlink_info |= 0x80;
     }
-    
+
     ZB_BZERO(&ZLL_COMM().scan_response, sizeof(ZLL_COMM().scan_response));
     ZLL_COMM().state = ZB_ZLL_COMM_SCAN;
     /**
