@@ -52,6 +52,11 @@ void get_enc_network_key(zb_uint8_t *enc_network_key)
     aes128(zll_master_key, nonce, exchange_key);
     aes128(exchange_key, ZG->nwk.nib.secur_material_set[0].key, enc_network_key);
 }
+
+void zll_change_channel(zb_uint8_t param)
+{
+    ZB_TRANSCEIVER_SET_CHANNEL(param);
+}
 /* ----- REQ/RESP HANDLING -------*/
 void zll_send_net_start_req(zb_uint8_t param)
 {
@@ -189,7 +194,13 @@ void zll_send_net_join(zb_uint8_t param)
     req->key_index = 4;
     get_enc_network_key(req->enc_network_key);
     req->net_update_id = ZB_NIB_UPDATE_ID();
-    req->channel = zb_transceiver_get_channel();
+    if (BDB_CTX().node_is_on_net) {
+        req->channel = ZLL_COMM().prev_channel;
+        ZB_SCHEDULE_TX_CB(zll_change_channel, ZLL_COMM().prev_channel);
+    }
+    else {
+        req->channel = zb_transceiver_get_channel();
+    }
     req->pan_id = ZB_NIB_PAN_ID();
     APL_CTX().addr_in_use++;
     req->network_address = APL_CTX().addr_in_use;
@@ -541,6 +552,7 @@ void zll_comm_signal(zb_zll_comm_state_t state)
     ZLL_COMM().state = state;
     switch (state) {
     case ZB_ZLL_COMM_SCAN:
+        ZLL_COMM().prev_channel = zb_transceiver_get_channel();
         /* BDB TL Init Step 1 */
         BDB_CTX().comm_status = IN_PROGRESS;
         /* BDB TL Init Step 2 */

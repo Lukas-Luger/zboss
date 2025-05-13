@@ -101,6 +101,7 @@ typedef struct zb_zll_comm_attr_s {
     zb_zll_comm_state_t state;
     zb_ieee_addr_t responder_addr;
     zb_zll_scan_resp_t scan_response;
+    zb_uint8_t prev_channel;
 } zb_zll_comm_attr_t;
 
 /**
