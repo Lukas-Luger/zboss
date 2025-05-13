@@ -132,7 +132,7 @@ void zll_send_net_start_req(zb_uint8_t param)
     intrp->dst_addr_mode = ZB_ADDR_64BIT_DEV;
     ZB_IEEE_ADDR_COPY(&intrp->dst_addr.addr_long, &ZLL_COMM().responder_addr);
 
-    ZB_SCHEDULE_CALLBACK(zb_intrp_data_request, ZB_REF_FROM_BUF(buf));
+    ZB_SCHEDULE_CALLBACK(zb_intrp_data_request, param);
 }
 
 void zll_handle_net_start_resp(zb_uint8_t param, zb_ieee_addr_t source)
@@ -141,6 +141,7 @@ void zll_handle_net_start_resp(zb_uint8_t param, zb_ieee_addr_t source)
     zb_zll_net_start_resp_t *resp = (zb_zll_net_start_resp_t *)ZB_BUF_BEGIN(buf);
     if (resp->status != 0) {
         BDB_CTX().comm_status = NO_NETWORK;
+        zb_free_buf(buf);
         puts("Target failed to start network");
         return;
     }
@@ -159,6 +160,7 @@ void zll_handle_net_start_resp(zb_uint8_t param, zb_ieee_addr_t source)
     /* BDB TL Init Step 19 */
     if (ZB_GET_NODE_DESC_LOGICAL_TYPE(ZB_ZDO_NODE_DESC()) == ZB_END_DEVICE) {
         /* continue Step 26 */
+        zb_free_buf(buf);
         zll_comm_signal(ZB_ZLL_COMM_SUCCESS);
         return;
     }
@@ -198,6 +200,7 @@ void zll_handle_net_start_resp(zb_uint8_t param, zb_ieee_addr_t source)
         enbt->device_type = ZB_ZCL_GET_ZB_DEV_TYPE(ZLL_COMM().scan_response.zigbee_information);
         enbt->update_id = ZB_NIB_UPDATE_ID();
     }
+    zb_free_buf(buf);
     zll_comm_signal(ZB_ZLL_COMM_REJOIN);
 }
 
@@ -265,7 +268,7 @@ void zll_send_net_join(zb_uint8_t param)
     intrp->dst_addr_mode = ZB_ADDR_64BIT_DEV;
     ZB_IEEE_ADDR_COPY(&intrp->dst_addr.addr_long, &ZLL_COMM().responder_addr);
 
-    ZB_SCHEDULE_CALLBACK(zb_intrp_data_request, ZB_REF_FROM_BUF(buf));
+    ZB_SCHEDULE_CALLBACK(zb_intrp_data_request, param);
 
     /* BDB TL Init Step 24 */
     ZB_SCHEDULE_ALARM(zll_timeout, 1, BDB_RX_WINDOW_DURATION);
@@ -283,8 +286,10 @@ void zll_handle_net_join_resp(zb_uint8_t param)
     }
     if (resp->status != 0) {
         BDB_CTX().comm_status = TARGET_FAILURE;
+        zb_free_buf(buf);
         return;
     }
+    zb_free_buf(buf);
     /* correct or rejoin expected? BDB says no! */
     zll_comm_signal(ZB_ZLL_COMM_SUCCESS);
 
@@ -335,7 +340,7 @@ void zll_handle_dev_info_resp(zb_uint8_t param)
         APL_CTX().dev_info_used++;
         ptr += sizeof(zb_zll_dev_record_t);
     }
-
+    zb_free_buf(buf);
     zll_comm_signal(ZB_ZLL_COMM_INIT_NET);
 }
 
@@ -369,6 +374,7 @@ void zll_handle_scan_resp(zb_uint8_t param, zb_ieee_addr_t source)
     ZB_MEMCPY(&ZLL_COMM().scan_response, resp, frame_size);
     ZB_IEEE_ADDR_COPY(ZLL_COMM().responder_addr, source);
     ZB_BZERO(&ZLL_COMM().v_scan_channels, sizeof(zb_uint32_t));
+    zb_free_buf(buf);
 }
 
 void zll_send_reset_fac_new_req(zb_uint8_t param)
