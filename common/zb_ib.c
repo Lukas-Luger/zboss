@@ -146,6 +146,12 @@ void zb_ib_set_defaults(zb_char_t *rx_pipe) ZB_CALLBACK
     BDB_CTX().tc_linkkey_ex_method = 0x00;
     BDB_CTX().tc_node_join_timeout = 0x0f;
     BDB_CTX().tc_require_key_ex = ZB_TRUE;
+    /* APL */
+    ZB_BZERO(&APL_CTX(), sizeof(zb_apl_globals_t));
+    APL_CTX().free_addr_range_begin = 0x0001;
+    APL_CTX().free_addr_range_end = 0xfff7;
+    APL_CTX().free_gr_id_range_begin = 0x0001;
+    APL_CTX().free_gr_id_range_end = 0xfeff;
     APL_CTX().dev_info_used = 0;
     ZB_BZERO(&APL_CTX().dev_info_tbl, sizeof(zb_apl_dev_info_ent_t)*ZB_APL_MAX_DEV_ENTRIES);
 #ifdef ZB_ROUTER_ROLE

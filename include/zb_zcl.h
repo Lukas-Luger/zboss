@@ -100,6 +100,7 @@ typedef struct zb_zll_comm_attr_s {
     zb_bool_t v_do_prim_scan;    /*!< vDoPrimaryScan */
     zb_zll_comm_state_t state;
     zb_ieee_addr_t responder_addr;
+    zb_uint16_t responder_addr_short;
     zb_zll_scan_resp_t scan_response;
     zb_uint8_t prev_channel;
 } zb_zll_comm_attr_t;

@@ -23,17 +23,6 @@ void zb_zcl_cib_init()
     ZG->zcl.cluster_num = 0;
     ZB_BZERO(&ZG->zcl.cluster, ZB_ZCL_CLUSTER_NUM);
 
-    /**
-     * since there is no other place to init apl attributes,
-     * lets do it here
-     */
-    ZB_BZERO(&ZG->apl, sizeof(zb_apl_globals_t));
-    ZG->apl.free_addr_range_begin = 0x7ffc;
-    ZG->apl.free_addr_range_end = 0xfff7;
-    ZG->apl.free_gr_id_range_begin = 0x7f80;
-    ZG->apl.free_gr_id_range_end = 0xfeff;
-    ZG->apl.addr_in_use = 1;
-
     zb_zcl_zll_initiator_setup();
     TRACE_MSG(TRACE - ZCL1, "<<cib_init", (FMT__0));
 }

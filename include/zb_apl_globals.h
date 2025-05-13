@@ -90,7 +90,6 @@ typedef struct zb_apl_dev_info_ent_s {
    Global ZCL structure
  */
 typedef struct zb_apl_globals_s {
-    zb_uint16_t addr_in_use;
     zb_uint16_t free_addr_range_begin;                          /*!< APL addr range */
     zb_uint16_t free_addr_range_end;                            /*!< APL addr range */
     zb_uint16_t free_gr_id_range_begin;                         /*!< APL group id range */

@@ -57,6 +57,29 @@ void zll_change_channel(zb_uint8_t param)
 {
     ZB_TRANSCEIVER_SET_CHANNEL(param);
 }
+
+zb_bool_t get_free_addr_and_group_range(zb_uint16_t *addr_begin, zb_uint16_t *addr_end,
+                zb_uint16_t *group_begin, zb_uint16_t *group_end)
+{
+   
+    if (APL_CTX().free_addr_range_end - APL_CTX().free_addr_range_begin < 2620) {
+        return ZB_FALSE;
+    }
+    if (APL_CTX().free_gr_id_range_end - APL_CTX().free_gr_id_range_begin < 2620) {
+        return ZB_FALSE;
+    }
+    /* we provide the target with a 10th of address space */
+    *addr_begin = APL_CTX().free_addr_range_end - 1310;
+    *addr_end = APL_CTX().free_addr_range_end;
+    /* these addresses should no longer be available to us */
+    APL_CTX().free_addr_range_end = *addr_begin - 1;
+    /* same for groups */
+    *group_begin = APL_CTX().free_gr_id_range_end - 1310;
+    *group_end = APL_CTX().free_gr_id_range_end;
+    APL_CTX().free_gr_id_range_end = *group_begin - 1;
+    return ZB_TRUE;
+
+}
 /* ----- REQ/RESP HANDLING -------*/
 void zll_send_net_start_req(zb_uint8_t param)
 {
@@ -70,19 +93,21 @@ void zll_send_net_start_req(zb_uint8_t param)
     get_enc_network_key(req->enc_network_key);
     req->channel = zb_transceiver_get_channel();
     req->pan_id = 0x0000;
-    APL_CTX().addr_in_use++;
-    req->network_address = APL_CTX().addr_in_use;
-    req->group_id_begin = 0;
-    req->group_id_end = 0;
+    req->network_address = ZLL_COMM().responder_addr_short;
+    req->group_id_begin = APL_CTX().free_gr_id_range_begin;
+    req->group_id_end = APL_CTX().free_gr_id_range_begin + ZLL_COMM().scan_response.subdevices - 1;
+    APL_CTX().free_gr_id_range_begin += ZLL_COMM().scan_response.subdevices;
     /**
      * ranges that recipient can use to allocate new devices etc.
      * only applies if recipient has addr assign capability
      */
     if (ZB_ZCL_GET_ADDR_ASS_CAP(ZLL_COMM().scan_response.touchlink_information)) {
-        req->free_addr_begin = APL_CTX().free_addr_range_begin;
-        req->free_addr_end = APL_CTX().free_addr_range_end;
-        req->free_group_begin = APL_CTX().free_gr_id_range_begin;
-        req->free_group_end = APL_CTX().free_gr_id_range_end;
+        if (!get_free_addr_and_group_range(&req->free_addr_begin, &req->free_addr_end,
+                &req->free_group_begin, &req->free_group_end)) {
+            zb_free_buf(buf);
+            BDB_CTX().comm_status = NOT_PERMITTED;
+            return;
+        }
     }
     else {
         req->free_addr_begin = 0;
@@ -97,7 +122,7 @@ void zll_send_net_start_req(zb_uint8_t param)
                                  ZB_ZCL_FRAME_DIRECTION_TO_SRV, ZB_TRUE, ZB_ZCL_CMD_WRITE_ATTRIB_STRUCT_RESP);
     /* Update address map */
     zb_address_ieee_ref_t addr_ref;
-    zb_address_update(ZLL_COMM().responder_addr, APL_CTX().addr_in_use, ZB_FALSE, &addr_ref);
+    zb_address_update(ZLL_COMM().responder_addr, ZLL_COMM().responder_addr_short, ZB_FALSE, &addr_ref);
 
     zb_intrp_data_req_params_t *intrp;
     intrp = ZB_GET_BUF_TAIL(buf, sizeof(zb_intrp_data_req_params_t));
@@ -160,7 +185,7 @@ void zll_handle_net_start_resp(zb_uint8_t param, zb_ieee_addr_t source)
     if (ret == RET_OK) {
         enbt->lqi = ZB_MAC_GET_LQI(buf);
         enbt->potential_parent = 1;
-        enbt->short_addr = APL_CTX().addr_in_use;
+        enbt->short_addr = ZLL_COMM().responder_addr_short;
         zb_ieee_addr_compress(ZLL_COMM().responder_addr, &enbt->long_addr);
         enbt->panid_ref = panid_ref;
         enbt->logical_channel = resp->channel;
@@ -202,16 +227,17 @@ void zll_send_net_join(zb_uint8_t param)
         req->channel = zb_transceiver_get_channel();
     }
     req->pan_id = ZB_NIB_PAN_ID();
-    APL_CTX().addr_in_use++;
-    req->network_address = APL_CTX().addr_in_use;
-    req->group_id_begin = 0;
-    req->group_id_end = 0;
-
+    req->network_address = ZLL_COMM().responder_addr_short;
+    req->group_id_begin = APL_CTX().free_gr_id_range_begin;
+    req->group_id_end = APL_CTX().free_gr_id_range_begin + ZLL_COMM().scan_response.subdevices - 1;
+    APL_CTX().free_gr_id_range_begin += ZLL_COMM().scan_response.subdevices;
     if (ZB_ZCL_GET_ADDR_ASS_CAP(ZLL_COMM().scan_response.touchlink_information)) {
-        req->free_addr_begin = APL_CTX().free_addr_range_begin;
-        req->free_addr_end = APL_CTX().free_addr_range_end;
-        req->free_group_begin = APL_CTX().free_gr_id_range_begin;
-        req->free_group_end = APL_CTX().free_gr_id_range_end;
+        if (!get_free_addr_and_group_range(&req->free_addr_begin, &req->free_addr_end,
+                &req->free_group_begin, &req->free_group_end)) {
+            zb_free_buf(buf);
+            BDB_CTX().comm_status = NOT_PERMITTED;
+            return;
+        }
     }
     else {
         req->free_addr_begin = 0;
@@ -229,7 +255,7 @@ void zll_send_net_join(zb_uint8_t param)
                                  ZB_ZCL_FRAME_DIRECTION_TO_SRV, ZB_TRUE, cmd);
     /* Update address map */
     zb_address_ieee_ref_t addr_ref;
-    zb_address_update(ZLL_COMM().responder_addr, APL_CTX().addr_in_use, ZB_FALSE, &addr_ref);
+    zb_address_update(ZLL_COMM().responder_addr, ZLL_COMM().responder_addr_short, ZB_FALSE, &addr_ref);
 
     zb_intrp_data_req_params_t *intrp;
     intrp = ZB_GET_BUF_TAIL(buf, sizeof(zb_intrp_data_req_params_t));
@@ -501,6 +527,9 @@ void zll_initiate_network()
         puts("unable to assign addresses");
         return;
     }
+    /* lets assing an address to target which can be used in requests */
+    ZLL_COMM().responder_addr_short = APL_CTX().free_addr_range_begin;
+    APL_CTX().free_addr_range_begin++;
     /* BDB TL Init Step 12 */
     if (BDB_CTX().node_is_on_net) {
         puts("we are already on a network");
@@ -663,8 +692,9 @@ void zb_zcl_zll_initiator_setup()
     /**
      * Lets assign ourelves the address of 1
      */
-    ZB_PIB_SHORT_ADDRESS() = 0x0001;
-    zb_transceiver_update_short_addr(0x0001);
+    ZB_PIB_SHORT_ADDRESS() = APL_CTX().free_addr_range_begin;
+    zb_transceiver_update_short_addr(APL_CTX().free_addr_range_begin);
+    APL_CTX().free_addr_range_begin++;
     (void)zb_zcl_register_cluster(1 /* EP 1 */, ZB_ZLL_CLUSTER_ID /* TL Cluster */,
                                   NULL /* attr list */, handle_zll, NULL /* action */);
     /**
