@@ -698,9 +698,11 @@ void zb_zcl_zll_initiator_setup()
     /**
      * Lets assign ourelves the address of 1
      */
-    ZB_PIB_SHORT_ADDRESS() = APL_CTX().free_addr_range_begin;
-    zb_transceiver_update_short_addr(APL_CTX().free_addr_range_begin);
-    APL_CTX().free_addr_range_begin++;
+    if (ZB_PIB_SHORT_ADDRESS() != 1) { // FIXME
+        ZB_PIB_SHORT_ADDRESS() = APL_CTX().free_addr_range_begin;
+        zb_transceiver_update_short_addr(APL_CTX().free_addr_range_begin);
+        APL_CTX().free_addr_range_begin++;
+    }
     (void)zb_zcl_register_cluster(1 /* EP 1 */, ZB_ZLL_CLUSTER_ID /* TL Cluster */,
                                   NULL /* attr list */, handle_zll, NULL /* action */);
     /**
