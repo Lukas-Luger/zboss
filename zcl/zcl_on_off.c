@@ -16,6 +16,10 @@ void zb_zcl_send_on_off_toggle(zb_uint16_t addr, zb_uint8_t dst_ep, zb_uint8_t s
 {
     zb_buf_t *buf = zb_get_out_buf();
 
+    if (buf == NULL) {
+        return;
+    }
+
     (void)zcl_alloc_and_fill_hdr(buf, ZB_ZCL_FRAME_TYPE_CLUSTER_SPECIFIED,
         ZB_ZCL_FRAME_DIRECTION_TO_SRV, default_resp, ZB_ZCL_CMD_WRITE_ATTRIB);
 
@@ -36,6 +40,10 @@ void zb_zcl_send_on_off_on(zb_uint16_t addr, zb_uint8_t dst_ep, zb_uint8_t src_e
 {
     zb_buf_t *buf = zb_get_out_buf();
 
+    if (buf == NULL) {
+        return;
+    }
+
     (void)zcl_alloc_and_fill_hdr(buf, ZB_ZCL_FRAME_TYPE_CLUSTER_SPECIFIED,
         ZB_ZCL_FRAME_DIRECTION_TO_SRV, default_resp, ZB_ZCL_CMD_READ_ATTRIB_RESP);
 
@@ -55,6 +63,10 @@ void zb_zcl_send_on_off_on(zb_uint16_t addr, zb_uint8_t dst_ep, zb_uint8_t src_e
 void zb_zcl_send_on_off_off(zb_uint16_t addr, zb_uint8_t dst_ep, zb_uint8_t src_ep, zb_bool_t default_resp)
 {
     zb_buf_t *buf = zb_get_out_buf();
+
+    if (buf == NULL) {
+        return;
+    }
 
     (void)zcl_alloc_and_fill_hdr(buf, ZB_ZCL_FRAME_TYPE_CLUSTER_SPECIFIED,
         ZB_ZCL_FRAME_DIRECTION_TO_SRV, default_resp, ZB_ZCL_CMD_READ_ATTRIB);
