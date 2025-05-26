@@ -201,7 +201,8 @@ zb_ret_t zdo_dev_start() ZB_SDCC_REENTRANT
     else {
 #ifdef ZB_USE_NVRAM
         zb_buf_t *buf = zb_get_out_buf();
-        buf->u.hdr.status = ZB_NWK_STATUS_ALREADY_PRESENT;
+        buf->u.hdr.status = ZB_NWK_STATUS_SUCCESS;
+        ZG->nwk.handle.joined = ZB_TRUE;
         ZB_SCHEDULE_CALLBACK(zb_zdo_startup_complete, ZB_REF_FROM_BUF(buf));
 #endif
         TRACE_MSG(TRACE_APS1, "already in nw", (FMT__0));
