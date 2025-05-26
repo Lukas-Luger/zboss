@@ -126,6 +126,7 @@ void zb_init() ZB_CALLBACK
 #ifdef ZB_USE_NVRAM
     zb_config_from_nvram();
     zb_read_up_counter();
+    zb_write_up_counter();
     zb_read_security_key();
     zb_read_formdesc_data();
 #endif

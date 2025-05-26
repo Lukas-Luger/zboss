@@ -660,9 +660,9 @@ LOG_INFO("using page %u of internal flash as nonvolatile storage\n",
     driver = (netdev_driver_t *)netdev->driver;
     _zb_iface_id = netif->pid;
 
-    uint16_t channel = 25;
-    gnrc_netapi_set(_zb_iface_id, NETOPT_CHANNEL, 0, &channel,
-                                                            sizeof(uint16_t));
+    // uint16_t channel = 25;
+    // gnrc_netapi_set(_zb_iface_id, NETOPT_CHANNEL, 0, &channel,
+    //                                                         sizeof(uint16_t));
     // int ret = gnrc_netif_set_from_netdev(netif, &opt);
     // printf("raw returned %i\n", ret);
 

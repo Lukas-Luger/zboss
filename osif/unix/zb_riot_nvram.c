@@ -117,6 +117,7 @@ typedef struct __attribute__((packed)) {
     uint8_t             profile_in_use;
     zb_ieee_addr_t      long_parent_addr;
     uint32_t            channel_mask;
+    uint8_t             current_channel;
     uint16_t            short_parent_addr;
     uint8_t             depth;
     uint16_t            pan_id;
@@ -161,6 +162,7 @@ zb_ret_t zb_save_formdesc_data(void)
                                                 sizeof(data.short_addr));
     memcpy(&data.channel_mask, &ZB_AIB().aps_channel_mask,
                                                 sizeof(data.channel_mask));
+    data.current_channel = MAC_CTX().current_channel;
     ZB_IEEE_ADDR_COPY(data.long_parent_addr, long_parent_addr);
     ZB_IEEE_ADDR_COPY(data.ext_pan_id, ZB_AIB().aps_use_extended_pan_id);
 
@@ -197,6 +199,7 @@ zb_ret_t zb_read_formdesc_data(void)
     memcpy(&MAC_PIB().mac_pan_id, &data.pan_id, sizeof(data.pan_id));
     memcpy(&ZB_AIB().aps_channel_mask, &data.channel_mask,
                                                     sizeof(data.channel_mask));
+    ZB_TRANSCEIVER_SET_CHANNEL(data.current_channel);
     memcpy(&MAC_PIB().mac_short_address, &data.short_addr,
                                                     sizeof(data.short_addr));
 
@@ -204,6 +207,7 @@ zb_ret_t zb_read_formdesc_data(void)
     ZB_UPDATE_SHORT_ADDR();
     ZB_IEEE_ADDR_COPY(ZB_AIB().aps_use_extended_pan_id, data.ext_pan_id);
     ZB_IEEE_ADDR_COPY(ZB_PIB_BEACON_PAYLOAD().extended_panid, data.ext_pan_id);
+    ZB_IEEE_ADDR_COPY(ZB_NIB_EXT_PAN_ID(), data.ext_pan_id);
     ZB_IEEE_ADDR_COPY(ZB_PIB_EXTENDED_ADDRESS(), data.long_addr);
     ZB_UPDATE_LONGMAC();
     /* parent short & long addr */
@@ -299,7 +303,8 @@ zb_ret_t zb_write_up_counter()
     zb_uint32_t counter[2];
     
     counter[0] = 0x425a;
-    counter[1] = ZG->nwk.nib.outgoing_frame_counter;
+    /* ZB 3.0: 4.3.4.1 increment on reboot */
+    counter[1] = ZG->nwk.nib.outgoing_frame_counter + 1024;
 
     zb_write_nvram(ZB_CONFIG_PAGE + sizeof(zb_config_t) +
                                     sizeof(zb_formdesc_data_t) +
