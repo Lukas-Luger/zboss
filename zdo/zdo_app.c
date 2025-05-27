@@ -203,6 +203,8 @@ zb_ret_t zdo_dev_start() ZB_SDCC_REENTRANT
         zb_buf_t *buf = zb_get_out_buf();
         buf->u.hdr.status = ZB_NWK_STATUS_SUCCESS;
         ZG->nwk.handle.joined = ZB_TRUE;
+        ZB_GET_OUT_BUF_DELAYED(zdo_send_device_annce);
+        ZB_GET_OUT_BUF_DELAYED(zdo_schedule_parent_annce);
         ZB_SCHEDULE_CALLBACK(zb_zdo_startup_complete, ZB_REF_FROM_BUF(buf));
 #endif
         TRACE_MSG(TRACE_APS1, "already in nw", (FMT__0));
@@ -292,6 +294,8 @@ void zb_nlme_permit_joining_confirm(zb_uint8_t param) ZB_CALLBACK
     ZB_BUF_FROM_REF(param)->u.hdr.status = 0;
 
     zb_address_by_short(ZB_PIB_SHORT_ADDRESS(), ZB_TRUE, ZB_FALSE, &addr_ref);
+    ZB_GET_OUT_BUF_DELAYED(zdo_send_device_annce);
+    ZB_GET_OUT_BUF_DELAYED(zdo_schedule_parent_annce);
     ZB_SCHEDULE_CALLBACK(zb_zdo_startup_complete, param);
 
 }
@@ -438,7 +442,10 @@ void zdo_join_done(zb_uint8_t param) ZB_CALLBACK
     else
 #endif
     {
+        /* should also be done prior joining */
         ZB_SCHEDULE_CALLBACK(zdo_send_device_annce, param);
+        /* this is mandatory after reboot/join */
+        ZB_GET_OUT_BUF_DELAYED(zdo_schedule_parent_annce);
     }
 
     /* inform ZLL */
@@ -595,6 +602,86 @@ void zdo_send_device_annce(zb_uint8_t param) ZB_CALLBACK
 #endif
 }
 
+void zdo_send_parent_annce(zb_uint8_t param) ZB_CALLBACK
+{
+    TRACE_MSG(TRACE_ZDO1, "send parent_annce", (FMT__0));
+
+    zb_buf_t *buf = ZB_BUF_FROM_REF(param);
+    ZB_AIB().aps_parent_annce_timer = 0;
+    zb_zdo_parent_annce_t req;
+
+    req.num_children = 0;
+    zb_ushort_t i;
+    // TODO: add keepalive to neighbors, and check them here
+    zb_neighbor_tbl_ent_t *ent;
+    for (i = 0; i < ZG->nwk.neighbor.base_neighbor_used; i++) {
+        ent = &ZG->nwk.neighbor.base_neighbor[i];
+        if (ent->device_type == ZB_NWK_DEVICE_TYPE_ED) {
+            zb_address_ieee_by_ref(req.children[req.num_children], ent->addr_ref);
+            req.num_children++;
+        }
+    }
+    if (ZG->nwk.neighbor.ext_neighbor_size) {
+        zb_ext_neighbor_tbl_ent_t *ext_ent;
+        zb_bool_t exists;
+        zb_ieee_addr_t addr;
+        for (i = 0; i < ZG->nwk.neighbor.ext_neighbor_used; i++) {
+            ext_ent = &ZG->nwk.neighbor.ext_neighbor[i];
+            if (ext_ent->device_type == ZB_NWK_DEVICE_TYPE_ED) {
+                // avoid duplicates
+                exists = ZB_FALSE;
+                zb_ieee_addr_decompress(addr, &ext_ent->long_addr);
+                for (zb_ushort_t j = 0; j < req.num_children; j++) {
+                    if (!ZB_IEEE_ADDR_CMP(req.children[j], addr)) {
+                        exists = ZB_TRUE;
+                        break;
+                    }
+                }
+                if (!exists) {
+                    ZB_IEEE_ADDR_COPY(req.children[req.num_children], addr);
+                    req.num_children++;
+                }
+            }
+        }
+    }
+
+    if (req.num_children == 0) {
+        zb_free_buf(buf);
+        return;
+    }
+    zb_ushort_t size = sizeof(zb_zdo_parent_annce_t) -  sizeof(zb_ieee_addr_t) * 
+        (ZB_NWK_MAX_CHILDREN - req.num_children);
+    zb_zdo_parent_annce_t *ptr;
+    ZB_BUF_INITIAL_ALLOC(buf, size, ptr);
+    ZB_MEMCPY(ptr, &req, size);
+    ZDO_CTX().tsn++;
+    ptr->tsn = ZDO_CTX().tsn;
+
+    zb_apsde_data_req_t *dreq = ZB_GET_BUF_TAIL(ZB_BUF_FROM_REF(
+                                                        param),
+                                                    sizeof(zb_apsde_data_req_t));
+
+    ZB_BZERO(dreq, sizeof(*dreq));
+    /* Boradcast to routers and coordinators. */
+    dreq->dst_addr = ZB_NWK_BROADCAST_ROUTER_COORDINATOR;
+    dreq->addr_mode = ZB_APS_ADDR_MODE_16_ENDP_PRESENT;
+    /* use default radius, max_depth * 2 */
+    dreq->clusterid = ZDO_PARENT_ANNCE_RESP_CLID;
+
+    ZB_SCHEDULE_CALLBACK(zb_apsde_data_request, param);
+}
+
+void zdo_schedule_parent_annce(zb_uint8_t param) ZB_CALLBACK
+{
+    if (ZB_AIB().aps_parent_annce_timer) {
+        ZB_SCHEDULE_ALARM_CANCEL(zdo_send_parent_annce, ZB_ALARM_ANY_PARAM);
+    }
+    do {
+        ZB_AIB().aps_parent_annce_timer = ZB_RANDOM();
+    } while (ZB_AIB().aps_parent_annce_timer >= ZB_APS_PARENT_ANNCE_JITTER_MAX);
+    ZB_AIB().aps_parent_annce_timer += ZB_APS_PARENT_ANNCE_BASE_TIMER;
+    ZB_SCHEDULE_ALARM(zdo_send_parent_annce, param, ZB_AIB().aps_parent_annce_timer);
+}
 
 #if 0
 /**
@@ -658,6 +745,8 @@ void zb_apsde_data_confirm(zb_uint8_t param) ZB_CALLBACK
                   (FMT__H, buf->u.hdr.status));
         if (!ZG->zdo.handle.started) {
             ZG->zdo.handle.started = 1;
+            ZB_GET_OUT_BUF_DELAYED(zdo_send_device_annce);
+            ZB_GET_OUT_BUF_DELAYED(zdo_schedule_parent_annce);
             ZB_SCHEDULE_CALLBACK(zb_zdo_startup_complete, param);
         }
     }
