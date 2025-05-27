@@ -62,6 +62,7 @@
 
 #ifdef ZB_ROUTER_ROLE
 static void zdo_device_annce_srv(zb_uint8_t param, void *dt) ZB_SDCC_REENTRANT;
+static void zdo_parent_annce(zb_uint8_t param) ZB_SDCC_REENTRANT;
 #endif
 
 void zb_zdo_data_indication(zb_uint8_t param) ZB_CALLBACK
@@ -337,6 +338,17 @@ void zb_zdo_data_indication(zb_uint8_t param) ZB_CALLBACK
     else if (ind->clusterid == ZDO_MGMT_NWK_UPDATE_NOTIFY_CLID) {
 
     }
+    else if (ind->clusterid == ZDO_PARENT_ANNCE_CLID) {
+        if (ZB_AIB().aps_parent_annce_timer) {
+            ZB_GET_OUT_BUF_DELAYED(zdo_schedule_parent_annce);
+        }
+#ifdef ZB_ROUTER_ROLE
+        /* only routers respond */
+        if (ZB_NIB_DEVICE_TYPE() == ZB_NWK_DEVICE_TYPE_ROUTER) {
+            zdo_parent_annce(param);
+        }
+#endif
+    }
     else
 #endif  /* ZB_LIMITED_FEATURES */
     {
@@ -352,6 +364,83 @@ void zb_zdo_data_indication(zb_uint8_t param) ZB_CALLBACK
     }
 }
 
+#ifdef ZB_ROUTER_ROLE
+static void zdo_parent_annce(zb_uint8_t param) ZB_SDCC_REENTRANT
+{
+    zb_buf_t *buf = ZB_BUF_FROM_REF(param);
+    zb_mac_mhr_t mac_hdr;
+    zb_parse_mhr(&mac_hdr, buf->buf + buf->u.hdr.mac_hdr_offset);
+    zb_uint16_t source = mac_hdr.src_addr.addr_short;
+    zb_free_buf(buf);
+    buf = zb_get_out_buf();
+    zb_zdo_parent_annce_resp_t resp;
+    resp.status = 0x00;
+    
+    
+    TRACE_MSG(TRACE_ZDO1, ">> zdo_parent_annce %p", (FMT__P, dt));
+
+    resp.num_children = 0;
+    zb_ushort_t i;
+    // TODO: add keepalive to neighbors, and check them here
+    zb_neighbor_tbl_ent_t *ent;
+    for (i = 0; i < ZG->nwk.neighbor.base_neighbor_used; i++) {
+        ent = &ZG->nwk.neighbor.base_neighbor[i];
+        if (ent->device_type == ZB_NWK_DEVICE_TYPE_ED) {
+            zb_address_ieee_by_ref(resp.children[resp.num_children], ent->addr_ref);
+            resp.num_children++;
+        }
+    }
+    if (ZG->nwk.neighbor.ext_neighbor_size) {
+        zb_ext_neighbor_tbl_ent_t *ext_ent;
+        zb_bool_t exists;
+        zb_ieee_addr_t addr;
+        for (i = 0; i < ZG->nwk.neighbor.ext_neighbor_used; i++) {
+            ext_ent = &ZG->nwk.neighbor.ext_neighbor[i];
+            if (ext_ent->device_type == ZB_NWK_DEVICE_TYPE_ED) {
+                // avoid duplicates
+                exists = ZB_FALSE;
+                zb_ieee_addr_decompress(addr, &ext_ent->long_addr);
+                for (zb_ushort_t j = 0; j < resp.num_children; j++) {
+                    if (!ZB_IEEE_ADDR_CMP(resp.children[j], addr)) {
+                        exists = ZB_TRUE;
+                        break;
+                    }
+                }
+                if (!exists) {
+                    ZB_IEEE_ADDR_COPY(resp.children[resp.num_children], addr);
+                    resp.num_children++;
+                }
+            }
+        }
+    }
+
+    if (resp.num_children == 0) {
+        zb_free_buf(buf);
+        return;
+    }
+    zb_ushort_t size = sizeof(zb_zdo_parent_annce_resp_t) -  sizeof(zb_ieee_addr_t) * 
+        (ZB_NWK_MAX_CHILDREN - resp.num_children);
+    zb_zdo_parent_annce_resp_t *ptr;
+    ZB_BUF_INITIAL_ALLOC(buf, size, ptr);
+    ZB_MEMCPY(ptr, &resp, size);
+    ZDO_CTX().tsn++;
+    ptr->tsn = ZDO_CTX().tsn;
+
+    zb_apsde_data_req_t *dreq = ZB_GET_BUF_TAIL(ZB_BUF_FROM_REF(
+                                                        param),
+                                                    sizeof(zb_apsde_data_req_t));
+
+    ZB_BZERO(dreq, sizeof(*dreq));
+    /* Unicast to sender. */
+    dreq->dst_addr = source;
+    dreq->addr_mode = ZB_APS_ADDR_MODE_16_ENDP_PRESENT;
+    /* use default radius, max_depth * 2 */
+    dreq->clusterid = ZDO_PARENT_ANNCE_RESP_CLID;
+
+    ZB_SCHEDULE_CALLBACK(zb_apsde_data_request, param);
+    
+}
+#endif /* ROUTER */
 
 #ifdef ZB_ROUTER_ROLE
 static void zdo_device_annce_srv(zb_uint8_t param, void *dt) ZB_SDCC_REENTRANT

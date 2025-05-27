@@ -68,6 +68,7 @@
 #define  ZDO_MATCH_DESC_REQ_CLID  0x6
 #define  ZDO_DEVICE_ANNCE_CLID    0x13
 #define  ZDO_SYSTEM_SERVER_DISCOVERY_REQ_CLID 0x15
+#define  ZDO_PARENT_ANNCE_CLID    0x1f
 #define  ZDO_END_DEVICE_BIND_REQ_CLID 0x20
 #define  ZDO_BIND_REQ_CLID        0x21
 #define  ZDO_UNBIND_REQ_CLID      0x22
@@ -85,6 +86,7 @@
 #define  ZDO_ACTIVE_EP_RESP_CLID   0x8005
 #define  ZDO_MATCH_DESC_RESP_CLID  0x8006
 #define  ZDO_SYSTEM_SERVER_DISCOVERY_RESP_CLID 0x8015
+#define  ZDO_PARENT_ANNCE_RESP_CLID 0x801f
 #define  ZDO_END_DEVICE_BIND_RESP_CLID 0x8020
 #define  ZDO_BIND_RESP_CLID        0x8021
 #define  ZDO_UNBIND_RESP_CLID      0x8022
@@ -1595,6 +1597,50 @@ void zb_zdo_add_group_req(zb_uint8_t param, zb_callback_t cb);
 /*! \addtogroup ZB_ZDO ZDO internals */
 /*! @{ */
 
+/**
+   Parameters of Parent_annce_resp primitive.
+
+   To be put into buffer as data (means - after space alloc).
+ */
+typedef struct zb_zdo_parent_annce_resp_s {
+    zb_uint8_t tsn;
+    zb_uint8_t status;
+    zb_uint8_t num_children;
+    zb_ieee_addr_t children[ZB_NWK_MAX_CHILDREN];
+} ZB_PACKED_STRUCT
+zb_zdo_parent_annce_resp_t;
+
+/**
+   Parent_annce_resp primitive.
+
+   For handling a parent announcement.
+
+   @param param - index of buffer with primitive parameters. Parameters must be
+   put into buffer as data (allocated).
+ */
+void zb_zdo_parent_annce(zb_uint8_t param) ZB_SDCC_REENTRANT;
+
+/**
+   Parameters of Parent_annce primitive.
+
+   To be put into buffer as data (means - after space alloc).
+ */
+typedef struct zb_zdo_parent_annce_s {
+    zb_uint8_t tsn;
+    zb_uint8_t num_children;
+    zb_ieee_addr_t children[ZB_NWK_MAX_CHILDREN];
+} ZB_PACKED_STRUCT
+zb_zdo_parent_annce_t;
+
+/**
+   Parent_annce primitive.
+
+   For sending a parent announcement.
+
+   @param param - index of buffer with primitive parameters. Parameters must be
+   put into buffer as data (allocated).
+ */
+void zdo_schedule_parent_annce(zb_uint8_t param) ZB_SDCC_REENTRANT;
 
 /**
    Parameters of Device_annce primitive.

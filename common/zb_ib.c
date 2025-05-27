@@ -113,6 +113,7 @@ void zb_ib_set_defaults(zb_char_t *rx_pipe) ZB_CALLBACK
     TRACE_MSG(TRACE_APS3, "aps_channel_mask 0x%x",
               (FMT__D, ZB_AIB().aps_channel_mask));
 
+    ZB_AIB().aps_parent_annce_timer = 0;
     ZB_AIB().aps_insecure_join = 1;
 
 #ifdef ZB_SECURITY

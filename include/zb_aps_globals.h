@@ -135,6 +135,9 @@ typedef struct zb_apsib_s {
                                                    to form or join a network at startup time.  */
     zb_ext_pan_id_t aps_use_extended_pan_id;    /*!< The 64-bit identifier of the network to join
                                                    or form.  */
+    zb_time_t aps_parent_annce_timer;          /*!< The value of the current countdown timer before
+                                                   the next Parent_annce is sent.  */
+    
 
     zb_ieee_addr_t trust_center_address;
 } zb_apsib_t;
@@ -198,6 +201,8 @@ typedef struct zb_aps_tmp_s {
                                                          ZB_APS_CHANNEL_MANAGER_ED_SCAN_MASK)
 #define ZB_APS_GET_CHANNEL_MANAGER_ED_SCAN_FLAG() (ZG->aps.flags & \
                                                    ZB_APS_CHANNEL_MANAGER_ED_SCAN_MASK)
+#define ZB_APS_PARENT_ANNCE_BASE_TIMER      (10 * ZB_TIME_ONE_SECOND)
+#define ZB_APS_PARENT_ANNCE_JITTER_MAX      (10 * ZB_TIME_ONE_SECOND)
 
 
 /**
