@@ -665,6 +665,32 @@ void zb_nlme_send_status(zb_uint8_t param) ZB_CALLBACK
 
     TRACE_MSG(TRACE_NWK1, "<< zb_nlme_send_status", (FMT__0));
 }
+
+void zb_nlme_send_link_status(zb_uint8_t param) ZB_CALLBACK
+{
+    zb_buf_t *buf = ZB_BUF_FROM_REF(param);
+
+    TRACE_MSG(TRACE_NWK1, ">> zb_nlme_send_link_status param %hd", (FMT__H, param));
+
+    zb_bool_t secure = (zb_bool_t)(ZG->aps.authenticated &&
+                        ZG->nwk.nib.secure_all_frames && ZG->nwk.nib.security_level);
+
+    nwk_alloc_and_fill_hdr(buf, ZB_NWK_BROADCAST_ROUTER_COORDINATOR,
+                           ZB_PIB_EXTENDED_ADDRESS(), NULL, ZB_FALSE, secure, ZB_TRUE);
+
+    zb_uint8_t *opt = (zb_uint8_t *)nwk_alloc_and_fill_cmd(buf, ZB_NWK_CMD_LINK_STATUS,
+                                                           sizeof(zb_uint8_t));
+    /* TODO: keep track of neighboring link status info */
+    /* this is the first and last frame and we do not have any link status info */
+    *opt = 0 | (1 << 6) | (1 << 5);
+    /* transmit link status packet */
+    ZB_SET_BUF_PARAM(buf, ZB_NWK_INTERNAL_NSDU_HANDLE, zb_uint8_t);
+    ZB_SCHEDULE_CALLBACK(zb_nwk_forward, param);
+
+    TRACE_MSG(TRACE_NWK1, "<< zb_nlme_send_link_status", (FMT__0));
+
+
+}
 #endif
 
 /*! @} */
