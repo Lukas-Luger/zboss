@@ -70,7 +70,7 @@ void zb_intrp_data_request(zb_uint8_t param) ZB_CALLBACK
     } 
 
     // APS frame
-    zb_int8_t *ptr;
+    zb_uint8_t *ptr;
     ZB_BUF_ALLOC_LEFT(du, 5, ptr);
     *ptr = fc; // 0x08 = Boradcast | 0x0C = group addr //FCF
     ptr++;
