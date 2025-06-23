@@ -6,16 +6,7 @@
 
 /*! \addgroup ZB_ZCL */
 /*! @{ */
-/**
- * Cluster IDs
- */
-#define ZB_ON_OFF_CLUSTER_ID 0x0006
-#define ZB_ZLL_CLUSTER_ID    0x1000
-/**
- * Profile IDs
- */
-#define ZB_HA_PROFILE_ID  0x0104
-#define ZB_ZLL_PROFILE_ID 0xc05e
+
 /**
  * fills zcl hdr
  */

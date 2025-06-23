@@ -53,6 +53,118 @@
 /*! @{ */
 
 /**
+ * Cluster IDs
+ */
+#define ZB_ON_OFF_CLUSTER_ID 0x0006
+#define ZB_ZLL_CLUSTER_ID    0x1000
+/**
+ * Profile IDs
+ */
+/* Industrial Plant Monitoring */
+#define ZB_IND_PL_MON_PROFILE_ID    0x0101
+/* Home automation*/
+#define ZB_HA_PROFILE_ID            0x0104
+/* Commercial Building Automation */
+#define ZB_COMM_B_AUTOM_PROFILE_ID  0x0105
+/* Personal Home and Hospital Care */
+#define ZB_HOME_HOSP_PROFILE_ID     0x0108
+/* Advanced Metering Initiative */
+#define ZB_ADV_METERING_PROFILE_ID  0x0109
+/* ZigBee Light Link */
+#define ZB_ZLL_PROFILE_ID           0xc05e
+/**
+ * Device IDs for HA
+ */
+/* ON/OFF Switch */
+#define ZB_HA_ON_OFF_SW_DEV_ID      0x0000
+/* Level Control Switch */
+#define ZB_HA_LVL_CTRL_SW_DEV_ID    0x0001
+/* ON/OFF Output */
+#define ZB_HA_ON_OFF_OUTP_DEV_ID    0x0002
+/* Level Controllable Output */
+#define ZB_HA_LVL_CTRL_OUTP_DEV_ID  0x0003
+/* Scene Selector */
+#define ZB_HA_SCENE_SEL_DEV_ID      0x0004
+/* Configuration Tool */
+#define ZB_HA_CONF_TOOL_DEV_ID  	0x0005
+/* Remote control */
+#define ZB_HA_REMOTE_CTRL_DEV_ID	0x0006
+/* Combined Interface */
+#define ZB_HA_COMB_IF_DEV_ID    	0x0007
+/* Range Extender */
+#define ZB_HA_RANGE_EXT_DEV_ID  	0x0008
+/* Mains Power Outlet */
+#define ZB_HA_MAINS_PWR_OUTL_DEV_ID	0x0009
+/* ON/OFF Light */
+#define ZB_HA_ON_OFF_LIGHT_DEV_ID   0x0100
+/* Dimmable Light */
+#define ZB_HA_DIMM_LIGHT_DEV_ID 	0x0101
+/* Color Dimmable Light */
+#define ZB_HA_COL_DIMM_L_DEV_ID 	0x0102
+/* ON/OFF Light Switch */
+#define ZB_HA_ON_OFF_L_SW_DEV_ID	0x0103
+/* Dimmer Switch */
+#define ZB_HA_DIMM_SW_DEV_ID    	0x0104
+/* Color Dimmer Switch */
+#define ZB_HA_COL_DIMM_SW_DEV_ID	0x0105
+/* Light Sensor */
+#define ZB_HA_LIGHT_SENS_DEV_ID 	0x0106
+/* Occupancy Sensor */
+#define ZB_HA_OCC_SENS_DEV_ID   	0x0107
+/* ON/OFF Ballast */
+#define ZB_HA_ON_OFF_BALL_DEV_ID    0x0108
+/* Dimmable Ballast */
+#define ZB_HA_DIMM_BALL_DEV_ID      0x0109
+/* On/off plug-in unit */
+#define ZB_HA_ON_OFF_PLUG_DEV_ID    0x010a
+/* Dimmable plug-in unit */
+#define ZB_HA_DIMM_PLUG_DEV_ID      0x010b
+/* Color temperature light */
+#define ZB_HA_COL_TEMP_LIGHT_DEV_ID 0x010c
+/* Extended color light */
+#define ZB_HA_COLOR_LIGHT_DEV_ID    0x010d
+/* Light level sensor */
+#define ZB_HA_LVL_SENS_DEV_ID       0x010e
+/* Shade */
+#define ZB_HA_SHADE_DEV_ID      	0x0200
+/* Shade Controller */
+#define ZB_HA_SHADE_CTRL_DEV_ID 	0x0201
+/* Heating/Cooling Unit */
+#define ZB_HA_HEAT_COOL_DEV_ID  	0x0300
+/* Thermostat */
+#define ZB_HA_THERMO_DEV_ID        	0x0301
+/* Temperature Sensor */
+#define ZB_HA_TEMP_SENS_DEV_ID  	0x0302
+/* Pump */
+#define ZB_HA_PUMP_DEV_ID       	0x0303
+/* Pump Controller */
+#define ZB_HA_PUMP_CTRL_DEV_ID  	0x0304
+/* Pressure Sensor */
+#define ZB_HA_PRESSURE_SENS_DEV_ID	0x0305
+/* Flow sensor */
+#define ZB_HA_FLOW_SENS_DEV_ID  	0x0306
+/* IAS Control and Indicating Equipment */
+#define ZB_HA_IAS_CTRL_IND_DEV_ID	0x0400
+/* IAS Ancillary Control Equipment */
+#define ZB_HA_IAS_ANC_CTRL_DEV_ID	0x0401
+/* IAS Zone */
+#define ZB_HA_IAS_ZONE_DEV_ID   	0x0402
+/* IAS Warning Device */
+#define ZB_HA_IAS_WARNDEV_ID    	0x0403
+/* Color controller */
+#define ZB_HA_COL_CTRL_DEV_ID       0x0800
+/* Color scene controller */
+#define ZB_HA_COL_SCENE_CTRL_DEV_ID 0x0810
+/* Non-color controller */
+#define ZB_HA_NON_COL_CTRL_DEV_ID   0x0820
+/* Non-color scene controller */
+#define ZB_HA_NON_COL_SC_CTR_DEV_ID 0x0830
+/* Control bridge */
+#define ZB_HA_CTRL_BR_DEV_ID        0x0840
+/* On/off sensor */
+#define ZB_HA_ON_OFF_SENS_DEV_ID    0x0850
+
+/**
    Response for ZLL scan request
  */
 typedef struct zb_zll_scan_resp_s {
@@ -102,7 +214,12 @@ typedef struct zb_zll_comm_attr_s {
     zb_ieee_addr_t responder_addr;
     zb_uint16_t responder_addr_short;
     zb_zll_scan_resp_t scan_response;
+    zb_uint8_t initiator_tl_info;
+    zb_uint8_t initiator_zb_info;
+    zb_uint8_t dev_info_start;
     zb_uint8_t prev_channel;
+    zb_bool_t received_join_net;
+    zb_buf_t *net_p_buf;
 } zb_zll_comm_attr_t;
 
 /**
@@ -456,6 +573,14 @@ void zll_start_tl_scan();
 void zll_nwk_rejoin();
 
 void zll_nwk_rejoin_cb();
+
+void zll_nwk_direct_join_cb();
+
+void zll_nwk_leave_conf_cb();
+
+void zll_nwk_start_router_conf_cb();
+
+void zll_nwk_disc_conf_cb(zb_uint8_t param);
 
 /**
  * On/Off Cluster functions
