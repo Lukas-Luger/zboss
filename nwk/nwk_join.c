@@ -1020,6 +1020,46 @@ void zb_nlme_join_request(zb_uint8_t param) ZB_CALLBACK
     TRACE_MSG(TRACE_NWK1, "<<join_req %d", (FMT__D, ret));
 }
 
+void zb_nlme_direct_join_confirm(zb_uint8_t param) ZB_CALLBACK
+{
+    zb_nlme_direct_join_confirm_t *confirm = ZB_GET_BUF_PARAM((zb_buf_t *)ZB_BUF_FROM_REF(
+                                                                param),
+                                                            zb_nlme_direct_join_confirm_t);
+    TRACE_MSG(TRACE_NWK1, "+direct_join_confirm status %d", (FMT__D, confirm->status));
+    if (ZLL_COMM().state == ZB_ZLL_COMM_INIT_NET) {
+        zll_nwk_direct_join_cb();
+    }
+    zb_free_buf(ZB_BUF_FROM_REF(param));
+
+}
+
+void zb_nlme_direct_join_request(zb_uint8_t param) ZB_CALLBACK
+{
+    // TODO: What shall we do with capability_information?
+    zb_nlme_direct_join_request_t *request = ZB_GET_BUF_PARAM((zb_buf_t *)ZB_BUF_FROM_REF(
+                                                                param),
+                                                            zb_nlme_direct_join_request_t);
+    zb_neighbor_tbl_ent_t *nbt;
+    zb_address_ieee_ref_t dev_addr;
+    zb_address_by_ieee(request->device_address, ZB_TRUE, ZB_FALSE, &dev_addr);
+    zb_ret_t ret = zb_nwk_neighbor_get(dev_addr, ZB_TRUE, &nbt);
+    zb_nlme_direct_join_confirm_t *resp = ZB_GET_BUF_PARAM((zb_buf_t *)ZB_BUF_FROM_REF(
+                                                                param),
+                                                            zb_nlme_direct_join_confirm_t);
+    switch(ret){
+        case RET_OK: 
+            resp->status = ZB_NWK_STATUS_SUCCESS;    
+            break; 
+        case RET_NO_MEMORY:
+            resp->status = ZB_NWK_STATUS_NEIGHBOR_TABLE_FULL;
+            break;
+        default:
+            resp->status = ZB_NWK_STATUS_ALREADY_PRESENT;
+            break;
+    }
+    zb_address_ieee_by_ref(resp->device_address, dev_addr);
+    ZB_SCHEDULE_CALLBACK(zb_nlme_direct_join_confirm, param);
+}
 
 void zb_mlme_comm_status_indication(zb_uint8_t param) ZB_CALLBACK
 {
