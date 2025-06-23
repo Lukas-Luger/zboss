@@ -623,7 +623,7 @@ void zll_comm_signal(zb_zll_comm_state_t state)
     }
 }
 
-void handle_zll(zb_uint16_t src_addr, zb_uint8_t src_ep,
+void handle_zll_cli(zb_uint16_t src_addr, zb_uint8_t src_ep,
                 zb_uint16_t profile_id, zb_uint8_t param,
                 zb_zcl_cluster_t *cluster)
 {
@@ -704,7 +704,7 @@ void zb_zcl_zll_initiator_setup()
         APL_CTX().free_addr_range_begin++;
     }
     (void)zb_zcl_register_cluster(1 /* EP 1 */, ZB_ZLL_CLUSTER_ID /* TL Cluster */,
-                                  NULL /* attr list */, handle_zll, NULL /* action */);
+                                  NULL /* attr list */, handle_zll_cli, NULL /* action */);
     /**
      * from BDB 10.2.2: if TC is not known - commissionig process should set it to broadcast
      * TODO: move this to BDB logic when possible 

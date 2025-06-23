@@ -92,6 +92,16 @@ typedef struct zb_zll_net_start_resp_s {
 } ZB_PACKED_STRUCT
     zb_zll_net_start_resp_t;
 
+typedef struct zb_zll_net_update_req_s {
+    zb_uint32_t transaction_id;
+    zb_ieee_addr_t ext_pan_id;
+    zb_uint8_t net_update_id;
+    zb_uint8_t channel;
+    zb_uint16_t pan_id;
+    zb_uint16_t network_address;
+} ZB_PACKED_STRUCT
+    zb_zll_net_update_req_t;
+
 /**
  * Data structure for network join router and end device req and resp
  */
@@ -120,6 +130,8 @@ typedef struct zb_zll_net_join_resp_s {
     zb_zll_net_join_resp_t;
 
 void zb_zcl_zll_initiator_setup();
+
+void zb_zcl_zll_target_setup();
 /**
  * returns true if no device information is present in scan response aka need to send dev info req
  */

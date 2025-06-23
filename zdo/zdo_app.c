@@ -342,7 +342,11 @@ void zb_nlme_network_discovery_confirm(zb_uint8_t param) ZB_CALLBACK
     zb_nlme_network_descriptor_t *dsc;
     zb_ushort_t i;
     zb_nlme_join_request_t *req;
-
+    if (ZLL_COMM().state == ZB_ZLL_COMM_INIT_NET) {
+        /* Continue in ZLL */
+        ZB_SCHEDULE_CALLBACK(zll_nwk_disc_conf_cb, param);
+        return;
+    }
     TRACE_MSG(TRACE_NWK1, "disc st %hd",
               (FMT__H, ((zb_buf_t *)ZB_BUF_FROM_REF(param))->u.hdr.status));
     cnf = (zb_nlme_network_discovery_confirm_t *)ZB_BUF_BEGIN((zb_buf_t *)ZB_BUF_FROM_REF(
@@ -435,7 +439,7 @@ void zdo_join_done(zb_uint8_t param) ZB_CALLBACK
     TRACE_MSG(TRACE_NWK1, ">>join_done %hd", (FMT__H, param));
 
     /* Not sure this is right, but let's send annonce after authentication complete */
-#ifdef ZB_SECURITY
+#if 0 //ZB_SECURITY
     if (ZG->nwk.nib.security_level != 0) {
         zb_free_buf(ZB_BUF_FROM_REF(param));
     }
@@ -451,6 +455,9 @@ void zdo_join_done(zb_uint8_t param) ZB_CALLBACK
     /* inform ZLL */
     if (ZLL_COMM().state == ZB_ZLL_COMM_REJOIN) {
         zll_nwk_rejoin_cb();
+    }
+    if (ZLL_COMM().state == ZB_ZLL_COMM_INIT_NET) {
+        zll_nwk_start_router_conf_cb();
     }
     /* clear poll retry count */
     ZDO_CTX().parent_threshold_retry = 0;
@@ -666,7 +673,7 @@ void zdo_send_parent_annce(zb_uint8_t param) ZB_CALLBACK
     dreq->dst_addr = ZB_NWK_BROADCAST_ROUTER_COORDINATOR;
     dreq->addr_mode = ZB_APS_ADDR_MODE_16_ENDP_PRESENT;
     /* use default radius, max_depth * 2 */
-    dreq->clusterid = ZDO_PARENT_ANNCE_RESP_CLID;
+    dreq->clusterid = ZDO_PARENT_ANNCE_CLID;
 
     ZB_SCHEDULE_CALLBACK(zb_apsde_data_request, param);
 }
@@ -1140,6 +1147,10 @@ void zb_nlme_leave_confirm(zb_uint8_t param) ZB_CALLBACK
     else {
         /* leave after mgmt resp will be sent */
         ZG->nwk.leave_context.leave_after_mgmt_leave_rsp_conf = will_leave;
+    }
+    /* logic above should happen prior to confirm! see 3.2.2.18.3 */
+    if (ZLL_COMM().state == ZB_ZLL_COMM_INIT_NET) {
+        zll_nwk_leave_conf_cb();
     }
 #endif
 }

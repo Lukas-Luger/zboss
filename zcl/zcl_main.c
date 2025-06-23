@@ -23,7 +23,7 @@ void zb_zcl_cib_init()
     ZG->zcl.cluster_num = 0;
     ZB_BZERO(&ZG->zcl.cluster, ZB_ZCL_CLUSTER_NUM);
 
-    zb_zcl_zll_initiator_setup();
+    zb_zcl_zll_target_setup();
     TRACE_MSG(TRACE - ZCL1, "<<cib_init", (FMT__0));
 }
 
