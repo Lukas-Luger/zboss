@@ -125,8 +125,8 @@ zb_zcl_cluster_t *zb_zcl_find_cluster(zb_uint16_t cluster_id)
     zb_ushort_t i;
     zb_zcl_cluster_t *ret = NULL;
     for (i = 0; i < ZG->zcl.cluster_num; i++) {
-        ret = &ZG->zcl.cluster[i];
-        if (ret->cluster_id == cluster_id) {
+        if (ZG->zcl.cluster[i].cluster_id == cluster_id) {
+            ret = &ZG->zcl.cluster[i];
             break;
         }
     }
