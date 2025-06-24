@@ -211,8 +211,8 @@ void zb_zdo_startup_complete(zb_uint8_t param)
               (FMT__D, (int)buf->u.hdr.status));
     if (buf->u.hdr.status == 0) {
         LOG_INFO("ZDO started ok\n");
-        zb_af_set_data_indication(zb_data_indication);
-        zb_data_indication(param);
+        // zb_af_set_data_indication(zb_data_indication);
+        // zb_data_indication(param);
 
         zb_apsme_add_group_req_t *req;
         zb_buf_reuse(buf);
@@ -743,7 +743,12 @@ LOG_INFO("using page %u of internal flash as nonvolatile storage\n",
 #if defined BOARD_OPENLABS_KW41Z_MINI || 1
     ZG->nwk.handle.permit_join = 1;
     MAC_PIB().mac_association_permit = 1;
-    ZB_AIB().aps_designated_coordinator = 1;
+    /**
+     * Zero will do disovery and rejoin -> provides us with PAN ID
+     * One start as Coordinator -> PAN ID is zero (as coord should)
+     * BUT: with PAN ID 0x0000 we do get ignored as Touchlink Target
+     */
+    ZB_AIB().aps_designated_coordinator = 0;
 //     ZG->nwk.handle.router_started = 1;
 #else
     ZB_AIB().aps_designated_coordinator = 0;
@@ -786,6 +791,7 @@ int cmd_zconfig(int argc, char *argv[])
 #else
     printf(" 0\n");
 #endif
+    printf("device type as int:\t %d\n", (zb_uint8_t)ZB_NIB_DEVICE_TYPE());
     switch(ZB_NIB_DEVICE_TYPE()){
         case ZB_NWK_DEVICE_TYPE_COORDINATOR:
             printf("device type:\t\t COORDINATOR\n");
@@ -822,7 +828,7 @@ int cmd_zconfig(int argc, char *argv[])
 #endif
     printf("PAN ID \t\t 0x%04x\n", MAC_PIB().mac_pan_id);
     zb_pretty_long_address(addr, sizeof(addr),
-                                            ZB_AIB().aps_use_extended_pan_id);
+                                            ZB_NIB_EXT_PAN_ID());
     printf("Extended Pan ID: \t %s\n", addr);
 
     printf("Short Address \t\t 0x%04x\n", ZG->mac.pib.mac_short_address);
