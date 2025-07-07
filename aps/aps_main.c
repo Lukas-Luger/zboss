@@ -442,7 +442,7 @@ static void aps_data_hdr_fill_datareq(zb_uint8_t fc, zb_apsde_data_req_t *req,
         aps_hdr_size -= 1 + 1 + 1; /* no dst_endpoint src_endpoint aps_counter */
     }
 
-    printf("aps_hdr_size: %u\n", aps_hdr_size);
+    // printf("aps_hdr_size: %u\n", aps_hdr_size);
 
 #ifdef ZB_SECURITY
     apsdu->u.hdr.encrypt_type = ZB_SECUR_NO_ENCR;
