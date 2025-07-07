@@ -26,6 +26,26 @@
 #define ZB_ZCL_GET_ADDR_ASS_CAP(tl_cap) (tl_cap & 2)
 
 #define ZB_IEEE_ADDR_BROADCAST          ((zb_ieee_addr_t){ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff })
+
+/**
+ * Touchlink Command IDs
+ */
+typedef enum zb_zll_cmd_e {
+    ZB_ZLL_SCAN_REQ_CMD_ID          = 0x00,
+    ZB_ZLL_SCAN_RESP_CMD_ID         = 0x01,
+    ZB_ZLL_DEV_INFO_REQ_CMD_ID      = 0x02,
+    ZB_ZLL_DEV_INFO_RESP_CMD_ID     = 0x03,
+    ZB_ZLL_IDENTIFY_REQ_CMD_ID      = 0x06,
+    ZB_ZLL_RESET_REQ_CMD_ID         = 0x07,
+    ZB_ZLL_NET_START_REQ_CMD_ID     = 0x10,
+    ZB_ZLL_NET_START_RESP_CMD_ID    = 0x11,
+    ZB_ZLL_NET_JOIN_R_REQ_CMD_ID    = 0x12,
+    ZB_ZLL_NET_JOIN_R_RESP_CMD_ID   = 0x13,
+    ZB_ZLL_NET_JOIN_ED_REQ_CMD_ID   = 0x14,
+    ZB_ZLL_NET_JOIN_ED_RESP_CMD_ID  = 0x15,
+    ZB_ZLL_NET_UPDATE_REQ_CMD_ID    = 0x16,
+} zb_zll_cmd_t;
+
 typedef struct zb_zll_scan_req_s {
     zb_uint32_t transaction_id;
     zb_uint8_t zigbee_information;
