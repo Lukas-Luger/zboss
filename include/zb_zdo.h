@@ -1574,7 +1574,8 @@ zb_zdo_mgmt_permit_joining_req_param_t;
    req = ZB_GET_BUF_PARAM(buf, zb_apsme_add_group_req_t);
    req->group_address = 10;
    req->endpoint = 66;
-   zb_zdo_add_group_req(param, group_add_conf1);
+   req->confirm_cb = group_add_conf1;
+   zb_zdo_add_group_req(param);
    }
 
    void group_add_conf1(zb_uint8_t param) ZB_CALLBACK
@@ -1587,8 +1588,28 @@ zb_zdo_mgmt_permit_joining_req_param_t;
 
    @endcode
  */
-void zb_zdo_add_group_req(zb_uint8_t param, zb_callback_t cb);
+void zb_zdo_add_group_req(zb_uint8_t param);
 
+/** 
+   ZDO interface for REMOVE-GROUP.request
+
+   @param param - (in/out) buffer with parameters
+ */
+void zb_zdo_remove_group_req(zb_uint8_t param);
+
+/** 
+   ZDO interface for REMOVE-ALL-GROUPS.request
+  
+   @param param - (in/out) buffer with parameters
+  */
+void zb_zdo_remove_all_groups_req(zb_uint8_t param);
+
+/** 
+   ZDO interface for ZCL Get Group Membership Command
+
+   @param param - (in/out) buffer with parameters
+  */
+void zb_zdo_get_group_membership_req(zb_uint8_t param);
 
 /*! @} */
 

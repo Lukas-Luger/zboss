@@ -219,13 +219,26 @@ void zb_zdo_bind_unbind_res(zb_uint8_t param, zb_bool_t bind) ZB_SDCC_REENTRANT
 }
 
 
-void zb_zdo_add_group_req(zb_uint8_t param, zb_callback_t cb)
+void zb_zdo_add_group_req(zb_uint8_t param)
 {
-    /* TODO: implement using register_zdo_cb? */
+    /* TODO: implement using register_zdo_cb? - no! done with cb in param*/
     zb_apsme_add_group_request(param);
-    zb_schedule_callback(cb, param);
 }
 
+void zb_zdo_remove_group_req(zb_uint8_t param)
+{
+    zb_apsme_remove_group_request(param);
+}
+
+void zb_zdo_remove_all_groups_req(zb_uint8_t param)
+{
+    zb_apsme_remove_all_groups_request(param);
+}
+
+void zb_zdo_get_group_membership_req(zb_uint8_t param)
+{
+    zb_apsme_get_group_membership_request(param);
+}
 void zb_get_peer_short_addr_cb(zb_uint8_t param) ZB_CALLBACK
 {
     zb_buf_t *buf = ZB_BUF_FROM_REF(param);
