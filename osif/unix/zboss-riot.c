@@ -214,19 +214,21 @@ void zb_zdo_startup_complete(zb_uint8_t param)
         // zb_af_set_data_indication(zb_data_indication);
         // zb_data_indication(param);
 
-        zb_apsme_add_group_req_t *req;
-        zb_buf_reuse(buf);
-        req = ZB_GET_BUF_PARAM(buf, zb_apsme_add_group_req_t);
-        req->group_address = g_group_id;
-        req->endpoint = 1;
-        zb_zdo_add_group_req(param, group_add_conf1);
+        // zb_apsme_add_group_req_t *req;
+        // zb_buf_reuse(buf);
+        // req = ZB_GET_BUF_PARAM(buf, zb_apsme_add_group_req_t);
+        // req->group_address = g_group_id;
+        // req->endpoint = 1;
+        // req->confirm_cb = group_add_conf1;
+        // zb_zdo_add_group_req(param);
 
-        zb_apsme_add_group_req_t *req2;
-        zb_buf_t *buf2 = zb_get_out_buf();
-        req2 = ZB_GET_BUF_PARAM(buf2, zb_apsme_add_group_req_t);
-        req2->group_address = 0;
-        req2->endpoint = 1;
-        zb_zdo_add_group_req(ZB_REF_FROM_BUF(buf2), group_add_conf1);
+        // zb_apsme_add_group_req_t *req2;
+        // zb_buf_t *buf2 = zb_get_out_buf();
+        // req2 = ZB_GET_BUF_PARAM(buf2, zb_apsme_add_group_req_t);
+        // req2->group_address = 0;
+        // req2->endpoint = 1;
+        // req2->confirm_cb = group_add_conf1;
+        // zb_zdo_add_group_req(ZB_REF_FROM_BUF(buf2));
     }
     else {
         zb_free_buf(buf);
