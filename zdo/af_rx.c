@@ -97,12 +97,11 @@ void zb_apsde_data_indication(zb_uint8_t param) ZB_CALLBACK
             }
             zb_zcl_cluster_t *cluster = zb_zcl_find_cluster(ind->clusterid);
             if(cluster){
-                ZB_APS_HDR_CUT(asdu);
-                zb_zcl_handle(ind->src_addr,ind->src_endpoint, ind->profileid, 
-                                asdu, cluster);
+                zb_zcl_handle(ZB_REF_FROM_BUF(asdu), cluster);
             
             }
             else {
+                puts("Cluster not found");
                 TRACE_MSG(TRACE_ERROR, "APS pkt for ep %hd - drop",
                           (FMT__H, ind->dst_endpoint));
                 zb_free_buf(asdu);

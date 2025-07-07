@@ -53,10 +53,25 @@
 /*! @{ */
 
 /**
- * Cluster IDs
+ * General Cluster IDs
  */
-#define ZB_ON_OFF_CLUSTER_ID 0x0006
-#define ZB_ZLL_CLUSTER_ID    0x1000
+/* Power Configuration */
+#define ZB_PWR_CFG_CLUSTER_ID   0x0001
+/* Device Temperature Configuration */
+#define ZB_DEV_TMP_CLUSTER_ID   0x0002
+/* Identify */
+#define ZB_IDENTIFY_CLUSTER_ID  0x0003
+/* Groups */
+#define ZB_GOUPS_CLUSTER_ID     0x0004
+/* Scenes */
+#define ZB_SCENES_CLUSTER_ID    0x0005
+/* On/Off */
+#define ZB_ON_OFF_CLUSTER_ID    0x0006
+/**
+ * Commissioning Cluster IDs
+ */
+/* Touchlink Commissioning */
+#define ZB_ZLL_CLUSTER_ID       0x1000
 /**
  * Profile IDs
  */
@@ -291,6 +306,8 @@ typedef enum zb_zcl_attr_access_e {
 typedef enum zb_zcl_status_e {
     ZB_ZCL_STATUS_SUCCESS               = 0x00,     /*!< ZCL Success */
     ZB_ZCL_STATUS_FAIL                  = 0x01,     /*!< ZCL Fail */
+    ZB_ZCL_STATUS_NOT_AUTHORIZED        = 0x7e,     /*!< Not authorized */
+    ZB_ZCL_STATUS_RESERVED_FIELD_NZ     = 0x7f,     /*!< Reserved field non-zero */
     ZB_ZCL_STATUS_MALFORMED_CMD         = 0x80,     /*!< Malformed command */
     ZB_ZCL_STATUS_UNSUP_CLUST_CMD       = 0x81,     /*!< Unsupported cluster
                                                        command */
@@ -309,9 +326,22 @@ typedef enum zb_zcl_status_e {
     ZB_ZCL_STATUS_NOT_FOUND             = 0x8b,     /*!< Not found */
     ZB_ZCL_STATUS_UNREPORTABLE_ATTRIB   = 0x8c,     /*!< Unreportable attribute */
     ZB_ZCL_STATUS_INVALID_TYPE          = 0x8d,     /*!< Invalid type */
+    ZB_ZCL_STATUS_INVALID_SELECTOR      = 0x8e,     /*!< Invalid attribute selector */
+    ZB_ZCL_STATUS_WRITE_ONLY            = 0x8f,     /*!< Write only */
+    ZB_ZCL_STATUS_INCON_STARTUP_STATE   = 0x90,     /*!< Inconsistent startup state */
+    ZB_ZCL_STATUS_DEFINED_OUT_OF_BAND   = 0x91,     /*!< Write attribute present but defined out-of-band */
+    ZB_ZCL_STATUS_INCONSISTENT          = 0x92,     /*!< Supplied values are inconsistent */
+    ZB_ZCL_STATUS_ACTION_DENIED         = 0x93,     /*!< Credenntials are not sufficient */
+    ZB_ZCL_STATUS_TIMEOUT               = 0x94,     /*!< exchange aborted due to excessive resp time */
+    ZB_ZCL_STATUS_ABORT                 = 0x95,     /*!< Client or Server aborts upgrade process */
+    ZB_ZCL_STATUS_INVALID_IMAGE         = 0x96,     /*!< Invalid OTA image*/
+    ZB_ZCL_STATUS_WAIT_FOR_DATA         = 0x97,     /*!< Server has not have datablock yet */
+    ZB_ZCL_STATUS_NO_IMAGE_AVAILABLE    = 0x98,     /*!< No image available for client */
+    ZB_ZCL_STATUS_REQUIRE_MORE_IMAGE    = 0x99,     /*!< Client requires more image files */
     ZB_ZCL_STATUS_HW_FAIL               = 0xc0,     /*!< Hardware failure */
     ZB_ZCL_STATUS_SW_FAIL               = 0xc1,     /*!< Software failure */
     ZB_ZCL_STATUS_CALIB_ERR             = 0xc2,     /*!< Calibration error */
+    ZB_ZCL_STATUS_UNSUPPORTED_CLUSTER   = 0xc3,     /*!< Cluster is not supported */
     ZB_ZCL_STATUS_DISC_COMPLETE         = 0x01,     /*!< Discovery complete */
     ZB_ZCL_STATUS_DISC_INCOMPLETE       = 0x00      /*!< Discovery incomplete */
 } zb_zcl_status_t;
@@ -335,7 +365,13 @@ typedef enum zb_zcl_frame_direction_e {
     ZB_ZCL_FRAME_DIRECTION_TO_CLI   = 0x01
 } zb_zcl_frame_direction_t;
 
-
+/**
+  ZCL cluster role
+ */
+typedef enum zb_zcl_cluster_role_e {
+    ZB_ZCL_SERVER_ROLE = 0x01,
+    ZB_ZCL_CLIENT_ROLE = 0x02
+} zb_zcl_cluster_role_t;
 /**
    ZCL attribute structure
  */
@@ -363,8 +399,9 @@ typedef struct zb_zcl_cluster_s zb_zcl_cluster_t;
 struct zb_zcl_cluster_s {
     zb_uint8_t ep;              /*!< Endpoint that cluster belongs to */
     zb_uint16_t cluster_id;     /*!< Cluster ID */
+    zb_zcl_cluster_role_t role; /*!< Cluster role (Server or Client)*/
     zb_zcl_attr_t *attr_list;   /*!< Cluster attribute list */
-
+    zb_uint8_t attr_count;
     zb_void_t (*handle)(zb_uint16_t, zb_uint8_t, zb_uint16_t, zb_uint8_t,
                         zb_zcl_cluster_t *) ZB_SDCC_REENTRANT;                                  /*!< Function to handle frames addressed to that cluster */
     zb_void_t (*action)(zb_uint16_t, zb_uint8_t, zb_uint16_t, zb_uint8_t,
@@ -483,7 +520,7 @@ void zb_zcl_init();
  */
 zb_zcl_cluster_t *zb_zcl_register_cluster(zb_uint8_t ep,
                                           zb_uint16_t cluster_id,
-                                          zb_zcl_attr_t *attr_list,
+                                          zb_zcl_cluster_role_t role,
                                           void (*handle)(zb_uint16_t,
                                                          zb_uint8_t,
                                                          zb_uint16_t,
@@ -507,12 +544,12 @@ zb_zcl_cluster_t *zb_zcl_find_cluster(zb_uint16_t cluster_id);
 /**
    Find attribute by attribute_id
 
-   @param attr_list - List of cluster attributes
+   @param cluster - Cluster containing attributes
    @param attribute_id - Attribute ID to be found
 
    @return Pointer to attribute structure if attribute found, NULL otherwise
  */
-zb_zcl_attr_t *zb_zcl_find_attribute(zb_zcl_attr_t *attr_list,
+zb_zcl_attr_t *zb_zcl_find_attribute(zb_zcl_cluster_t *cluster,
                                      zb_uint16_t attribute_id);
 
 /**
@@ -525,6 +562,20 @@ zb_zcl_attr_t *zb_zcl_find_attribute(zb_zcl_attr_t *attr_list,
 zb_uint8_t zb_zcl_get_attribute_size(zb_zcl_attr_t *attr);
 
 /**
+  Creates an attribute and adds it to a cluster
+
+  @param cluster - Cluster to add Attributes to
+  @param attr_id - Attribute ID
+  @param type - Attribute type (see zb_zcl_attr_type_t)
+  @param access - Access permissions (see zb_zcl_attr_access_t)
+  @param data_p - pointer to data
+
+  @return nothing
+ */
+void zb_zcl_add_attribute(zb_zcl_cluster_t *cluster, zb_uint16_t attr_id,
+                          zb_zcl_attr_type_t type, zb_zcl_attr_access_t access,
+                          zb_voidp_t data_p);
+/**
    Main function to handle ZCL commands
 
    @param src_addr - Addrees of the device that send this frame
@@ -535,9 +586,7 @@ zb_uint8_t zb_zcl_get_attribute_size(zb_zcl_attr_t *attr);
 
    @return nothing
  */
-void zb_zcl_handle(zb_uint16_t src_addr, zb_uint8_t src_ep,
-                   zb_uint16_t profile_id, zb_buf_t *buf,
-                   zb_zcl_cluster_t *cluster);
+void zb_zcl_handle(zb_uint8_t param, zb_zcl_cluster_t *cluster);
 
 
 /**
@@ -582,12 +631,6 @@ void zll_nwk_start_router_conf_cb();
 
 void zll_nwk_disc_conf_cb(zb_uint8_t param);
 
-/**
- * On/Off Cluster functions
- */
-void zb_zcl_send_on_off_toggle(zb_uint16_t addr, zb_uint8_t dst_ep, zb_uint8_t src_ep, zb_bool_t default_resp);
-void zb_zcl_send_on_off_on(zb_uint16_t addr, zb_uint8_t dst_ep, zb_uint8_t src_ep, zb_bool_t default_resp);
-void zb_zcl_send_on_off_off(zb_uint16_t addr, zb_uint8_t dst_ep, zb_uint8_t src_ep, zb_bool_t default_resp);
 /*! @} */
 
 #endif /* ZB_ZCL_H */
