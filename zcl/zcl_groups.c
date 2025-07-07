@@ -2,272 +2,408 @@
 #include "zb_aps.h"
 #include "zb_zdo.h"
 #include "zb_zcl_groups.h"
-
+#include "zcl_internal.h"
 #include "log.h"
 
-#include <stdbool.h>
-
-#define ENABLE_DEBUG (0)
-#include "debug.h"
-
-#if ENABLE_DEBUG
-#include "od.h"
-#else
-#define od_hex_dump(...)
-#endif
-
-extern uint16_t g_group_id;
-
-static uint8_t zcl_seq = 0;
-
-const zb_zcl_frame_ctrl_t default_fcf = {
-    .frame_type = ZB_ZCL_FRAME_TYPE_CLUSTER_SPECIFIED,
-    .manufacturer = 0,
-    .direction = ZB_ZCL_FRAME_DIRECTION_TO_CLI,
-    .disable_def_resp = 0,
-    .reserved = 0
-};
-
-void group_add_confirmation(zb_uint8_t param)
+/**
+ * Server Side
+ */
+static void send_add_group_resp(zb_uint8_t param) ZB_CALLBACK
 {
-    (void)param;
-    zb_apsme_add_group_conf_t *conf = ZB_GET_BUF_PARAM(ZB_BUF_FROM_REF(param), zb_apsme_add_group_conf_t);
-    printf("group add confirmation status: %i\n", conf->status);
+    zb_buf_t *buf = ZB_BUF_FROM_REF(param);
+    zb_apsme_add_group_conf_t conf;
+    zb_zcl_parsed_hdr_t zcl_hdr;
+    ZB_MEMCPY(&conf, ZB_GET_BUF_PARAM(buf, zb_apsme_add_group_conf_t), sizeof(zb_apsme_add_group_conf_t));
+    ZB_MEMCPY(&zcl_hdr, ZB_BUF_BEGIN(buf), sizeof(zb_zcl_parsed_hdr_t));
+    
+    zb_buf_reuse(buf);
+    zb_zcl_groups_add_group_resp_t *resp;
+    ZB_BUF_INITIAL_ALLOC(buf, sizeof(zb_zcl_groups_add_group_resp_t), resp);
+    resp->status = conf.status;
+    resp->group_id = conf.group_address;
+    (void)zcl_alloc_and_fill_hdr(buf, ZB_ZCL_FRAME_TYPE_CLUSTER_SPECIFIED,
+                                ZB_ZCL_FRAME_DIRECTION_TO_CLI, ZB_TRUE, ZB_ZCL_GROUPS_ADD_GROUP);
+
+    zb_apsde_data_req_t *req = ZB_GET_BUF_TAIL(buf, sizeof(zb_apsde_data_req_t));
+    req->dst_addr = zcl_hdr.src_addr;
+    req->profileid = zcl_hdr.profile_id;
+    req->clusterid = ZB_GOUPS_CLUSTER_ID;
+    req->dst_endpoint = zcl_hdr.src_endpoint;
+    req->src_endpoint = zcl_hdr.dst_endpoint;
+    req->addr_mode = ZB_APS_ADDR_MODE_16_ENDP_PRESENT;
+    req->tx_options = ZB_APSDE_TX_OPT_ACK_TX;
+    ZB_SCHEDULE_CALLBACK(zb_apsde_data_request, param);
 }
 
-void zb_zcl_handle_group_request(zb_uint8_t param)
+void handle_add_group(zb_uint8_t param)
 {
-    zb_buf_t *zbbuf = ZB_BUF_FROM_REF(param);
-    zb_apsde_data_indication_t *ind = ZB_GET_BUF_PARAM(zbbuf,
-                                                    zb_apsde_data_indication_t);
+    zb_buf_t *buf = ZB_BUF_FROM_REF(param);
+    zb_zcl_groups_add_group_req_t req;
+    zb_zcl_parsed_hdr_t zcl_hdr;
+    ZB_MEMCPY(&req, ZB_BUF_BEGIN(buf), sizeof(zb_zcl_groups_add_group_req_t));
+    ZB_MEMCPY(&zcl_hdr, ZB_GET_BUF_PARAM(buf, zb_zcl_parsed_hdr_t), sizeof(zb_zcl_parsed_hdr_t));
+    
+    zb_buf_reuse(buf);
+    zb_zcl_parsed_hdr_t *zcl_hdr2;
+    ZB_BUF_INITIAL_ALLOC(buf, sizeof(zb_zcl_parsed_hdr_t), zcl_hdr2);
+    ZB_MEMCPY(zcl_hdr2, &zcl_hdr, sizeof(zb_zcl_parsed_hdr_t));
+    zb_apsme_add_group_req_t *req_ptr = ZB_GET_BUF_PARAM(buf, zb_apsme_add_group_req_t);
+    req_ptr->group_address = req.group_id;
+    req_ptr->endpoint = zcl_hdr.dst_endpoint;
+    req_ptr->confirm_cb = send_add_group_resp;
+    ZB_SCHEDULE_CALLBACK(zb_zdo_add_group_req, param);
+}
 
-    DEBUG("zbbuf->buf:\n");
-    od_hex_dump(zbbuf->buf, sizeof(zbbuf->buf), 16);
-    DEBUG("ZB_BUF_BEGIN(zbbuf):\n");
-    od_hex_dump(zbbuf->buf + zbbuf->u.hdr.data_offset, zbbuf->u.hdr.len, 16);
+static void send_view_group_resp(zb_uint8_t param) ZB_CALLBACK
+{
+    zb_buf_t *buf = ZB_BUF_FROM_REF(param);
+    zb_apsme_get_group_membership_conf_t conf;
+    zb_zcl_parsed_hdr_t zcl_hdr;
+    ZB_MEMCPY(&conf, ZB_GET_BUF_PARAM(buf, zb_apsme_get_group_membership_conf_t),
+                            sizeof(zb_apsme_get_group_membership_conf_t));
+    ZB_MEMCPY(&zcl_hdr, ZB_BUF_BEGIN(buf), sizeof(zb_zcl_parsed_hdr_t));
+    
+    zb_buf_reuse(buf);
+    zb_zcl_groups_view_group_resp_t *resp;
+    ZB_BUF_INITIAL_ALLOC(buf, sizeof(zb_zcl_groups_view_group_resp_t), resp);
+    resp->status = (conf.n_groups == 0) ? ZB_ZCL_STATUS_NOT_FOUND : ZB_ZCL_STATUS_SUCCESS;
+    resp->group_id = conf.groups[0];
+    resp->length = 0; // we do not support names currently (length of following string)
+    (void)zcl_alloc_and_fill_hdr(buf, ZB_ZCL_FRAME_TYPE_CLUSTER_SPECIFIED,
+                                ZB_ZCL_FRAME_DIRECTION_TO_CLI, ZB_TRUE, ZB_ZCL_GROUPS_VIEW_GROUP);
 
-    /* pointer to beginning of aps header */
-    uint8_t *aps = ZB_BUF_BEGIN(zbbuf);
-    /* pointer to beginning of zcl header */
-    uint8_t *zcl = aps + zb_aps_full_hdr_size(aps);
-    /* zcl header type */
-    zb_zcl_hdr_t *zcl_hdr = (zb_zcl_hdr_t *)zcl;
+    zb_apsde_data_req_t *req = ZB_GET_BUF_TAIL(buf, sizeof(zb_apsde_data_req_t));
+    req->dst_addr = zcl_hdr.src_addr;
+    req->profileid = zcl_hdr.profile_id;
+    req->clusterid = ZB_GOUPS_CLUSTER_ID;
+    req->dst_endpoint = zcl_hdr.src_endpoint;
+    req->src_endpoint = zcl_hdr.dst_endpoint;
+    req->addr_mode = ZB_APS_ADDR_MODE_16_ENDP_PRESENT;
+    req->tx_options = ZB_APSDE_TX_OPT_ACK_TX;
+    ZB_SCHEDULE_CALLBACK(zb_apsde_data_request, param);
+}
 
-    if (zcl_hdr->frame_control.frame_type == ZB_ZCL_FRAME_TYPE_COMMON ) { /* profile-wide */
-        LOG_DEBUG("unhandled profile-wide frame_control 0x%x\n", zcl_hdr->frame_control);
-        zb_free_buf(zbbuf);
-        return;
+void handle_view_group(zb_uint8_t param)
+{
+    zb_buf_t *buf = ZB_BUF_FROM_REF(param);
+    zb_zcl_groups_view_group_req_t req;
+    zb_zcl_parsed_hdr_t zcl_hdr;
+    ZB_MEMCPY(&req, ZB_BUF_BEGIN(buf), sizeof(zb_zcl_groups_view_group_req_t));
+    ZB_MEMCPY(&zcl_hdr, ZB_GET_BUF_PARAM(buf, zb_zcl_parsed_hdr_t), sizeof(zb_zcl_parsed_hdr_t));
+
+    zb_buf_reuse(buf);
+    zb_zcl_parsed_hdr_t *zcl_hdr2;
+    ZB_BUF_INITIAL_ALLOC(buf, sizeof(zb_zcl_parsed_hdr_t), zcl_hdr2);
+    ZB_MEMCPY(zcl_hdr2, &zcl_hdr, sizeof(zb_zcl_parsed_hdr_t));
+    zb_apsme_get_group_membership_req_t *get_req = ZB_GET_BUF_PARAM(buf, zb_apsme_get_group_membership_req_t);
+    get_req->n_groups = 1;
+    get_req->groups[0] = req.group_id;
+    get_req->endpoint = zcl_hdr.dst_endpoint;
+    get_req->confirm_cb = send_view_group_resp;
+    ZB_SCHEDULE_CALLBACK(zb_zdo_get_group_membership_req, param);
+}
+
+static void send_get_group_membership_resp(zb_uint8_t param) ZB_CALLBACK
+{
+    zb_buf_t *buf = ZB_BUF_FROM_REF(param);
+    zb_apsme_get_group_membership_conf_t conf;
+    zb_zcl_parsed_hdr_t zcl_hdr;
+    ZB_MEMCPY(&conf, ZB_GET_BUF_PARAM(buf, zb_apsme_get_group_membership_conf_t),
+                            sizeof(zb_apsme_get_group_membership_conf_t));
+    ZB_MEMCPY(&zcl_hdr, ZB_BUF_BEGIN(buf), sizeof(zb_zcl_parsed_hdr_t));
+    
+    zb_buf_reuse(buf);
+    zb_zcl_groups_get_group_membership_resp_t *resp;
+    ZB_BUF_INITIAL_ALLOC(buf, sizeof(zb_uint8_t)*2 + sizeof(zb_uint16_t)*conf.n_groups, resp);
+    resp->group_capacity = conf.capacity;
+    resp->group_count = conf.n_groups;
+    ZB_MEMCPY(resp->group_list, conf.groups, sizeof(zb_uint16_t)*conf.n_groups);
+    (void)zcl_alloc_and_fill_hdr(buf, ZB_ZCL_FRAME_TYPE_CLUSTER_SPECIFIED,
+                                ZB_ZCL_FRAME_DIRECTION_TO_CLI, ZB_TRUE, ZB_ZCL_GROUPS_GET_GR_MEMBERSHIP);
+
+    zb_apsde_data_req_t *req = ZB_GET_BUF_TAIL(buf, sizeof(zb_apsde_data_req_t));
+    req->dst_addr = zcl_hdr.src_addr;
+    req->profileid = zcl_hdr.profile_id;
+    req->clusterid = ZB_GOUPS_CLUSTER_ID;
+    req->dst_endpoint = zcl_hdr.src_endpoint;
+    req->src_endpoint = zcl_hdr.dst_endpoint;
+    req->addr_mode = ZB_APS_ADDR_MODE_16_ENDP_PRESENT;
+    req->tx_options = ZB_APSDE_TX_OPT_ACK_TX;
+    ZB_SCHEDULE_CALLBACK(zb_apsde_data_request, param);
+}
+
+void handle_get_group_membership(zb_uint8_t param)
+{
+    zb_buf_t *buf = ZB_BUF_FROM_REF(param);
+    zb_zcl_groups_get_group_membership_req_t req;
+    zb_zcl_groups_get_group_membership_req_t *ptr = (zb_zcl_groups_get_group_membership_req_t *)ZB_BUF_BEGIN(buf);
+    zb_zcl_parsed_hdr_t zcl_hdr;
+    ZB_MEMCPY(&req, ptr, sizeof(zb_uint8_t) + ptr->group_count*sizeof(zb_uint16_t));
+    ZB_MEMCPY(&zcl_hdr, ZB_GET_BUF_PARAM(buf, zb_zcl_parsed_hdr_t), sizeof(zb_zcl_parsed_hdr_t));
+
+    zb_buf_reuse(buf);
+    zb_zcl_parsed_hdr_t *zcl_hdr2;
+    ZB_BUF_INITIAL_ALLOC(buf, sizeof(zb_zcl_parsed_hdr_t), zcl_hdr2);
+    ZB_MEMCPY(zcl_hdr2, &zcl_hdr, sizeof(zb_zcl_parsed_hdr_t));
+    zb_apsme_get_group_membership_req_t *get_req = ZB_GET_BUF_PARAM(buf, zb_apsme_get_group_membership_req_t);
+    get_req->n_groups = req.group_count;
+    ZB_MEMCPY(get_req->groups, req.group_list, sizeof(zb_uint16_t)*req.group_count);
+    get_req->endpoint = zcl_hdr.dst_endpoint;
+    get_req->confirm_cb = send_get_group_membership_resp;
+    ZB_SCHEDULE_CALLBACK(zb_zdo_get_group_membership_req, param);
+}
+
+static void send_remove_group_resp(zb_uint8_t param) ZB_CALLBACK
+{
+    zb_buf_t *buf = ZB_BUF_FROM_REF(param);
+    zb_apsme_remove_group_conf_t conf;
+    zb_zcl_parsed_hdr_t zcl_hdr;
+    ZB_MEMCPY(&conf, ZB_GET_BUF_PARAM(buf, zb_apsme_remove_group_conf_t),
+            sizeof(zb_apsme_remove_group_conf_t));
+    ZB_MEMCPY(&zcl_hdr, ZB_BUF_BEGIN(buf), sizeof(zb_zcl_parsed_hdr_t));
+    
+    zb_buf_reuse(buf);
+    zb_zcl_groups_remove_group_resp_t *resp;
+    ZB_BUF_INITIAL_ALLOC(buf, sizeof(zb_zcl_groups_remove_group_resp_t), resp);
+    resp->status = conf.status;
+    resp->group_id = conf.group_address;
+    (void)zcl_alloc_and_fill_hdr(buf, ZB_ZCL_FRAME_TYPE_CLUSTER_SPECIFIED,
+                                ZB_ZCL_FRAME_DIRECTION_TO_CLI, ZB_TRUE, ZB_ZCL_GROUPS_REMOVE_GROUP);
+
+    zb_apsde_data_req_t *req = ZB_GET_BUF_TAIL(buf, sizeof(zb_apsde_data_req_t));
+    req->dst_addr = zcl_hdr.src_addr;
+    req->profileid = zcl_hdr.profile_id;
+    req->clusterid = ZB_GOUPS_CLUSTER_ID;
+    req->dst_endpoint = zcl_hdr.src_endpoint;
+    req->src_endpoint = zcl_hdr.dst_endpoint;
+    req->addr_mode = ZB_APS_ADDR_MODE_16_ENDP_PRESENT;
+    req->tx_options = ZB_APSDE_TX_OPT_ACK_TX;
+    ZB_SCHEDULE_CALLBACK(zb_apsde_data_request, param);
+}
+
+void handle_remove_group(zb_uint8_t param)
+{
+    zb_buf_t *buf = ZB_BUF_FROM_REF(param);
+    zb_zcl_groups_remove_group_req_t req;
+    zb_zcl_parsed_hdr_t zcl_hdr;
+    ZB_MEMCPY(&req, ZB_BUF_BEGIN(buf), sizeof(zb_zcl_groups_remove_group_req_t));
+    ZB_MEMCPY(&zcl_hdr, ZB_GET_BUF_PARAM(buf, zb_zcl_parsed_hdr_t), sizeof(zb_zcl_parsed_hdr_t));
+
+    zb_buf_reuse(buf);
+    zb_zcl_parsed_hdr_t *zcl_hdr2;
+    ZB_BUF_INITIAL_ALLOC(buf, sizeof(zb_zcl_parsed_hdr_t), zcl_hdr2);
+    ZB_MEMCPY(zcl_hdr2, &zcl_hdr, sizeof(zb_zcl_parsed_hdr_t));
+    zb_apsme_remove_group_req_t *rem_req = ZB_GET_BUF_PARAM(buf, zb_apsme_remove_group_req_t);
+    rem_req->group_address = req.group_id;
+    rem_req->endpoint =  zcl_hdr.dst_endpoint;
+    rem_req->confirm_cb = send_remove_group_resp;
+    ZB_SCHEDULE_CALLBACK(zb_zdo_remove_group_req, param);
+}
+
+static void send_remove_all_groups_resp(zb_uint8_t param) ZB_CALLBACK
+{
+    zb_buf_t *buf = ZB_BUF_FROM_REF(param);
+    zb_free_buf(buf);
+}
+
+void handle_remove_all_groups(zb_uint8_t param)
+{
+    zb_buf_t *buf = ZB_BUF_FROM_REF(param);
+    zb_zcl_parsed_hdr_t zcl_hdr;
+    ZB_MEMCPY(&zcl_hdr, ZB_GET_BUF_PARAM(buf, zb_zcl_parsed_hdr_t), sizeof(zb_zcl_parsed_hdr_t));
+
+    zb_buf_reuse(buf);
+    zb_zcl_parsed_hdr_t *zcl_hdr2;
+    ZB_BUF_INITIAL_ALLOC(buf, sizeof(zb_zcl_parsed_hdr_t), zcl_hdr2);
+    ZB_MEMCPY(zcl_hdr2, &zcl_hdr, sizeof(zb_zcl_parsed_hdr_t));
+    zb_apsme_remove_all_groups_req_t *rem_req = ZB_GET_BUF_PARAM(buf, zb_apsme_remove_all_groups_req_t);
+    rem_req->endpoint = zcl_hdr.dst_endpoint;
+    rem_req->confirm_cb = send_remove_all_groups_resp;
+    ZB_SCHEDULE_CALLBACK(zb_zdo_remove_all_groups_req, param);
+}
+
+void handle_groups_srv(zb_uint16_t src_addr, zb_uint8_t src_ep,
+                zb_uint16_t profile_id, zb_uint8_t param,
+                zb_zcl_cluster_t *cluster)
+{
+    zb_buf_t *buf = ZB_BUF_FROM_REF(param);
+    zb_zcl_parsed_hdr_t *zcl_hdr = ZB_GET_BUF_PARAM(buf, zb_zcl_parsed_hdr_t);
+
+    switch (zcl_hdr->cmd_id) {
+    case ZB_ZCL_GROUPS_ADD_GROUP: /* add group */
+        puts("adding group");
+        handle_add_group(param);
+        break;
+    case ZB_ZCL_GROUPS_VIEW_GROUP: /* view group */
+        handle_view_group(param);
+        break;
+    case ZB_ZCL_GROUPS_GET_GR_MEMBERSHIP: /* get group membership */
+        handle_get_group_membership(param);
+        break;
+    case ZB_ZCL_GROUPS_REMOVE_GROUP: /* remove group */
+        handle_remove_group(param);
+        break;
+    case ZB_ZCL_GROUPS_REMOVE_ALL_GROUPS: /* remove all groups */
+        puts("remove all groups");
+        handle_remove_all_groups(param);
+        break;
+    case ZB_ZCL_GROUPS_ADD_GR_IF_ID: /* FIXME add group if identifying */
+        handle_add_group(param);
+        break;
+    default:
+        break;
     }
+}
 
-    if (zcl_hdr->frame_control.frame_type != ZB_ZCL_FRAME_TYPE_CLUSTER_SPECIFIED) { /* cluster-specific */
-        LOG_WARNING("unhandled ZCL frame_control 0x%x\n", zcl_hdr->frame_control);
-        zb_free_buf(zbbuf);
-        return;
-    }
+void zb_zcl_groups_srv_setup(zb_uint8_t ep)
+{
+    zb_zcl_cluster_t *cluster = zb_zcl_register_cluster(ep, ZB_GOUPS_CLUSTER_ID,
+                                  ZB_ZCL_SERVER_ROLE, handle_groups_srv, NULL);
+    static zb_uint8_t name_support = 1;
+    zb_zcl_add_attribute(cluster, 0, ZB_ZCL_ATTR_TYPE_8BITMAP, ZB_ZCL_ATTR_ACCESS_READ_ONLY, &name_support);
+}
 
-    if (zcl_hdr->command_id == 0x2) { /* get group membership */
+/**
+ * Client Side (Called by application)
+ * TODO: handle responses from server!
+ */
+void zb_zcl_groups_send_add_group(zb_uint8_t param, zb_uint16_t profile_id, zb_uint16_t group_id,
+                                    zb_uint16_t dst_addr, zb_uint8_t dst_ep, zb_uint8_t src_ep)
+{
+    zb_buf_t *buf = ZB_BUF_FROM_REF(param);
+    zb_buf_reuse(buf);
+    zb_zcl_groups_add_group_req_t *req;
+    ZB_BUF_INITIAL_ALLOC(buf, sizeof(zb_zcl_groups_add_group_req_t), req);
+    req->group_id = group_id;
+    req->length = 0;
+    (void)zcl_alloc_and_fill_hdr(buf, ZB_ZCL_FRAME_TYPE_CLUSTER_SPECIFIED,
+                                ZB_ZCL_FRAME_DIRECTION_TO_SRV, ZB_TRUE, ZB_ZCL_GROUPS_ADD_GROUP);
 
-        LOG_INFO("get group membership\n");
+    zb_apsde_data_req_t *aps_req = ZB_GET_BUF_TAIL(buf, sizeof(zb_apsde_data_req_t));
+    aps_req->dst_addr = dst_addr;
+    aps_req->profileid = profile_id;
+    aps_req->clusterid = ZB_GOUPS_CLUSTER_ID;
+    aps_req->dst_endpoint = dst_ep;
+    aps_req->src_endpoint = src_ep;
+    aps_req->addr_mode = ZB_APS_ADDR_MODE_16_ENDP_PRESENT;
+    aps_req->tx_options = ZB_APSDE_TX_OPT_ACK_TX;
+    ZB_SCHEDULE_CALLBACK(zb_apsde_data_request, param);
+}
 
-        /* FIXME tradfri remotes can cause a bug if we reply to this, so don't */
-        zb_free_buf(zbbuf);
-        return;
+void zb_zcl_groups_send_view_group(zb_uint8_t param, zb_uint16_t profile_id, zb_uint16_t group_id,
+                                    zb_uint16_t dst_addr, zb_uint8_t dst_ep, zb_uint8_t src_ep)
+{
+    zb_buf_t *buf = ZB_BUF_FROM_REF(param);
+    zb_buf_reuse(buf);
+    zb_zcl_groups_view_group_req_t *req;
+    ZB_BUF_INITIAL_ALLOC(buf, sizeof(zb_zcl_groups_view_group_req_t), req);
+    req->group_id = group_id;
+    (void)zcl_alloc_and_fill_hdr(buf, ZB_ZCL_FRAME_TYPE_CLUSTER_SPECIFIED,
+                                ZB_ZCL_FRAME_DIRECTION_TO_SRV, ZB_TRUE, ZB_ZCL_GROUPS_VIEW_GROUP);
 
-        uint8_t *req = zcl + sizeof(zb_zcl_hdr_t);
-        zcl_get_group_membership_hdr_t *req_hdr =
-                                    (zcl_get_group_membership_hdr_t *)req;
+    zb_apsde_data_req_t *aps_req = ZB_GET_BUF_TAIL(buf, sizeof(zb_apsde_data_req_t));
+    aps_req->dst_addr = dst_addr;
+    aps_req->profileid = profile_id;
+    aps_req->clusterid = ZB_GOUPS_CLUSTER_ID;
+    aps_req->dst_endpoint = dst_ep;
+    aps_req->src_endpoint = src_ep;
+    aps_req->addr_mode = ZB_APS_ADDR_MODE_16_ENDP_PRESENT;
+    aps_req->tx_options = ZB_APSDE_TX_OPT_ACK_TX;
+    ZB_SCHEDULE_CALLBACK(zb_apsde_data_request, param);
+}
 
-        bool group_match = false;
-        if (req_hdr->group_count > 0) {
-            uint16_t *first_group_id = (uint16_t *)
-                                (req + sizeof(zcl_get_group_membership_hdr_t));
+void zb_zcl_groups_send_get_group_membership(zb_uint8_t param, zb_uint16_t profile_id, zb_uint8_t n_groups,
+                                    zb_uint16_t group_list[ZB_APS_GROUP_TABLE_SIZE],
+                                    zb_uint16_t dst_addr, zb_uint8_t dst_ep, zb_uint8_t src_ep)
+{
+    zb_buf_t *buf = ZB_BUF_FROM_REF(param);
+    zb_buf_reuse(buf);
+    zb_zcl_groups_get_group_membership_req_t *req;
+    zb_ushort_t group_size = sizeof(zb_uint16_t) * n_groups;
+    ZB_BUF_INITIAL_ALLOC(buf, sizeof(zb_uint8_t) + group_size, req);
+    req->group_count = n_groups;
+    ZB_MEMCPY(req->group_list, group_list, group_size);
+    (void)zcl_alloc_and_fill_hdr(buf, ZB_ZCL_FRAME_TYPE_CLUSTER_SPECIFIED,
+                                ZB_ZCL_FRAME_DIRECTION_TO_SRV, ZB_TRUE, ZB_ZCL_GROUPS_GET_GR_MEMBERSHIP);
 
-            for (int i = 0; i < req_hdr->group_count; i++) {
-                LOG_INFO("get group 0x%04x\n", first_group_id[i]);
-                if (g_group_id == first_group_id[i]) {
-                    group_match = true;
-                }
-            }
+    zb_apsde_data_req_t *aps_req = ZB_GET_BUF_TAIL(buf, sizeof(zb_apsde_data_req_t));
+    aps_req->dst_addr = dst_addr;
+    aps_req->profileid = profile_id;
+    aps_req->clusterid = ZB_GOUPS_CLUSTER_ID;
+    aps_req->dst_endpoint = dst_ep;
+    aps_req->src_endpoint = src_ep;
+    aps_req->addr_mode = ZB_APS_ADDR_MODE_16_ENDP_PRESENT;
+    aps_req->tx_options = ZB_APSDE_TX_OPT_ACK_TX;
+    ZB_SCHEDULE_CALLBACK(zb_apsde_data_request, param);
+}
 
-            if(!group_match) {
-                LOG_WARNING("not replying to group request\n");
-                zb_free_buf(zbbuf);
-                return;
-            }
-        }
+void zb_zcl_groups_send_remove_group(zb_uint8_t param, zb_uint16_t profile_id, zb_uint16_t group_id,
+                                    zb_uint16_t dst_addr, zb_uint8_t dst_ep, zb_uint8_t src_ep)
+{
+    zb_buf_t *buf = ZB_BUF_FROM_REF(param);
+    zb_buf_reuse(buf);
+    zb_zcl_groups_remove_group_req_t *req;
+    ZB_BUF_INITIAL_ALLOC(buf, sizeof(zb_zcl_groups_remove_group_req_t), req);
+    req->group_id = group_id;
+    (void)zcl_alloc_and_fill_hdr(buf, ZB_ZCL_FRAME_TYPE_CLUSTER_SPECIFIED,
+                                ZB_ZCL_FRAME_DIRECTION_TO_SRV, ZB_TRUE, ZB_ZCL_GROUPS_REMOVE_GROUP);
 
-        uint8_t group_count = 0;
-        if (group_match) {
-            group_count++;
-        } else if (req_hdr->group_count == 0) {
-            if (g_group_id != 0) {
-                group_count++;
-            }
-        }
+    zb_apsde_data_req_t *aps_req = ZB_GET_BUF_TAIL(buf, sizeof(zb_apsde_data_req_t));
+    aps_req->dst_addr = dst_addr;
+    aps_req->profileid = profile_id;
+    aps_req->clusterid = ZB_GOUPS_CLUSTER_ID;
+    aps_req->dst_endpoint = dst_ep;
+    aps_req->src_endpoint = src_ep;
+    aps_req->addr_mode = ZB_APS_ADDR_MODE_16_ENDP_PRESENT;
+    aps_req->tx_options = ZB_APSDE_TX_OPT_ACK_TX;
+    ZB_SCHEDULE_CALLBACK(zb_apsde_data_request, param);
+}
 
-        zcl_get_group_membership_resp_t *resp;
-        uint8_t resp_size = sizeof(zcl_get_group_membership_resp_t) +
-                            sizeof(uint16_t) * group_count;
-        ZB_BUF_INITIAL_ALLOC(zbbuf, resp_size, resp);
-        ZB_BZERO(resp, sizeof(zcl_get_group_membership_resp_t));
+void zb_zcl_groups_send_remove_all_groups(zb_uint8_t param, zb_uint16_t profile_id, zb_uint16_t dst_addr,
+                                        zb_uint8_t dst_ep, zb_uint8_t src_ep)
+{
+    zb_buf_t *buf = ZB_BUF_FROM_REF(param);
+    zb_buf_reuse(buf);
+    //ZB_BUF_INITIAL_ALLOC(buf, 0, NULL);
+    (void)zcl_alloc_and_fill_hdr(buf, ZB_ZCL_FRAME_TYPE_CLUSTER_SPECIFIED,
+                                ZB_ZCL_FRAME_DIRECTION_TO_SRV, ZB_TRUE, ZB_ZCL_GROUPS_REMOVE_ALL_GROUPS);
 
-        zb_zcl_hdr_t *resp_zcl;
-        ZB_BUF_ALLOC_LEFT(zbbuf, sizeof(*resp_zcl), resp_zcl);
-        ZB_BZERO(resp_zcl, sizeof(*resp_zcl));
-        resp_zcl->frame_control = default_fcf;
-        resp_zcl->seq_number = zcl_seq++;
-        resp_zcl->command_id = 0x02; /* get group membership response */
+    zb_apsde_data_req_t *aps_req = ZB_GET_BUF_TAIL(buf, sizeof(zb_apsde_data_req_t));
+    aps_req->dst_addr = dst_addr;
+    aps_req->profileid = profile_id;
+    aps_req->clusterid = ZB_GOUPS_CLUSTER_ID;
+    aps_req->dst_endpoint = dst_ep;
+    aps_req->src_endpoint = src_ep;
+    aps_req->addr_mode = ZB_APS_ADDR_MODE_16_ENDP_PRESENT;
+    aps_req->tx_options = ZB_APSDE_TX_OPT_ACK_TX;
+    ZB_SCHEDULE_CALLBACK(zb_apsde_data_request, param);
+}
 
-        resp->group_count = group_count;
-        resp->group_capacity = 255 - resp->group_count;
+void zb_zcl_groups_send_add_group_iid(zb_uint8_t param, zb_uint16_t profile_id, zb_uint16_t group_id,
+                                    zb_uint16_t dst_addr, zb_uint8_t dst_ep, zb_uint8_t src_ep)
+{
+    zb_buf_t *buf = ZB_BUF_FROM_REF(param);
+    zb_buf_reuse(buf);
+    zb_zcl_groups_add_group_iid_req_t *req;
+    ZB_BUF_INITIAL_ALLOC(buf, sizeof(zb_zcl_groups_add_group_iid_req_t), req);
+    req->group_id = group_id;
+    req->length = 0;
+    (void)zcl_alloc_and_fill_hdr(buf, ZB_ZCL_FRAME_TYPE_CLUSTER_SPECIFIED,
+                                ZB_ZCL_FRAME_DIRECTION_TO_SRV, ZB_TRUE, ZB_ZCL_GROUPS_ADD_GR_IF_ID);
 
-        if (resp->group_count > 0) {
-            memcpy((uint8_t *)resp + sizeof(zcl_get_group_membership_resp_t), &g_group_id, 2);
-            printf("respond group 0x%04x %u\n", g_group_id, sizeof(zcl_get_group_membership_resp_t));
-        }
+    zb_apsde_data_req_t *aps_req = ZB_GET_BUF_TAIL(buf, sizeof(zb_apsde_data_req_t));
+    aps_req->dst_addr = dst_addr;
+    aps_req->profileid = profile_id;
+    aps_req->clusterid = ZB_GOUPS_CLUSTER_ID;
+    aps_req->dst_endpoint = dst_ep;
+    aps_req->src_endpoint = src_ep;
+    aps_req->addr_mode = ZB_APS_ADDR_MODE_16_ENDP_PRESENT;
+    aps_req->tx_options = ZB_APSDE_TX_OPT_ACK_TX;
+    ZB_SCHEDULE_CALLBACK(zb_apsde_data_request, param);
+}
 
-        uint16_t addr = ind->src_addr;
-
-        uint8_t src_endpoint = ind->dst_endpoint;
-        uint8_t dst_endpoint = ind->src_endpoint;
-        uint16_t profileid = ind->profileid;
-        uint16_t clusterid = ind->clusterid;
-
-        DEBUG("ZB_BUF_BEGIN(zbbuf):\n");
-        od_hex_dump(zbbuf->buf + zbbuf->u.hdr.data_offset, zbbuf->u.hdr.len, 16);
-
-        zb_apsde_data_req_t *dreq = ZB_GET_BUF_TAIL(ZB_BUF_FROM_REF(param),
-                                            sizeof(zb_apsde_data_req_t));
-        ZB_BZERO(dreq, sizeof(*dreq));
-
-        dreq->dst_addr = addr;
-        dreq->dst_endpoint = dst_endpoint;
-        dreq->src_endpoint = src_endpoint;
-        dreq->clusterid = clusterid;
-        dreq->profileid = profileid;
-
-        if (!ZB_NWK_IS_ADDRESS_BROADCAST(addr)) {
-            dreq->tx_options = ZB_APSDE_TX_OPT_ACK_TX;
-        }
-        dreq->addr_mode = ZB_APS_ADDR_MODE_16_ENDP_PRESENT;
-        ZB_SCHEDULE_CALLBACK(zb_apsde_data_request, param);
-
-    } else if (zcl_hdr->command_id == 0x0) { /* add group */
-        LOG_INFO("add group\n");
-
-        zcl_add_group_hdr_t *req_hdr = (zcl_add_group_hdr_t *)(zcl +
-                                                            sizeof(zb_zcl_hdr_t));
-        uint16_t group_id;
-        memcpy(&group_id, &req_hdr->group_id, sizeof(uint16_t));
-
-        uint16_t src_addr = ind->src_addr;
-        uint8_t src_endpoint = ind->dst_endpoint;
-        uint8_t dst_endpoint = ind->src_endpoint;
-        uint16_t profileid = ind->profileid;
-        uint16_t clusterid = ind->clusterid;
-
-        /* save group_id to nvram */
-        g_group_id = group_id;
-        zb_save_formdesc_data();
-
-        /* tell zdo to add group */
-        zb_apsme_add_group_req_t *req;
-        zb_buf_reuse(zbbuf);
-        req = ZB_GET_BUF_PARAM(zbbuf, zb_apsme_add_group_req_t);
-        req->group_address = group_id;
-        req->endpoint = 1;
-        zb_zdo_add_group_req(param, group_add_confirmation);
-
-        /* send response */
-        zcl_add_group_resp_t *resp;
-        ZB_BUF_INITIAL_ALLOC(zbbuf, sizeof(zcl_add_group_resp_t), resp);
-        ZB_BZERO(resp, sizeof(zcl_add_group_resp_t));
-
-        zb_zcl_hdr_t *resp_zcl;
-        ZB_BUF_ALLOC_LEFT(zbbuf, sizeof(*resp_zcl), resp_zcl);
-        ZB_BZERO(resp_zcl, sizeof(*resp_zcl));
-        resp_zcl->frame_control = default_fcf;
-        resp_zcl->seq_number = zcl_seq++;
-        resp_zcl->command_id = 0x0; /* add group response */
-
-        resp->group_id = group_id;
-        resp->status = 0; /* STATUS_OK */
-
-        zb_apsde_data_req_t *dreq = ZB_GET_BUF_TAIL(ZB_BUF_FROM_REF(param),
-                                                    sizeof(zb_apsde_data_req_t));
-        ZB_BZERO(dreq, sizeof(*dreq));
-
-        dreq->dst_addr = src_addr;
-        dreq->dst_endpoint = dst_endpoint;
-        dreq->src_endpoint = src_endpoint;
-        dreq->clusterid = clusterid;
-        dreq->profileid = profileid;
-
-        if (!ZB_NWK_IS_ADDRESS_BROADCAST(src_addr)) {
-            dreq->tx_options = ZB_APSDE_TX_OPT_ACK_TX;
-        }
-        dreq->addr_mode = ZB_APS_ADDR_MODE_16_ENDP_PRESENT;
-        ZB_SCHEDULE_CALLBACK(zb_apsde_data_request, param);
-
-    } else if (zcl_hdr->command_id == 0x3) { /* remove group */
-        LOG_INFO("remove group\n");
-
-        zcl_remove_group_t *req_hdr = (zcl_remove_group_t *)(zcl +
-        sizeof(zb_zcl_hdr_t));
-        uint16_t group_id;
-        memcpy(&group_id, &req_hdr->group_id, sizeof(uint16_t));
-
-        /* TODO zb_zdo_remove_group_req() doesn't exist */
-
-        /* send response */
-
-        zcl_remove_group_resp_t *resp;
-        ZB_BUF_INITIAL_ALLOC(zbbuf, sizeof(zcl_remove_group_resp_t), resp);
-        ZB_BZERO(resp, sizeof(zcl_remove_group_resp_t));
-
-        zb_zcl_hdr_t *resp_zcl;
-        ZB_BUF_ALLOC_LEFT(zbbuf, sizeof(*resp_zcl), resp_zcl);
-        ZB_BZERO(resp_zcl, sizeof(*resp_zcl));
-        resp_zcl->frame_control = default_fcf;
-        resp_zcl->seq_number = zcl_seq++;
-        resp_zcl->command_id = 0x3; /* remove group response */
-
-        resp->group_id = group_id;
-
-        if (group_id == g_group_id) {
-            resp->status = 0x0; /* STATUS_OK */
-            /* save a blank group_id to nvram */
-            g_group_id = 0;
-            zb_save_formdesc_data();
-        } else {
-            resp->status = 0x8b; /* NOT_FOUND */
-        }
-
-        uint16_t src_addr = ind->src_addr;
-        uint8_t src_endpoint = ind->dst_endpoint;
-        uint8_t dst_endpoint = ind->src_endpoint;
-        uint16_t profileid = ind->profileid;
-        uint16_t clusterid = ind->clusterid;
-
-        zb_apsde_data_req_t *dreq = ZB_GET_BUF_TAIL(ZB_BUF_FROM_REF(param),
-                                                    sizeof(zb_apsde_data_req_t));
-        ZB_BZERO(dreq, sizeof(*dreq));
-
-        dreq->dst_addr = src_addr;
-        dreq->dst_endpoint = dst_endpoint;
-        dreq->src_endpoint = src_endpoint;
-        dreq->clusterid = clusterid;
-        dreq->profileid = profileid;
-
-        if (!ZB_NWK_IS_ADDRESS_BROADCAST(src_addr)) {
-            dreq->tx_options = ZB_APSDE_TX_OPT_ACK_TX;
-        }
-        dreq->addr_mode = ZB_APS_ADDR_MODE_16_ENDP_PRESENT;
-        ZB_SCHEDULE_CALLBACK(zb_apsde_data_request, param);
-
-    } else {
-        LOG_WARNING("unhandled group request 0x%x\n", zcl_hdr->command_id);
-        zb_free_buf(zbbuf);
-        return;
-    }
+void zb_zcl_groups_cli_setup(zb_uint8_t ep)
+{
+    (void)zb_zcl_register_cluster(ep, ZB_GOUPS_CLUSTER_ID,
+                                ZB_ZCL_CLIENT_ROLE, NULL, NULL);
 }
