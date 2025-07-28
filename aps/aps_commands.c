@@ -60,14 +60,15 @@ void zb_aps_in_command_handle(zb_uint8_t param) ZB_CALLBACK
 {
 #ifdef ZB_SECURITY
     zb_uint8_t *cmd_id_p;
-    zb_ushort_t hdr_size = sizeof(zb_aps_command_pkt_header_t);
+    zb_uint8_t *ptr = ZB_BUF_BEGIN(ZB_BUF_FROM_REF(param));
+    zb_ushort_t hdr_size = ZB_APS_HDR_SIZE(*ptr);
 
 #ifdef APS_FRAME_SECURITY
     {
         zb_aps_command_pkt_header_t *hdr =
-            (zb_aps_command_pkt_header_t *)ZB_BUF_BEGIN(ZB_BUF_FROM_REF(param));
+            (zb_aps_command_pkt_header_t *)ptr;
         if (ZB_APS_FC_GET_SECURITY(hdr->fc)) {
-            hdr_size += zb_aps_secur_aux_size((zb_uint8_t *)(hdr + 1));
+            hdr_size += ZB_APS_AUX_HDR_SIZE(*(ptr + sizeof(zb_aps_command_pkt_header_t)));
             TRACE_MSG(TRACE_SECUR3, "secured aps cmd frame, hdr+aux size %hd",
                       (FMT__H, hdr_size));
         }
@@ -79,25 +80,17 @@ void zb_aps_in_command_handle(zb_uint8_t param) ZB_CALLBACK
     TRACE_MSG(TRACE_SECUR3, "in aps cmd %hd", (FMT__H, *cmd_id_p));
     switch (*cmd_id_p) {
         case APS_CMD_TRANSPORT_KEY:
-            if (!ZG->nwk.handle.joined_pro) {
                 zb_aps_in_transport_key(param);
-            }
             break;
 #ifdef ZB_ROUTER_ROLE
         case APS_CMD_UPDATE_DEVICE:
-            if (!ZG->nwk.handle.joined_pro) {
                 zb_aps_in_update_device(param);
-            }
             break;
         case APS_CMD_REMOVE_DEVICE:
-            if (!ZG->nwk.handle.joined_pro) {
                 zb_aps_in_remove_device(param);
-            }
             break;
         case APS_CMD_REQUEST_KEY:
-            if (!ZG->nwk.handle.joined_pro) {
                 zb_aps_in_request_key(param);
-            }
             break;
 #else   /* ZB_ROUTER_ROLE */
         case APS_CMD_SWITCH_KEY:

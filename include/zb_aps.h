@@ -714,6 +714,15 @@ enum zb_aps_frame_delivery_mode_e {
           0                                                                  \
           )))
 
+
+/**
+   Get APS auxiliary frame header size
+ */
+#define ZB_APS_AUX_HDR_SIZE(fc)                                              \
+    (1 + 4 +            /* secur control field + frame counter */            \
+    ((fc & 0x20) ? sizeof(zb_ieee_addr_t) : 0) + /* extended nonce present*/ \
+    ((((fc >> 3) & 3) == 1) ? 1 : 0)   /* key sequence number present */     \
+    )   
 /**
    Return APS header + APS aux hdr size
  */
