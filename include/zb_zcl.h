@@ -55,6 +55,8 @@
 /**
  * General Cluster IDs
  */
+/* Basic */
+#define ZB_BASIC_CLUSTER_ID     0x0000
 /* Power Configuration */
 #define ZB_PWR_CFG_CLUSTER_ID   0x0001
 /* Device Temperature Configuration */
@@ -62,7 +64,7 @@
 /* Identify */
 #define ZB_IDENTIFY_CLUSTER_ID  0x0003
 /* Groups */
-#define ZB_GOUPS_CLUSTER_ID     0x0004
+#define ZB_GROUPS_CLUSTER_ID    0x0004
 /* Scenes */
 #define ZB_SCENES_CLUSTER_ID    0x0005
 /* On/Off */
@@ -276,19 +278,73 @@ typedef enum zb_zcl_cmd_e {
  */
 typedef enum zb_zcl_attr_type_e {
     ZB_ZCL_ATTR_TYPE_NULL           = 0x00, /*!< Null data type */
-    ZB_ZCL_ATTR_TYPE_8BIT           = 0x08, /*!< 8-bit value data type */
-    ZB_ZCL_ATTR_TYPE_16BIT          = 0x09, /*!< 16-bit value data type */
-    ZB_ZCL_ATTR_TYPE_32BIT          = 0x0b, /*!< 32-bit value data type */
-    ZB_ZCL_ATTR_TYPE_BOOL           = 0x10, /*!< Boolean data type */
-    ZB_ZCL_ATTR_TYPE_8BITMAP        = 0x18, /*!< 8-bit bitmap data type */
-    ZB_ZCL_ATTR_TYPE_16BITMAP       = 0x19, /*!< 16-bit bitmap data type */
-    ZB_ZCL_ATTR_TYPE_32BITMAP       = 0x1b, /*!< 32-bit bitmap data type */
-    ZB_ZCL_ATTR_TYPE_U8             = 0x20, /*!< Unsigned 8-bit value data type */
-    ZB_ZCL_ATTR_TYPE_U16            = 0x21, /*!< Unsigned 16-bit value data type */
-    ZB_ZCL_ATTR_TYPE_U32            = 0x23, /*!< Unsigned 32-bit value data type */
-    ZB_ZCL_ATTR_TYPE_BYTE_ARRAY     = 0x41, /*!< Byte array data type */
-    ZB_ZCL_ATTR_TYPE_CHAR_STRING    = 0x42, /*!< Charactery string (array) data type */
+    /* General data */
+    ZB_ZCL_ATTR_TYPE_8BIT           = 0x08, /*!< data8 - 8-bit value data type */
+    ZB_ZCL_ATTR_TYPE_16BIT          = 0x09, /*!< data16 - 16-bit value data type */
+    ZB_ZCL_ATTR_TYPE_24BIT          = 0x0a, /*!< data24 - 24-bit value data type */
+    ZB_ZCL_ATTR_TYPE_32BIT          = 0x0b, /*!< data32 - 32-bit value data type */
+    ZB_ZCL_ATTR_TYPE_40BIT          = 0x0c, /*!< data40 - 40-bit value data type */
+    ZB_ZCL_ATTR_TYPE_48BIT          = 0x0d, /*!< data48 - 48-bit value data type */
+    ZB_ZCL_ATTR_TYPE_56BIT          = 0x0e, /*!< data56 - 56-bit value data type */
+    ZB_ZCL_ATTR_TYPE_64BIT          = 0x0f, /*!< data64 - 64-bit value data type */
+    /* Logical */
+    ZB_ZCL_ATTR_TYPE_BOOL           = 0x10, /*!< bool -  Boolean data type */
+    /* Bitmap */
+    ZB_ZCL_ATTR_TYPE_8BITMAP        = 0x18, /*!< map8 - 8-bit bitmap data type */
+    ZB_ZCL_ATTR_TYPE_16BITMAP       = 0x19, /*!< map16 - 16-bit bitmap data type */
+    ZB_ZCL_ATTR_TYPE_24BITMAP       = 0x1a, /*!< map24 - 24-bit bitmap data type */
+    ZB_ZCL_ATTR_TYPE_32BITMAP       = 0x1b, /*!< map32 - 32-bit bitmap data type */
+    ZB_ZCL_ATTR_TYPE_40BITMAP       = 0x1c, /*!< map40 - 40-bit bitmap data type */
+    ZB_ZCL_ATTR_TYPE_48BITMAP       = 0x1d, /*!< map48 - 48-bit bitmap data type */
+    ZB_ZCL_ATTR_TYPE_56BITMAP       = 0x1e, /*!< map56 - 56-bit bitmap data type */
+    ZB_ZCL_ATTR_TYPE_64BITMAP       = 0x1f, /*!< map64 - 64-bit bitmap data type */
+    /* Unsigned integer */
+    ZB_ZCL_ATTR_TYPE_U8             = 0x20, /*!< uint8 - Unsigned 8-bit integer data type */
+    ZB_ZCL_ATTR_TYPE_U16            = 0x21, /*!< uint16 - Unsigned 16-bit integer data type */
+    ZB_ZCL_ATTR_TYPE_U24            = 0x22, /*!< uint24 - Unsigned 14-bit integer data type */
+    ZB_ZCL_ATTR_TYPE_U32            = 0x23, /*!< uint32 - Unsigned 32-bit integer data type */
+    ZB_ZCL_ATTR_TYPE_U40            = 0x24, /*!< uint40 - Unsigned 40-bit integer data type */
+    ZB_ZCL_ATTR_TYPE_U48            = 0x25, /*!< uint48 - Unsigned 48-bit integer data type */
+    ZB_ZCL_ATTR_TYPE_U56            = 0x26, /*!< uint56 - Unsigned 56-bit integer data type */
+    ZB_ZCL_ATTR_TYPE_U64            = 0x27, /*!< uint64 - Unsigned 64-bit integer data type */
+    /* Signed Integer */
+    ZB_ZCL_ATTR_TYPE_S8             = 0x28, /*!< uint8  - Signed 8-bit integer data type */
+    ZB_ZCL_ATTR_TYPE_S16            = 0x29, /*!< uint16 - Signed 16-bit integer data type */
+    ZB_ZCL_ATTR_TYPE_S24            = 0x2a, /*!< uint24 - Signed 14-bit integer data type */
+    ZB_ZCL_ATTR_TYPE_S32            = 0x2b, /*!< uint32 - Signed 32-bit integer data type */
+    ZB_ZCL_ATTR_TYPE_S40            = 0x2c, /*!< uint40 - Signed 40-bit integer data type */
+    ZB_ZCL_ATTR_TYPE_S48            = 0x2d, /*!< uint48 - Signed 48-bit integer data type */
+    ZB_ZCL_ATTR_TYPE_S56            = 0x2e, /*!< uint56 - Signed 56-bit integer data type */
+    ZB_ZCL_ATTR_TYPE_S64            = 0x2f, /*!< uint64 - Signed 64-bit integer data type */
+    /* Enumeration */
+    ZB_ZCL_ATTR_TYPE_ENUM8          = 0x30, /*!< enum8 - 8-bit Enumeration data type */
+    ZB_ZCL_ATTR_TYPE_ENUM16         = 0x31, /*!< enum16 - 16-bit Enumeration data type */
+    /* Floating point */
+    ZB_ZCL_ATTR_TYPE_FLOAT16        = 0x38, /*!< semi - 16-bit Semi-precision data type */
+    ZB_ZCL_ATTR_TYPE_FLOAT32        = 0x39, /*!< single - 32-bit Single-precision data type */
+    ZB_ZCL_ATTR_TYPE_FLOAT64        = 0x3a, /*!< double - 64-bit Double-precision data type */
+    /* String */
+    ZB_ZCL_ATTR_TYPE_BYTE_ARRAY     = 0x41, /*!< octstr - Byte array data type */
+    ZB_ZCL_ATTR_TYPE_CHAR_STRING    = 0x42, /*!< string - Charactery string (array) data type */
+    ZB_ZCL_ATTR_TYPE_LONG_ARRAY     = 0x43, /*!< octstr16 - Long byte array data type */
+    ZB_ZCL_ATTR_TYPE_LONG_STRING    = 0x44, /*!< string16 - Long Charactery string (array) data type */
+    /* Ordered Sequence */
+    ZB_ZCL_ATTR_TYPE_ARRAY          = 0x48, /*!< array - Array data type */
+    ZB_ZCL_ATTR_TYPE_STRUCT         = 0x4c, /*!< struct - Structure data type */
+    /* Collection */
+    ZB_ZCL_ATTR_TYPE_SET            = 0x50, /*!< set - Set data type */
+    ZB_ZCL_ATTR_TYPE_BAG            = 0x51, /*!< bag - Bag data type */
+    /* Time */
+    ZB_ZCL_ATTR_TYPE_TOD            = 0xe0, /*!< ToD - Time of Day data type */
+    ZB_ZCL_ATTR_TYPE_DATE           = 0xe1, /*!< date - Date data type */
+    ZB_ZCL_ATTR_TYPE_UTC            = 0xe2, /*!< UTC - UTC Time data type */
+    /* Identifier */
+    ZB_ZCL_ATTR_TYPE_CLUSTER_ID     = 0xe8, /*!< clusterId - Cluster ID data type */
+    ZB_ZCL_ATTR_TYPE_ATTR_ID        = 0xe9, /*!< attribId - Attribute ID data type */
+    ZB_ZCL_ATTR_TYPE_BAC_OID        = 0xea, /*!< bacOID - BACnet OID data type */
+    /* Miscellaneous */
     ZB_ZCL_ATTR_TYPE_IEEE_ADDR      = 0xf0, /*!< IEEE address (U64) type */
+    ZB_ZCL_ATTR_TYPE_SEC_KEY        = 0xf1, /*!< key128 - 128-bit security key data type */
     ZB_ZCL_ATTR_TYPE_INVALID        = 0xff  /*!< Invalid data type */
 } zb_zcl_attr_type_t;
 
@@ -400,7 +456,7 @@ struct zb_zcl_cluster_s {
     zb_uint8_t ep;              /*!< Endpoint that cluster belongs to */
     zb_uint16_t cluster_id;     /*!< Cluster ID */
     zb_zcl_cluster_role_t role; /*!< Cluster role (Server or Client)*/
-    zb_zcl_attr_t *attr_list;   /*!< Cluster attribute list */
+    zb_zcl_attr_t attr_list[16];   /*!< Cluster attribute list */
     zb_uint8_t attr_count;
     zb_void_t (*handle)(zb_uint16_t, zb_uint8_t, zb_uint16_t, zb_uint8_t,
                         zb_zcl_cluster_t *) ZB_SDCC_REENTRANT;                                  /*!< Function to handle frames addressed to that cluster */
