@@ -211,6 +211,7 @@ void zb_zdo_startup_complete(zb_uint8_t param)
               (FMT__D, (int)buf->u.hdr.status));
     if (buf->u.hdr.status == 0) {
         LOG_INFO("ZDO started ok\n");
+        ZB_NIB_SECURITY_LEVEL() = 5;
         // zb_af_set_data_indication(zb_data_indication);
         // zb_data_indication(param);
 
@@ -282,10 +283,11 @@ static zb_ret_t _zb_schedule_alarm(zb_callback_t func, zb_uint8_t param,
     callback->msg.content.ptr = callback;
     callback->msg.type = ZB_MSG_FIRE_CALLBACK;
 
-    if(run_after == 0){
+    if (run_after == 0) {
         msg_try_send(&(callback->msg), _zb_pid);
-    }else{
-        uint32_t run_after_usec = run_after * 15360;
+    }
+    else {
+        uint32_t run_after_usec = run_after * ZB_BEACON_INTERVAL_USEC;
         ztimer_set_msg(ZTIMER_USEC, &(callback->timer), run_after_usec,
                          &(callback->msg), _zb_pid);
     }
@@ -825,9 +827,6 @@ int cmd_zconfig(int argc, char *argv[])
                                             ZB_IOBUF_POOL_SIZE / 2);
     printf("channel: \t\t %d\n",  zb_transceiver_get_channel());
     printf("Group ID \t\t 0x%04x\n", g_group_id);
-#ifdef ZB_SECURITY
-    uint8_t *network_key = ZG->nwk.nib.secur_material_set[0].key;
-#endif
     printf("PAN ID \t\t 0x%04x\n", MAC_PIB().mac_pan_id);
     zb_pretty_long_address(addr, sizeof(addr),
                                             ZB_NIB_EXT_PAN_ID());
@@ -853,13 +852,12 @@ int cmd_zconfig(int argc, char *argv[])
                         ZG->mac.pib.mac_coord_extended_address);
     printf("Coordinator Long Address: \t %s\n", addr);
 #ifdef ZB_SECURITY
-    printf(
-        "Network Key: \t\t\t %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n",
-        network_key[0], network_key[1], network_key[2], network_key[3],
-        network_key[4], network_key[5], network_key[6], network_key[7],
-        network_key[8], network_key[9], network_key[10], network_key[11],
-        network_key[12], network_key[13], network_key[14], network_key[15]
-    );
+    zb_uint8_t *network_key = ZG->nwk.nib.secur_material_set[0].key;
+    printf("Network Key: \t\t\t ");
+    for (zb_uint8_t i=0; i < sizeof(ZG->nwk.nib.secur_material_set[0].key); i++){
+        printf("%02x", network_key[i]);
+    }
+    printf("\n");
 #endif
 
 #ifdef ZB_ROUTER_ROLE
