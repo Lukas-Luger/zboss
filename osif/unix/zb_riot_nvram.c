@@ -70,20 +70,18 @@ typedef struct __attribute__((packed)) {
     uint16_t        magic; /* always "ZB" 0x425a */
     uint8_t         designated_coordinator : 1;
     uint8_t         insecure_join : 1;
-   // zb_ieee_addr_t  extended_address;
 } zb_config_t;
 
 zb_ret_t zb_save_nvram_config(void)
 {
     if (!has_eeprom) {
-        return RET_OK;
+        return RET_ERROR;
     }
 
     zb_config_t config;
     config.magic = 0x425a;
     config.designated_coordinator = ZB_AIB().aps_designated_coordinator;
     config.insecure_join = ZB_AIB().aps_insecure_join;
-    //ZB_IEEE_ADDR_COPY(config.extended_address, MAC_PIB().mac_extended_address);
 
     zb_write_nvram(ZB_CONFIG_PAGE, &config, sizeof(config));
 
@@ -93,19 +91,18 @@ zb_ret_t zb_save_nvram_config(void)
 zb_ret_t zb_config_from_nvram(void)
 {
     if (!has_eeprom) {
-        return RET_OK;
+        return RET_ERROR;
     }
 
     zb_config_t config;
     zb_read_nvram(ZB_CONFIG_PAGE, &config, sizeof(config));
 
     if (config.magic != 0x425a) {
-        return RET_OK;
+        return RET_ERROR;
     }
 
     ZB_AIB().aps_designated_coordinator = config.designated_coordinator;
     ZB_AIB().aps_insecure_join = config.insecure_join;
-//     ZB_IEEE_ADDR_COPY(MAC_PIB().mac_extended_address, config.extended_address);
 
 //     ZB_UPDATE_LONGMAC();
 
@@ -115,7 +112,7 @@ zb_ret_t zb_config_from_nvram(void)
 typedef struct __attribute__((packed)) {
     uint16_t            magic; /* always "ZB" 0x425a */
     uint8_t             profile_in_use;
-    zb_ieee_addr_t      long_parent_addr;
+    zb_ieee_addr_t      ext_parent_addr;
     uint32_t            channel_mask;
     uint8_t             current_channel;
     uint16_t            short_parent_addr;
@@ -123,7 +120,7 @@ typedef struct __attribute__((packed)) {
     uint16_t            pan_id;
     zb_ext_pan_id_t     ext_pan_id;
     uint16_t            short_addr;
-    zb_ieee_addr_t      long_addr;
+    zb_ieee_addr_t      ext_addr;
     uint16_t            group_id;
     zb_bool_t           bdb_node_on_net;
     uint8_t             nwk_update_id;
@@ -139,7 +136,7 @@ typedef struct __attribute__((packed)) {
 zb_ret_t zb_save_formdesc_data(void)
 {
     if (!has_eeprom) {
-        return RET_OK;
+        return RET_ERROR;
     }
 
     zb_formdesc_data_t data;
@@ -147,10 +144,10 @@ zb_ret_t zb_save_formdesc_data(void)
 
     zb_uint8_t profile_in_use = 0;
     zb_uint16_t short_parent_addr;
-    zb_ieee_addr_t long_parent_addr;
+    zb_ieee_addr_t ext_parent_addr;
 
     zb_address_short_by_ref(&short_parent_addr, ZG->nwk.handle.parent);
-    zb_address_ieee_by_ref(long_parent_addr, ZG->nwk.handle.parent);
+    zb_address_ieee_by_ref(ext_parent_addr, ZG->nwk.handle.parent);
 
     data.depth = ZB_NIB_DEPTH();
     data.profile_in_use = profile_in_use;
@@ -163,11 +160,11 @@ zb_ret_t zb_save_formdesc_data(void)
     memcpy(&data.channel_mask, &ZB_AIB().aps_channel_mask,
                                                 sizeof(data.channel_mask));
     data.current_channel = MAC_CTX().current_channel;
-    ZB_IEEE_ADDR_COPY(data.long_parent_addr, long_parent_addr);
+    ZB_IEEE_ADDR_COPY(data.ext_parent_addr, ext_parent_addr);
     ZB_IEEE_ADDR_COPY(data.ext_pan_id, ZB_AIB().aps_use_extended_pan_id);
 
-    memcpy(&data.bdb_node_on_net, &BDB_CTX().node_is_on_net, sizeof(zb_bool_t));
-    ZB_IEEE_ADDR_COPY(data.long_addr, ZB_PIB_EXTENDED_ADDRESS());
+    data.bdb_node_on_net = BDB_CTX().node_is_on_net;
+    ZB_IEEE_ADDR_COPY(data.ext_addr, ZB_PIB_EXTENDED_ADDRESS());
     data.nwk_update_id = ZB_NIB_UPDATE_ID();
     data.nwk_security_level = (uint8_t) ZB_NIB_SECURITY_LEVEL();
     data.nwk_active_key_snum = ZG->nwk.nib.active_key_seq_number;
@@ -184,14 +181,14 @@ zb_ret_t zb_save_formdesc_data(void)
 zb_ret_t zb_read_formdesc_data(void)
 {
     if (!has_eeprom) {
-        return RET_OK;
+        return RET_ERROR;
     }
 
     zb_formdesc_data_t data;
     zb_read_nvram(ZB_CONFIG_PAGE + sizeof(zb_config_t), &data, sizeof(data));
 
     if (data.magic != 0x425a) {
-        return RET_OK;
+        return RET_ERROR;
     }
 
     ZB_NIB_DEPTH() = data.depth;
@@ -208,10 +205,10 @@ zb_ret_t zb_read_formdesc_data(void)
     ZB_IEEE_ADDR_COPY(ZB_AIB().aps_use_extended_pan_id, data.ext_pan_id);
     ZB_IEEE_ADDR_COPY(ZB_PIB_BEACON_PAYLOAD().extended_panid, data.ext_pan_id);
     ZB_IEEE_ADDR_COPY(ZB_NIB_EXT_PAN_ID(), data.ext_pan_id);
-    ZB_IEEE_ADDR_COPY(ZB_PIB_EXTENDED_ADDRESS(), data.long_addr);
+    ZB_IEEE_ADDR_COPY(ZB_PIB_EXTENDED_ADDRESS(), data.ext_addr);
     ZB_UPDATE_LONGMAC();
-    /* parent short & long addr */
-    zb_address_update(data.long_parent_addr, data.short_parent_addr, ZB_FALSE, 
+    /* parent short & extended addr */
+    zb_address_update(data.ext_parent_addr, data.short_parent_addr, ZB_FALSE, 
             &ZG->nwk.handle.parent);
     zb_neighbor_tbl_ent_t *nbt;
     zb_nwk_neighbor_get(ZG->nwk.handle.parent, ZB_TRUE, &nbt);
@@ -219,7 +216,7 @@ zb_ret_t zb_read_formdesc_data(void)
     nbt->device_type = ZB_NWK_DEVICE_TYPE_COORDINATOR;
     nbt->rx_on_when_idle = ZB_TRUE;
     nbt->addr_ref = ZG->nwk.handle.parent;
-    memcpy(&BDB_CTX().node_is_on_net, &data.bdb_node_on_net, sizeof(zb_bool_t));
+    BDB_CTX().node_is_on_net = data.bdb_node_on_net;
     ZB_NIB_UPDATE_ID() = data.nwk_update_id;
     ZB_NIB_SECURITY_LEVEL() = data.nwk_security_level;
     ZG->nwk.nib.active_key_seq_number = data.nwk_active_key_snum;
@@ -336,7 +333,7 @@ zb_ret_t zb_read_up_counter()
     return RET_OK;
 }
 
-zb_ret_t reset()
+zb_ret_t zb_reset()
 {
     zb_erase_nvram(0);
     zb_write_up_counter();
