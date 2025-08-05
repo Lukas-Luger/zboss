@@ -46,7 +46,7 @@
    PURPOSE: time functions implementation for 8051 for the Common bank
  */
 
- #ifndef ZB_PLATFORM_RIOT_ARM
+#ifndef ZB_PLATFORM_RIOT_ARM
 
 #include "zb_common.h"
 #include "zb_osif.h"
