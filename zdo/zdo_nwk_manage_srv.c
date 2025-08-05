@@ -618,12 +618,16 @@ void zb_zdo_mgmt_permit_joining_handle(zb_uint8_t param) ZB_CALLBACK
               (FMT__H_H, req->permit_duration, req->tc_significance));
     req_param = (zb_nlme_permit_joining_request_t *)ZB_GET_BUF_PARAM(buf,
                                                                      zb_nlme_permit_joining_request_t);
+    /* see 2.4.3.3.7.2 */
+    if (req->permit_duration == 0xff) {
+        req->permit_duration = 0xfe; 
+    }
     req_param->permit_duration = req->permit_duration;
     ZB_SCHEDULE_CALLBACK(zb_nlme_permit_joining_request, param);
 
 #if defined ZB_SECURITY && defined ZB_COORDINATOR_ROLE
-    if (ZB_NIB_DEVICE_TYPE() == ZB_NWK_DEVICE_TYPE_COORDINATOR
-        && req->tc_significance) {
+    if (ZB_NIB_DEVICE_TYPE() == ZB_NWK_DEVICE_TYPE_COORDINATOR) {
+        // && req->tc_significance) { - has been deprecated and should be ignored
         if (req->permit_duration) {
             ZDO_CTX().handle.allow_auth = 1;
         }
@@ -632,7 +636,7 @@ void zb_zdo_mgmt_permit_joining_handle(zb_uint8_t param) ZB_CALLBACK
         }
     }
 #endif
-
+    /* if sent unicast we should respond after nlme_confirm */
     TRACE_MSG(TRACE_ZDO3, "<<mgmt_nwk_update_handler", (FMT__0));
 }
 #endif  /* ZB_ROUTER_ROLE */

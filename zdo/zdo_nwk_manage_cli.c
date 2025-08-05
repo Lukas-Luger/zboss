@@ -270,7 +270,7 @@ void zb_zdo_mgmt_permit_joining_req(zb_uint8_t param,
     req->permit_duration = req_param.permit_duration;
     req->tc_significance = req_param.tc_significance;
 
-    zdo_send_req_by_short(ZDO_MGMT_PERMIT_JOINING_CLID, param, cb,
+    zdo_send_req_by_short(ZDO_MGMT_PERMIT_JOINING_REQ_CLID, param, cb,
                           req_param.dest_addr, 1);
 
     TRACE_MSG(TRACE_ZDO3, "<< zb_zdo_mgmt_permit_joining_req", (FMT__0));

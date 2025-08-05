@@ -236,7 +236,7 @@ void zb_zdo_data_indication(zb_uint8_t param) ZB_CALLBACK
     else
 #endif
 #ifndef ZB_LIMITED_FEATURES
-    if ((ind->clusterid == ZDO_NODE_DESC_REQ_CLID) &&
+    if ((ind->clusterid == ZDO_NODE_DESC_REQ_CLID) ||
         (ind->clusterid == ZDO_POWER_DESC_REQ_CLID)) {
         zdo_send_desc_resp(param);
     }
@@ -276,7 +276,7 @@ void zb_zdo_data_indication(zb_uint8_t param) ZB_CALLBACK
     else if (ind->clusterid == ZDO_END_DEVICE_BIND_REQ_CLID) {
         zb_zdo_end_device_bind_handler(param);
     }
-    else if (ind->clusterid == ZDO_MGMT_PERMIT_JOINING_CLID) {
+    else if (ind->clusterid == ZDO_MGMT_PERMIT_JOINING_REQ_CLID) {
 #ifdef ZB_ROUTER_ROLE
         if (!ZG->nwk.handle.joined_pro) {
             zb_zdo_mgmt_permit_joining_handle(param);

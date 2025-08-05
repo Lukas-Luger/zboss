@@ -57,42 +57,82 @@
 
 
 /**
-   Cluster ids for ZDO commands
+   Cluster ids for ZDO Client commands
  */
-#define  ZDO_NWK_ADDR_REQ_CLID    0x0
-#define  ZDO_IEEE_ADDR_REQ_CLID   0x1
-#define  ZDO_NODE_DESC_REQ_CLID   0x2
-#define  ZDO_POWER_DESC_REQ_CLID  0x3
-#define  ZDO_SIMPLE_DESC_REQ_CLID 0x4
-#define  ZDO_ACTIVE_EP_REQ_CLID   0x5
-#define  ZDO_MATCH_DESC_REQ_CLID  0x6
-#define  ZDO_DEVICE_ANNCE_CLID    0x13
-#define  ZDO_SYSTEM_SERVER_DISCOVERY_REQ_CLID 0x15
-#define  ZDO_PARENT_ANNCE_CLID    0x1f
-#define  ZDO_END_DEVICE_BIND_REQ_CLID 0x20
-#define  ZDO_BIND_REQ_CLID        0x21
-#define  ZDO_UNBIND_REQ_CLID      0x22
-#define  ZDO_MGMT_LQI_REQ_CLID    0x31
-#define  ZDO_MGMT_LEAVE_REQ_CLID  0x0034
-#define  ZDO_MGMT_NWK_UPDATE_REQ_CLID 0x0038
-#define  ZDO_MGMT_PERMIT_JOINING_CLID 0x0036
+/* 2.4.3.1 Device and Service Discovery Client Services */
+#define  ZDO_NWK_ADDR_REQ_CLID                      0x0000
+#define  ZDO_IEEE_ADDR_REQ_CLID                     0x0001
+#define  ZDO_NODE_DESC_REQ_CLID                     0x0002
+#define  ZDO_POWER_DESC_REQ_CLID                    0x0003
+#define  ZDO_SIMPLE_DESC_REQ_CLID                   0x0004
+#define  ZDO_ACTIVE_EP_REQ_CLID                     0x0005
+#define  ZDO_MATCH_DESC_REQ_CLID                    0x0006
+#define  ZDO_DEVICE_ANNCE_CLID                      0x0013
+#define  ZDO_SYSTEM_SERVER_DISCOVERY_REQ_CLID       0x0015
+#define  ZDO_PARENT_ANNCE_CLID                      0x001f
+/* 2.4.3.2 Bind, Unbind and Bind Management Client Services */
+#define  ZDO_END_DEVICE_BIND_REQ_CLID               0x0020 // deprecated
+#define  ZDO_BIND_REQ_CLID                          0x0021
+#define  ZDO_UNBIND_REQ_CLID                        0x0022
+#define  ZDO_CLEAR_ALL_BINDINGS_REQ_CLID            0x002b // Not implemented
+/* 2.4.3.3 Network Management Client Services */
+#define  ZDO_MGMT_LQI_REQ_CLID                      0x0031
+#define  ZDO_MGMT_RTG_REQ_CLID                      0x0032 // Not implemented
+#define  ZDO_MGMT_BIND_REQ_CLID                     0x0033 // Not implemented
+#define  ZDO_MGMT_LEAVE_REQ_CLID                    0x0034
+#define  ZDO_MGMT_PERMIT_JOINING_REQ_CLID           0x0036 // Nedds adjustment
+#define  ZDO_MGMT_NWK_UPDATE_REQ_CLID               0x0038
+#define  ZDO_MGMT_NWK_ENH_UPDATE_REQ_CLID           0x0039 // Not implemented
+#define  ZDO_MGMT_NWK_IEEE_JOINING_LIST_REQ_CLID    0x003a // Not implemented
+#define  ZDO_MGMT_NWK_BEACON_SURVEY_REQ_CLID        0x003c // Not implemented
+/* 2.4.3.4 Security Client Services */
+#define  ZDO_SECUR_START_KEY_NEGOTIATION_REQ_CLID   0x0040 // Not implemented
+#define  ZDO_SECUR_RETRIEVE_AUTH_TOKEN_REQ_CLID     0x0041 // Not implemented
+#define  ZDO_SECUR_GET_AUTH_LEVEL_REQ_CLID          0x0042 // Not implemented
+#define  ZDO_SECUR_SET_CONFIG_REQ_CLID              0x0043 // Not implemented
+#define  ZDO_SECUR_GET_CONFIG_REQ_CLID              0x0044 // Not implemented
+#define  ZDO_SECUR_START_KEY_UPDATE_REQ_CLID        0x0045 // Not implemented
+#define  ZDO_SECUR_DECOMMISSION_REQ_CLID            0x0046 // Not implemented
+#define  ZDO_SECUR_CHALLENGE_REQ_CLID               0x0047 // Not implemented
 
 
-#define  ZDO_NWK_ADDR_RESP_CLID    0x8000
-#define  ZDO_IEEE_ADDR_RESP_CLID   0x8001
-#define  ZDO_NODE_DESC_RESP_CLID   0x8002
-#define  ZDO_POWER_DESC_RESP_CLID  0x8003
-#define  ZDO_SIMPLE_DESC_RESP_CLID 0x8004
-#define  ZDO_ACTIVE_EP_RESP_CLID   0x8005
-#define  ZDO_MATCH_DESC_RESP_CLID  0x8006
-#define  ZDO_SYSTEM_SERVER_DISCOVERY_RESP_CLID 0x8015
-#define  ZDO_PARENT_ANNCE_RESP_CLID 0x801f
-#define  ZDO_END_DEVICE_BIND_RESP_CLID 0x8020
-#define  ZDO_BIND_RESP_CLID        0x8021
-#define  ZDO_UNBIND_RESP_CLID      0x8022
-#define  ZDO_MGMT_LQI_RESP_CLID    0x8031
-#define  ZDO_MGMT_LEAVE_RESP_CLID  0x8034
-#define  ZDO_MGMT_NWK_UPDATE_NOTIFY_CLID 0x8038
+/**
+   Cluster ids for ZDO Server commands
+ */
+/* 2.4.4.2 Device and Service Discovery Server */
+#define  ZDO_NWK_ADDR_RESP_CLID                     0x8000
+#define  ZDO_IEEE_ADDR_RESP_CLID                    0x8001
+#define  ZDO_NODE_DESC_RESP_CLID                    0x8002
+#define  ZDO_POWER_DESC_RESP_CLID                   0x8003
+#define  ZDO_SIMPLE_DESC_RESP_CLID                  0x8004
+#define  ZDO_ACTIVE_EP_RESP_CLID                    0x8005
+#define  ZDO_MATCH_DESC_RESP_CLID                   0x8006
+#define  ZDO_SYSTEM_SERVER_DISCOVERY_RESP_CLID      0x8015
+#define  ZDO_PARENT_ANNCE_RESP_CLID                 0x801f
+/* Bind, Unbind and Bind Management Server Services */
+#define  ZDO_END_DEVICE_BIND_RESP_CLID              0x8020 // deprecated
+#define  ZDO_BIND_RESP_CLID                         0x8021
+#define  ZDO_UNBIND_RESP_CLID                       0x8022
+#define  ZDO_CLEAR_ALL_BINDINGS_RESP_CLID           0x802b // Not implemented
+/* 2.4.4.3 Network Management Server Services */
+#define  ZDO_MGMT_LQI_RESP_CLID                     0x8031
+#define  ZDO_MGMT_RTG_RESP_CLID                     0x8032 // Not implemented
+#define  ZDO_MGMT_BIND_RESP_CLID                    0x8033 // Not implemented
+#define  ZDO_MGMT_LEAVE_RESP_CLID                   0x8034
+#define  ZDO_MGMT_PERMIT_JOINING_RESP_CLID          0x8036 // Needs adjustment
+#define  ZDO_MGMT_NWK_UPDATE_NOTIFY_CLID            0x8038
+#define  ZDO_MGMT_NWK_ENH_UPDATE_RESP_CLID          0x8039 // Not implemented
+#define  ZDO_MGMT_NWK_IEEE_JOINING_LIST_RESP_CLID   0x803a // Not implemented
+#define  ZDO_MGMT_NWK_BEACON_SURVEY_RESP_CLID       0x803c // Not implemented
+/* 2.4.4.4 Security Server Services */
+#define  ZDO_SECUR_START_KEY_NEGOTIATION_RESP_CLID  0x8040 // Not implemented
+#define  ZDO_SECUR_RETRIEVE_AUTH_TOKEN_RESP_CLID    0x8041 // Not implemented
+#define  ZDO_SECUR_GET_AUTH_LEVEL_RESP_CLID         0x8042 // Not implemented
+#define  ZDO_SECUR_SET_CONFIG_RESP_CLID             0x8043 // Not implemented
+#define  ZDO_SECUR_GET_CONFIG_RESP_CLID             0x8044 // Not implemented
+#define  ZDO_SECUR_START_KEY_UPDATE_RESP_CLID       0x8045 // Not implemented
+#define  ZDO_SECUR_DECOMMISSION_RESP_CLID           0x8046 // Not implemented
+#define  ZDO_SECUR_CHALLENGE_RESP_CLID              0x8047 // Not implemented
 
 
 /*! @} */
