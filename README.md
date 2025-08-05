@@ -6,6 +6,7 @@ To use this stack with RIOT-OS, download the pr/zboss branch and run the zigbee-
 
 ```shell
 git clone https://github.com/Lukas-Luger/RIOT.git
+git checkout pr/zboss
 cd RIOT/examples/networking/zigbee-zll
 make -j4 flash
 ```
