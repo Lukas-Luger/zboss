@@ -439,9 +439,9 @@ asdf
 
 /**
    MAC: max time to wait for a response command frame, range 2-64
-   Default is 32, 64 set for better compatibility, default = 32
+   Default is 32, 64 set for better compatibility
  */
-#define ZB_MAC_RESPONSE_WAIT_TIME 128
+#define ZB_MAC_RESPONSE_WAIT_TIME 32
 
 /* Make all MAC PIB attributes configurable */
 //#define ZB_CONFIGURABLE_MAC_PIB
@@ -776,7 +776,7 @@ asdf
 
 /* parameters for security level 5 - the only security level supported */
 /**
-   SECUR: security level. Now fixed to be 5
+   SECUR: security level. Now fixed to be 0
  */
 #define ZB_SECURITY_LEVEL 0
 
