@@ -81,7 +81,8 @@ void zb_set_node_descriptor(zb_logical_type_t device_type, zb_int8_t power_src,
         ZB_MANUFACTORER_CODE,
         ZB_NSDU_MAX_LEN,
         /* ZB_ASDU_MAX_LEN */ 0,    /* 0 - is described in certification tests */
-        device_type == ZB_COORDINATOR ? ZB_PRIMARY_TRUST_CENTER | ZB_NETWORK_MANAGER : 0,
+        (device_type == ZB_COORDINATOR ? ZB_PRIMARY_TRUST_CENTER | ZB_NETWORK_MANAGER : 0) |
+        (23 & 0x7f) << 9 /* server mask stack compliance revision 23*/,
         /* ZB_ASDU_MAX_LEN */ 0,    /* 0 - is described in certification tests */
         0);
 
