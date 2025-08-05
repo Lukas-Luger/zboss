@@ -53,29 +53,78 @@
 /*! @{ */
 
 /**
- * General Cluster IDs
+ * General Cluster IDs ZCL 3.1.2 
  */
 /* Basic */
-#define ZB_BASIC_CLUSTER_ID     0x0000
+#define ZB_BASIC_CLUSTER_ID             0x0000
 /* Power Configuration */
-#define ZB_PWR_CFG_CLUSTER_ID   0x0001
+#define ZB_PWR_CFG_CLUSTER_ID           0x0001
 /* Device Temperature Configuration */
-#define ZB_DEV_TMP_CLUSTER_ID   0x0002
+#define ZB_DEV_TMP_CLUSTER_ID           0x0002
 /* Identify */
-#define ZB_IDENTIFY_CLUSTER_ID  0x0003
+#define ZB_IDENTIFY_CLUSTER_ID          0x0003
 /* Groups */
-#define ZB_GROUPS_CLUSTER_ID    0x0004
+#define ZB_GROUPS_CLUSTER_ID            0x0004
 /* Scenes */
-#define ZB_SCENES_CLUSTER_ID    0x0005
+#define ZB_SCENES_CLUSTER_ID            0x0005
 /* On/Off */
-#define ZB_ON_OFF_CLUSTER_ID    0x0006
+#define ZB_ON_OFF_CLUSTER_ID            0x0006
+/* On/Off Switch Configuration */
+#define ZB_ON_OFF_SW_CFG_CLUSTER_ID     0x0007
+/* Level Control for Lighting */
+#define ZB_LVL_CTRL_LIGHT_CLUSTER_ID    0x0008
+/* Pulse Width Modulation */
+#define ZB_PWM_CLUSTER_ID               0x001c
+/* Alarms */
+#define ZB_ALARMS_CLUSTER_ID            0x0009
+/* Time */
+#define ZB_TIME_CLUSTER_ID              0x000a
+/* RSSI Location */
+#define ZB_RSSI_LOC_CLUSTER_ID          0x000b
+/* Diagnostics */
+#define ZB_DIAG_CLUSTER_ID              0x0b05
+/* Poll Control */
+#define ZB_POLL_CTRL_CLUSTER_ID         0x0020
+/* Power Profile */
+#define ZB_KEEP_ALIVE_CLUSTER_ID        0x0025
+/* Analog Input */
+#define ZB_ANALOG_INPUT_CLUSTER_ID      0x000c
+/* Analog Output */
+#define ZB_ANALOG_OUTPUT_CLUSTER_ID     0x000d
+/* Analog Value */
+#define ZB_ANALOG_VALUE_CLUSTER_ID      0x000e
+/* Binary Input */
+#define ZB_BINARY_INPUT_CLUSTER_ID      0x000f
+/* Binary Output */
+#define ZB_BINARY_OUTPUT_CLUSTER_ID     0x0010
+/* Binary Value */
+#define ZB_BINARY_VALUE_CLUSTER_ID      0x0011
+/* Multistate Input */
+#define ZB_MULTISTATE_INPUT_CLUSTER_ID  0x0012
+/* Multistate Output */
+#define ZB_MULTISTATE_OUTPUT_CLUSTER_ID 0x0013
+/* Multistate Value */
+#define ZB_MULTISTATE_VALUE_CLUSTER_ID  0x0014
+
 /**
- * Commissioning Cluster IDs
+ * TODO: Cluster IDs ZCL [4-12].1.2
  */
+
+/**
+ * Commissioning Cluster IDs ZCL 13.1.2
+ */
+/* Commissioning */
+#define ZB_COMM_CLUSTER_ID              0x0015
 /* Touchlink Commissioning */
-#define ZB_ZLL_CLUSTER_ID       0x1000
+#define ZB_ZLL_CLUSTER_ID               0x1000
+
+/**
+ * TODO: Cluster IDs ZCL [14-15].1.2
+ */
+
 /**
  * Profile IDs
+ * from https://www.rfwireless-world.com/terminology/zigbee-profile-device-id-list
  */
 /* Industrial Plant Monitoring */
 #define ZB_IND_PL_MON_PROFILE_ID    0x0101
@@ -89,8 +138,10 @@
 #define ZB_ADV_METERING_PROFILE_ID  0x0109
 /* ZigBee Light Link */
 #define ZB_ZLL_PROFILE_ID           0xc05e
+
 /**
  * Device IDs for HA
+ * from https://www.rfwireless-world.com/terminology/zigbee-profile-device-id-list
  */
 /* ON/OFF Switch */
 #define ZB_HA_ON_OFF_SW_DEV_ID      0x0000
@@ -103,31 +154,36 @@
 /* Scene Selector */
 #define ZB_HA_SCENE_SEL_DEV_ID      0x0004
 /* Configuration Tool */
-#define ZB_HA_CONF_TOOL_DEV_ID  	0x0005
+#define ZB_HA_CONF_TOOL_DEV_ID      0x0005
 /* Remote control */
-#define ZB_HA_REMOTE_CTRL_DEV_ID	0x0006
+#define ZB_HA_REMOTE_CTRL_DEV_ID    0x0006
 /* Combined Interface */
-#define ZB_HA_COMB_IF_DEV_ID    	0x0007
+#define ZB_HA_COMB_IF_DEV_ID        0x0007
 /* Range Extender */
-#define ZB_HA_RANGE_EXT_DEV_ID  	0x0008
+#define ZB_HA_RANGE_EXT_DEV_ID      0x0008
 /* Mains Power Outlet */
-#define ZB_HA_MAINS_PWR_OUTL_DEV_ID	0x0009
+#define ZB_HA_MAINS_PWR_OUTL_DEV_ID 0x0009
+
+/**
+ * Device IDs from
+ * ZigBee Lighting & Occupancy Spec. Table 1 
+ */
 /* ON/OFF Light */
 #define ZB_HA_ON_OFF_LIGHT_DEV_ID   0x0100
 /* Dimmable Light */
-#define ZB_HA_DIMM_LIGHT_DEV_ID 	0x0101
+#define ZB_HA_DIMM_LIGHT_DEV_ID     0x0101
 /* Color Dimmable Light */
-#define ZB_HA_COL_DIMM_L_DEV_ID 	0x0102
+#define ZB_HA_COL_DIMM_L_DEV_ID     0x0102
 /* ON/OFF Light Switch */
-#define ZB_HA_ON_OFF_L_SW_DEV_ID	0x0103
+#define ZB_HA_ON_OFF_L_SW_DEV_ID    0x0103
 /* Dimmer Switch */
-#define ZB_HA_DIMM_SW_DEV_ID    	0x0104
+#define ZB_HA_DIMM_SW_DEV_ID        0x0104
 /* Color Dimmer Switch */
-#define ZB_HA_COL_DIMM_SW_DEV_ID	0x0105
+#define ZB_HA_COL_DIMM_SW_DEV_ID    0x0105
 /* Light Sensor */
-#define ZB_HA_LIGHT_SENS_DEV_ID 	0x0106
+#define ZB_HA_LIGHT_SENS_DEV_ID     0x0106
 /* Occupancy Sensor */
-#define ZB_HA_OCC_SENS_DEV_ID   	0x0107
+#define ZB_HA_OCC_SENS_DEV_ID       0x0107
 /* ON/OFF Ballast */
 #define ZB_HA_ON_OFF_BALL_DEV_ID    0x0108
 /* Dimmable Ballast */
@@ -142,32 +198,6 @@
 #define ZB_HA_COLOR_LIGHT_DEV_ID    0x010d
 /* Light level sensor */
 #define ZB_HA_LVL_SENS_DEV_ID       0x010e
-/* Shade */
-#define ZB_HA_SHADE_DEV_ID      	0x0200
-/* Shade Controller */
-#define ZB_HA_SHADE_CTRL_DEV_ID 	0x0201
-/* Heating/Cooling Unit */
-#define ZB_HA_HEAT_COOL_DEV_ID  	0x0300
-/* Thermostat */
-#define ZB_HA_THERMO_DEV_ID        	0x0301
-/* Temperature Sensor */
-#define ZB_HA_TEMP_SENS_DEV_ID  	0x0302
-/* Pump */
-#define ZB_HA_PUMP_DEV_ID       	0x0303
-/* Pump Controller */
-#define ZB_HA_PUMP_CTRL_DEV_ID  	0x0304
-/* Pressure Sensor */
-#define ZB_HA_PRESSURE_SENS_DEV_ID	0x0305
-/* Flow sensor */
-#define ZB_HA_FLOW_SENS_DEV_ID  	0x0306
-/* IAS Control and Indicating Equipment */
-#define ZB_HA_IAS_CTRL_IND_DEV_ID	0x0400
-/* IAS Ancillary Control Equipment */
-#define ZB_HA_IAS_ANC_CTRL_DEV_ID	0x0401
-/* IAS Zone */
-#define ZB_HA_IAS_ZONE_DEV_ID   	0x0402
-/* IAS Warning Device */
-#define ZB_HA_IAS_WARNDEV_ID    	0x0403
 /* Color controller */
 #define ZB_HA_COL_CTRL_DEV_ID       0x0800
 /* Color scene controller */
@@ -180,6 +210,38 @@
 #define ZB_HA_CTRL_BR_DEV_ID        0x0840
 /* On/off sensor */
 #define ZB_HA_ON_OFF_SENS_DEV_ID    0x0850
+
+/**
+ * Device IDs for HA
+ * from https://www.rfwireless-world.com/terminology/zigbee-profile-device-id-list
+ */
+/* Shade */
+#define ZB_HA_SHADE_DEV_ID          0x0200
+/* Shade Controller */
+#define ZB_HA_SHADE_CTRL_DEV_ID     0x0201
+/* Heating/Cooling Unit */
+#define ZB_HA_HEAT_COOL_DEV_ID      0x0300
+/* Thermostat */
+#define ZB_HA_THERMO_DEV_ID         0x0301
+/* Temperature Sensor */
+#define ZB_HA_TEMP_SENS_DEV_ID      0x0302
+/* Pump */
+#define ZB_HA_PUMP_DEV_ID           0x0303
+/* Pump Controller */
+#define ZB_HA_PUMP_CTRL_DEV_ID      0x0304
+/* Pressure Sensor */
+#define ZB_HA_PRESSURE_SENS_DEV_ID  0x0305
+/* Flow sensor */
+#define ZB_HA_FLOW_SENS_DEV_ID      0x0306
+/* IAS Control and Indicating Equipment */
+#define ZB_HA_IAS_CTRL_IND_DEV_ID   0x0400
+/* IAS Ancillary Control Equipment */
+#define ZB_HA_IAS_ANC_CTRL_DEV_ID   0x0401
+/* IAS Zone */
+#define ZB_HA_IAS_ZONE_DEV_ID       0x0402
+/* IAS Warning Device */
+#define ZB_HA_IAS_WARN_DEV_ID       0x0403
+
 
 /**
    Response for ZLL scan request
@@ -251,8 +313,8 @@ typedef enum zb_zcl_cmd_e {
     ZB_ZCL_CMD_READ_ATTRIB          = 0x00,     /*!< Read attributes command */
     ZB_ZCL_CMD_READ_ATTRIB_RESP     = 0x01,     /*!< Read attributes response command */
     ZB_ZCL_CMD_WRITE_ATTRIB         = 0x02,     /*!< Write attributes foundation command */
-    ZB_ZCL_CMD_WRITE_ATTRIB_RESP    = 0x03,     /*!< Write attributes response command */
-    ZB_ZCL_CMD_WRITE_ATTRIB_UNDIV   = 0x04,     /*!< Write attributes undivided command */
+    ZB_ZCL_CMD_WRITE_ATTRIB_UNDIV   = 0x03,     /*!< Write attributes undivided command */
+    ZB_ZCL_CMD_WRITE_ATTRIB_RESP    = 0x04,     /*!< Write attributes response command */
     ZB_ZCL_CMD_WRITE_ATTRIB_NO_RESP = 0x05,     /*!< Write attributes no response command */
     ZB_ZCL_CMD_CONFIG_REPORT        = 0x06,     /*!< Configure reporting command */
     ZB_ZCL_CMD_CONFIG_REPORT_RESP   = 0x07,     /*!< Configure reporting response command */
@@ -447,6 +509,15 @@ typedef struct zb_zcl_attr_s {
         attr->data_p = _data_p;                                       \
     }
 
+typedef enum zb_zcl_attr_reporting_status_e {
+    ZB_ZCL_ATTR_REPORTING_PENDING       = 0x00,
+    ZB_ZCL_ATTR_REPORTING_COMPLETE      = 0x01
+} zb_zcl_attr_reporting_status_t;
+
+typedef struct zb_zcl_global_attrs_s {
+    zb_uint16_t cluster_revision;
+    zb_zcl_attr_reporting_status_t reporting_status;
+} zb_zcl_global_attrs_t;
 /**
    ZCL cluster structure
  */
@@ -456,7 +527,7 @@ struct zb_zcl_cluster_s {
     zb_uint8_t ep;              /*!< Endpoint that cluster belongs to */
     zb_uint16_t cluster_id;     /*!< Cluster ID */
     zb_zcl_cluster_role_t role; /*!< Cluster role (Server or Client)*/
-    zb_zcl_attr_t attr_list[16];   /*!< Cluster attribute list */
+    zb_zcl_attr_t attr_list[64];   /*!< Cluster attribute list */
     zb_uint8_t attr_count;
     zb_void_t (*handle)(zb_uint16_t, zb_uint8_t, zb_uint16_t, zb_uint8_t,
                         zb_zcl_cluster_t *) ZB_SDCC_REENTRANT;                                  /*!< Function to handle frames addressed to that cluster */
@@ -556,7 +627,15 @@ zb_zcl_hdr_t;
  */
 #define ZB_ZCL_GET_SEQ_NUM() (ZCL_CTX().seq_number++)
 
+/**
+ * Global default cluster revision
+ */
+#define ZB_ZCL_DEFAULT_CLUSTER_REVISION()         ((zb_uint16_t)1)
 
+/**
+ * Default max array length
+ */
+#define ZB_ZCL_ATTR_MAX_ARRAY_LENGTH        50
 /**
    Initialize Zigbee cluster library
  */
