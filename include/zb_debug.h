@@ -66,13 +66,11 @@
  */
 void zb_abort(char *caller_file, int caller_line);
 
-#if defined DEBUG || defined USE_ASSERT || defined ZB_PLATFORM_RIOT_ARM
-
-
 char *zb_pretty_long_address(char *address_str, unsigned address_str_len,
                              zb_uint8_t *address_bytes);
 char *zb_pretty_key(char *key_str, unsigned key_str_len, uint8_t *key_bytes);
 
+#if defined DEBUG || defined USE_ASSERT
 #ifdef SDCC
 /*
    SDCC warns about unreachable code in the constructions like ZB_ASSERT(2 > 1)
