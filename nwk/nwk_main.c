@@ -1137,17 +1137,36 @@ void zb_mcps_data_indication(zb_uint8_t param) ZB_CALLBACK
     ZB_LETOH16(&src_addr, &nwk_hdr->src_addr);
 
     /* See 3.6.5 Skip already precessed broadcast packets and not for us packets */
+    /**
+     * Broadcast communication 3.6.6:
+     * 1) we must be on a network (aka ZG->nwk.handle.joined or bdbNodeIsOnNetwork??)
+     *      for nwkNetworkBroadcastDeliveryTime (aka ZB_NWK_BROADCAST_DELIVERY_TIME())
+     * 2) compare dst-addr with own dev type (e.g: if we are ed, do not accept 0xfffc)
+     * 3) compare src and snum with btt entries
+     * 3.1) if entry exists: may update entry, then drop frame
+     * 3.2) if no entry exists: create new entry (MAY mark it as having delivered the brdcst??)
+     *          indicate to next higher layer via NLDE-DATA.indication
+     * 4) If we are (Router or Coordinator) AND Radius > 0:
+     *      wait for random time (max=nwkcMaxBroadcastJitter) then retransmit packet
+     *    Else: drop packet!
+     * Other conditions:
+     * - End devices whith macRxOnWhenIdle = False: no retransmission and no btt!
+     * - If btt is full and no expired entries: drop packet - no retransmission, no NLDE-DATA.indication
+     * - if (Router or Coordinator) and network is non-beacon-enabled: retransmit frame at most nwkMaxBroadcastRetries times
+     * - If passive ack is not supported: retransmit nwkMaxBroadcastRetries times
+     * - ...
+     */
     if (ZB_NWK_IS_ADDRESS_BROADCAST(dst_addr)) {
         TRACE_MSG(TRACE_NWK3, "broadc addr 0x%x", (FMT__D, dst_addr));
 
         if (!(dst_addr == ZB_NWK_BROADCAST_ALL_DEVICES
               || (dst_addr == ZB_NWK_BROADCAST_RX_ON_WHEN_IDLE
                   && ZB_PIB_RX_ON_WHEN_IDLE())
-#ifdef ZB_ROUTER_ROLE
+#if defined ZB_ROUTER_ROLE || defined ZB_COORDINATOR_ROLE
               || (dst_addr == ZB_NWK_BROADCAST_ROUTER_COORDINATOR &&
-                  (!ZG->nwk.handle.joined_pro))
+                 ZB_NIB_DEVICE_TYPE() != ZB_NWK_DEVICE_TYPE_ED)// (!ZG->nwk.handle.joined_pro))
               || (dst_addr == ZB_NWK_BROADCAST_LOW_POWER_ROUTER &&
-                  (!ZG->nwk.handle.joined_pro))
+                  ZB_NIB_DEVICE_TYPE() != ZB_NWK_DEVICE_TYPE_ED)//(!ZG->nwk.handle.joined_pro))
 #endif
               )
             ) {

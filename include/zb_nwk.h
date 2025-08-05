@@ -346,13 +346,11 @@ void zb_nlme_send_status(zb_uint8_t param) ZB_CALLBACK;
 
 /**
    Send link status command
- 
-   No parameters needed
 
-   Not fully implemented!
+   Tracking of neighboring link status info not implemented!
 
-   @param v_buf - request params - @see
-   zb_nlme_send_status_t
+   @param v_buf - empty buffer - @see
+   
    @return nothing
  */
 void zb_nlme_send_link_status(zb_uint8_t param) ZB_CALLBACK;
