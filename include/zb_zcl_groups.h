@@ -2,8 +2,14 @@
 
 #ifndef ZB_ZCL_GROUPS_H
 #define ZB_ZCL_GROUPS_H 1
+/**
+ * Server Attributes
+ */
+typedef struct zb_zcl_groups_srv_attr_s {
+    zb_uint8_t name_support;
+} zb_zcl_groups_srv_attr_t;
 
-typedef enum zb_zcl_group_cmd_e{
+typedef enum zb_zcl_group_cmd_e {
     ZB_ZCL_GROUPS_ADD_GROUP         = 0x00,
     ZB_ZCL_GROUPS_VIEW_GROUP        = 0x01,
     ZB_ZCL_GROUPS_GET_GR_MEMBERSHIP = 0x02,
@@ -61,12 +67,13 @@ typedef struct {
     zb_uint8_t length;
     //zb_char_t *name;
 } ZB_PACKED_STRUCT zb_zcl_groups_add_group_iid_req_t;
+
 /**
    Setup Method for Server
 
    @param ep - Endpoint of application
  */
-void zb_zcl_groups_srv_setup(zb_uint8_t ep);
+void zb_zcl_groups_srv_setup(zb_uint8_t ep, zb_zcl_groups_srv_attr_t *attrs);
 
 /* Public Client Methods */
 /**

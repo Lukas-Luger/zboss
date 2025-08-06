@@ -5,6 +5,7 @@
 #include "zcl_internal.h"
 #include "log.h"
 
+zb_zcl_global_attrs_t groups_global_attrs;
 /**
  * Server Side
  */
@@ -25,9 +26,10 @@ static void send_add_group_resp(zb_uint8_t param) ZB_CALLBACK
                                 ZB_ZCL_FRAME_DIRECTION_TO_CLI, ZB_TRUE, ZB_ZCL_GROUPS_ADD_GROUP);
 
     zb_apsde_data_req_t *req = ZB_GET_BUF_TAIL(buf, sizeof(zb_apsde_data_req_t));
+    ZB_BZERO(req, sizeof(zb_apsde_data_req_t));
     req->dst_addr = zcl_hdr.src_addr;
     req->profileid = zcl_hdr.profile_id;
-    req->clusterid = ZB_GOUPS_CLUSTER_ID;
+    req->clusterid = ZB_GROUPS_CLUSTER_ID;
     req->dst_endpoint = zcl_hdr.src_endpoint;
     req->src_endpoint = zcl_hdr.dst_endpoint;
     req->addr_mode = ZB_APS_ADDR_MODE_16_ENDP_PRESENT;
@@ -73,9 +75,10 @@ static void send_view_group_resp(zb_uint8_t param) ZB_CALLBACK
                                 ZB_ZCL_FRAME_DIRECTION_TO_CLI, ZB_TRUE, ZB_ZCL_GROUPS_VIEW_GROUP);
 
     zb_apsde_data_req_t *req = ZB_GET_BUF_TAIL(buf, sizeof(zb_apsde_data_req_t));
+    ZB_BZERO(req, sizeof(zb_apsde_data_req_t));
     req->dst_addr = zcl_hdr.src_addr;
     req->profileid = zcl_hdr.profile_id;
-    req->clusterid = ZB_GOUPS_CLUSTER_ID;
+    req->clusterid = ZB_GROUPS_CLUSTER_ID;
     req->dst_endpoint = zcl_hdr.src_endpoint;
     req->src_endpoint = zcl_hdr.dst_endpoint;
     req->addr_mode = ZB_APS_ADDR_MODE_16_ENDP_PRESENT;
@@ -122,9 +125,10 @@ static void send_get_group_membership_resp(zb_uint8_t param) ZB_CALLBACK
                                 ZB_ZCL_FRAME_DIRECTION_TO_CLI, ZB_TRUE, ZB_ZCL_GROUPS_GET_GR_MEMBERSHIP);
 
     zb_apsde_data_req_t *req = ZB_GET_BUF_TAIL(buf, sizeof(zb_apsde_data_req_t));
+    ZB_BZERO(req, sizeof(zb_apsde_data_req_t));
     req->dst_addr = zcl_hdr.src_addr;
     req->profileid = zcl_hdr.profile_id;
-    req->clusterid = ZB_GOUPS_CLUSTER_ID;
+    req->clusterid = ZB_GROUPS_CLUSTER_ID;
     req->dst_endpoint = zcl_hdr.src_endpoint;
     req->src_endpoint = zcl_hdr.dst_endpoint;
     req->addr_mode = ZB_APS_ADDR_MODE_16_ENDP_PRESENT;
@@ -171,9 +175,10 @@ static void send_remove_group_resp(zb_uint8_t param) ZB_CALLBACK
                                 ZB_ZCL_FRAME_DIRECTION_TO_CLI, ZB_TRUE, ZB_ZCL_GROUPS_REMOVE_GROUP);
 
     zb_apsde_data_req_t *req = ZB_GET_BUF_TAIL(buf, sizeof(zb_apsde_data_req_t));
+    ZB_BZERO(req, sizeof(zb_apsde_data_req_t));
     req->dst_addr = zcl_hdr.src_addr;
     req->profileid = zcl_hdr.profile_id;
-    req->clusterid = ZB_GOUPS_CLUSTER_ID;
+    req->clusterid = ZB_GROUPS_CLUSTER_ID;
     req->dst_endpoint = zcl_hdr.src_endpoint;
     req->src_endpoint = zcl_hdr.dst_endpoint;
     req->addr_mode = ZB_APS_ADDR_MODE_16_ENDP_PRESENT;
@@ -255,12 +260,15 @@ void handle_groups_srv(zb_uint16_t src_addr, zb_uint8_t src_ep,
     }
 }
 
-void zb_zcl_groups_srv_setup(zb_uint8_t ep)
+void zb_zcl_groups_srv_setup(zb_uint8_t ep, zb_zcl_groups_srv_attr_t *attrs)
 {
-    zb_zcl_cluster_t *cluster = zb_zcl_register_cluster(ep, ZB_GOUPS_CLUSTER_ID,
+    zb_zcl_cluster_t *cluster = zb_zcl_register_cluster(ep, ZB_GROUPS_CLUSTER_ID,
                                   ZB_ZCL_SERVER_ROLE, handle_groups_srv, NULL);
-    static zb_uint8_t name_support = 1;
-    zb_zcl_add_attribute(cluster, 0, ZB_ZCL_ATTR_TYPE_8BITMAP, ZB_ZCL_ATTR_ACCESS_READ_ONLY, &name_support);
+    groups_global_attrs.cluster_revision = ZB_ZCL_DEFAULT_CLUSTER_REVISION();
+    groups_global_attrs.reporting_status = ZB_ZCL_ATTR_REPORTING_COMPLETE;
+    zb_zcl_add_attribute(cluster, 0xfffd, ZB_ZCL_ATTR_TYPE_U16, ZB_ZCL_ATTR_ACCESS_READ_ONLY, &(groups_global_attrs.cluster_revision));
+    zb_zcl_add_attribute(cluster, 0xfffe, ZB_ZCL_ATTR_TYPE_ENUM8, ZB_ZCL_ATTR_ACCESS_READ_ONLY, &(groups_global_attrs.reporting_status));
+    zb_zcl_add_attribute(cluster, 0, ZB_ZCL_ATTR_TYPE_8BITMAP, ZB_ZCL_ATTR_ACCESS_READ_ONLY, &(attrs->name_support));
 }
 
 /**
@@ -282,7 +290,7 @@ void zb_zcl_groups_send_add_group(zb_uint8_t param, zb_uint16_t profile_id, zb_u
     zb_apsde_data_req_t *aps_req = ZB_GET_BUF_TAIL(buf, sizeof(zb_apsde_data_req_t));
     aps_req->dst_addr = dst_addr;
     aps_req->profileid = profile_id;
-    aps_req->clusterid = ZB_GOUPS_CLUSTER_ID;
+    aps_req->clusterid = ZB_GROUPS_CLUSTER_ID;
     aps_req->dst_endpoint = dst_ep;
     aps_req->src_endpoint = src_ep;
     aps_req->addr_mode = ZB_APS_ADDR_MODE_16_ENDP_PRESENT;
@@ -304,7 +312,7 @@ void zb_zcl_groups_send_view_group(zb_uint8_t param, zb_uint16_t profile_id, zb_
     zb_apsde_data_req_t *aps_req = ZB_GET_BUF_TAIL(buf, sizeof(zb_apsde_data_req_t));
     aps_req->dst_addr = dst_addr;
     aps_req->profileid = profile_id;
-    aps_req->clusterid = ZB_GOUPS_CLUSTER_ID;
+    aps_req->clusterid = ZB_GROUPS_CLUSTER_ID;
     aps_req->dst_endpoint = dst_ep;
     aps_req->src_endpoint = src_ep;
     aps_req->addr_mode = ZB_APS_ADDR_MODE_16_ENDP_PRESENT;
@@ -329,7 +337,7 @@ void zb_zcl_groups_send_get_group_membership(zb_uint8_t param, zb_uint16_t profi
     zb_apsde_data_req_t *aps_req = ZB_GET_BUF_TAIL(buf, sizeof(zb_apsde_data_req_t));
     aps_req->dst_addr = dst_addr;
     aps_req->profileid = profile_id;
-    aps_req->clusterid = ZB_GOUPS_CLUSTER_ID;
+    aps_req->clusterid = ZB_GROUPS_CLUSTER_ID;
     aps_req->dst_endpoint = dst_ep;
     aps_req->src_endpoint = src_ep;
     aps_req->addr_mode = ZB_APS_ADDR_MODE_16_ENDP_PRESENT;
@@ -351,7 +359,7 @@ void zb_zcl_groups_send_remove_group(zb_uint8_t param, zb_uint16_t profile_id, z
     zb_apsde_data_req_t *aps_req = ZB_GET_BUF_TAIL(buf, sizeof(zb_apsde_data_req_t));
     aps_req->dst_addr = dst_addr;
     aps_req->profileid = profile_id;
-    aps_req->clusterid = ZB_GOUPS_CLUSTER_ID;
+    aps_req->clusterid = ZB_GROUPS_CLUSTER_ID;
     aps_req->dst_endpoint = dst_ep;
     aps_req->src_endpoint = src_ep;
     aps_req->addr_mode = ZB_APS_ADDR_MODE_16_ENDP_PRESENT;
@@ -371,7 +379,7 @@ void zb_zcl_groups_send_remove_all_groups(zb_uint8_t param, zb_uint16_t profile_
     zb_apsde_data_req_t *aps_req = ZB_GET_BUF_TAIL(buf, sizeof(zb_apsde_data_req_t));
     aps_req->dst_addr = dst_addr;
     aps_req->profileid = profile_id;
-    aps_req->clusterid = ZB_GOUPS_CLUSTER_ID;
+    aps_req->clusterid = ZB_GROUPS_CLUSTER_ID;
     aps_req->dst_endpoint = dst_ep;
     aps_req->src_endpoint = src_ep;
     aps_req->addr_mode = ZB_APS_ADDR_MODE_16_ENDP_PRESENT;
@@ -394,7 +402,7 @@ void zb_zcl_groups_send_add_group_iid(zb_uint8_t param, zb_uint16_t profile_id, 
     zb_apsde_data_req_t *aps_req = ZB_GET_BUF_TAIL(buf, sizeof(zb_apsde_data_req_t));
     aps_req->dst_addr = dst_addr;
     aps_req->profileid = profile_id;
-    aps_req->clusterid = ZB_GOUPS_CLUSTER_ID;
+    aps_req->clusterid = ZB_GROUPS_CLUSTER_ID;
     aps_req->dst_endpoint = dst_ep;
     aps_req->src_endpoint = src_ep;
     aps_req->addr_mode = ZB_APS_ADDR_MODE_16_ENDP_PRESENT;
@@ -404,6 +412,6 @@ void zb_zcl_groups_send_add_group_iid(zb_uint8_t param, zb_uint16_t profile_id, 
 
 void zb_zcl_groups_cli_setup(zb_uint8_t ep)
 {
-    (void)zb_zcl_register_cluster(ep, ZB_GOUPS_CLUSTER_ID,
+    (void)zb_zcl_register_cluster(ep, ZB_GROUPS_CLUSTER_ID,
                                 ZB_ZCL_CLIENT_ROLE, NULL, NULL);
 }

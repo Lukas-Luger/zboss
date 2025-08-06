@@ -15,49 +15,46 @@
 /*! \addtogroup ZB_ZCL */
 /*! @{ */
 
+zb_zcl_global_attrs_t on_off_global_attrs;
 /**
  * Server Side
  * 
  * TODO: proper use of attribute and better zcl callback scheme
  */
-static zb_bool_t on_off;
-static zb_bool_t global_scene_ctrl;
-static zb_uint16_t on_time;
-static zb_uint16_t off_wait_time;
-zb_callback_t set_state;
+static zb_zcl_on_off_srv_attr_t *local_attrs;
 
 void handle_off(zb_uint8_t param)
 {
     zb_buf_t *buf = ZB_BUF_FROM_REF(param);
     zb_free_buf(buf);
-    on_time = 0x0000;
-    on_off = ZB_FALSE;
-    set_state(on_off);
+    local_attrs->on_time = 0x0000;
+    local_attrs->on_off = ZB_FALSE;
+    local_attrs->set_state(local_attrs->on_off);
 }
 
 void handle_on(zb_uint8_t param)
 {
     zb_buf_t *buf = ZB_BUF_FROM_REF(param);
     zb_free_buf(buf);
-    if (on_time == 0x0000) {
-        off_wait_time = 0x0000;
+    if (local_attrs->on_time == 0x0000) {
+        local_attrs->off_wait_time = 0x0000;
     }
-    on_off = ZB_TRUE;
-    set_state(on_off);
+    local_attrs->on_off = ZB_TRUE;
+    local_attrs->set_state(local_attrs->on_off);
 }
 
 void handle_toggle(zb_uint8_t param)
 {
     zb_buf_t *buf = ZB_BUF_FROM_REF(param);
     zb_free_buf(buf);
-    if (!on_off && on_time == 0x0000) {
-        off_wait_time = 0x0000;
+    if (!local_attrs->on_off && local_attrs->on_time == 0x0000) {
+        local_attrs->off_wait_time = 0x0000;
     }
-    if (on_off) {
-        on_time = 0x0000;
+    if (local_attrs->on_off) {
+        local_attrs->on_time = 0x0000;
     }
-    on_off = !on_off;
-    set_state(on_off);
+    local_attrs->on_off = !local_attrs->on_off;
+    local_attrs->set_state(local_attrs->on_off);
 }
 
 void handle_off_with_effect(zb_uint8_t param)
@@ -65,12 +62,12 @@ void handle_off_with_effect(zb_uint8_t param)
     zb_buf_t *buf = ZB_BUF_FROM_REF(param);
     zb_zcl_on_off_off_with_effect_req_t *req; 
     req = (zb_zcl_on_off_off_with_effect_req_t *)ZB_BUF_BEGIN(buf);
-    if (global_scene_ctrl) {
+    if (local_attrs->global_scene_ctrl) {
         // TODO: (in application) store seetings in globalSceneControl
-        global_scene_ctrl = ZB_FALSE;
+        local_attrs->global_scene_ctrl = ZB_FALSE;
     }
-    on_off = ZB_FALSE;
-    on_time = 0x0000;
+    local_attrs->on_off = ZB_FALSE;
+    local_attrs->on_time = 0x0000;
     // might be better in application?
     if (req->effect_id == 0) {
         switch (req->effect_variant) {
@@ -95,36 +92,36 @@ void handle_on_global_scene(zb_uint8_t param)
 {
     zb_buf_t *buf = ZB_BUF_FROM_REF(param);
     zb_free_buf(buf);
-    if (global_scene_ctrl) {
+    if (local_attrs->global_scene_ctrl) {
         return;
     }
     // TODO: (in application) recall global scene, enter state
-    on_off = ZB_TRUE; // might be wrong to assume the light will turn on?
-    global_scene_ctrl = ZB_TRUE;
-    if (on_time == 0x0000) {
-        off_wait_time = 0x0000;
+    local_attrs->on_off = ZB_TRUE; // might be wrong to assume the light will turn on?
+    local_attrs->global_scene_ctrl = ZB_TRUE;
+    if (local_attrs->on_time == 0x0000) {
+        local_attrs->off_wait_time = 0x0000;
     }
 }
 
 void update_timed_off(zb_uint8_t param)
 {
     ZVUNUSED(param);
-    if (on_time == 0x0000 && off_wait_time == 0x0000) {
+    if (local_attrs->on_time == 0x0000 && local_attrs->off_wait_time == 0x0000) {
         return;
     }
-    if (on_off) {
-        if (on_time > 0x0000) {
-            on_time--;
+    if (local_attrs->on_off) {
+        if (local_attrs->on_time > 0x0000) {
+            local_attrs->on_time--;
         }
         else {
-            off_wait_time = 0x0000;
-            on_off = ZB_FALSE;
+            local_attrs->off_wait_time = 0x0000;
+            local_attrs->on_off = ZB_FALSE;
         }
 
     }
     else {
-        if (off_wait_time > 0x0000) {
-            off_wait_time--;
+        if (local_attrs->off_wait_time > 0x0000) {
+            local_attrs->off_wait_time--;
         }
         else {
             return;
@@ -139,18 +136,18 @@ void handle_on_with_timed_off(zb_uint8_t param)
     zb_zcl_on_off_on_with_timed_off_req_t *req;
     req = (zb_zcl_on_off_on_with_timed_off_req_t *)ZB_BUF_BEGIN(buf);
     /* accept only when on bitfield */
-    if ((req->on_off_ctrl & 0x80) && !on_off) {
+    if ((req->on_off_ctrl & 0x80) && !local_attrs->on_off) {
         return;
     }
-    if (off_wait_time > 0 && !on_off) {
-        off_wait_time = req->off_wait_time; // 3.8.2.3.6.4 "and minimum"??
+    if (local_attrs->off_wait_time > 0 && !local_attrs->on_off) {
+        local_attrs->off_wait_time = req->off_wait_time; // 3.8.2.3.6.4 "and minimum"??
     }
     else {
-        on_time = req->on_time;  // 3.8.2.3.6.4 "and maximum"??
-        off_wait_time = req->off_wait_time;
-        on_off = ZB_TRUE;
+        local_attrs->on_time = req->on_time;  // 3.8.2.3.6.4 "and maximum"??
+        local_attrs->off_wait_time = req->off_wait_time;
+        local_attrs->on_off = ZB_TRUE;
     }
-    if (on_time < 0xffff && off_wait_time < 0xffff) {
+    if (local_attrs->on_time < 0xffff && local_attrs->off_wait_time < 0xffff) {
         ZB_SCHEDULE_ALARM(update_timed_off, 0, ZB_TIME_ONE_SECOND/10);
     }
 
@@ -185,19 +182,20 @@ void handle_on_off_srv(zb_uint16_t src_addr, zb_uint8_t src_ep,
     }
 }
 
-void zb_zcl_on_off_srv_setup(zb_uint8_t ep, zb_callback_t set_st)
+void zb_zcl_on_off_srv_setup(zb_uint8_t ep, zb_zcl_on_off_srv_attr_t *attrs)
 {
-    set_state = set_st;
+    local_attrs = attrs;
     zb_zcl_cluster_t *cluster = zb_zcl_register_cluster(ep, ZB_ON_OFF_CLUSTER_ID,
                                   ZB_ZCL_SERVER_ROLE, handle_on_off_srv, NULL);
-    on_off = ZB_FALSE;
-    global_scene_ctrl = ZB_TRUE;
-    on_time = 0x0000;
-    off_wait_time = 0x0000;
-    zb_zcl_add_attribute(cluster, 0, ZB_ZCL_ATTR_TYPE_BOOL, ZB_ZCL_ATTR_ACCESS_READ_ONLY, &on_off);
-    zb_zcl_add_attribute(cluster, 0x4000, ZB_ZCL_ATTR_TYPE_BOOL, ZB_ZCL_ATTR_ACCESS_READ_ONLY, &global_scene_ctrl);
-    zb_zcl_add_attribute(cluster, 0x4001, ZB_ZCL_ATTR_TYPE_U16, ZB_ZCL_ATTR_ACCESS_READ_WRITE, &on_time);
-    zb_zcl_add_attribute(cluster, 0x4002, ZB_ZCL_ATTR_TYPE_U16, ZB_ZCL_ATTR_ACCESS_READ_WRITE, &off_wait_time);
+    on_off_global_attrs.cluster_revision = ZB_ZCL_DEFAULT_CLUSTER_REVISION();
+    on_off_global_attrs.reporting_status = ZB_ZCL_ATTR_REPORTING_COMPLETE;
+    zb_zcl_add_attribute(cluster, 0xfffd, ZB_ZCL_ATTR_TYPE_U16, ZB_ZCL_ATTR_ACCESS_READ_ONLY, &(on_off_global_attrs.cluster_revision));
+    zb_zcl_add_attribute(cluster, 0xfffe, ZB_ZCL_ATTR_TYPE_ENUM8, ZB_ZCL_ATTR_ACCESS_READ_ONLY, &(on_off_global_attrs.reporting_status));
+    zb_zcl_add_attribute(cluster, 0x0000, ZB_ZCL_ATTR_TYPE_BOOL, ZB_ZCL_ATTR_ACCESS_READ_ONLY, &(attrs->on_off));
+    zb_zcl_add_attribute(cluster, 0x4000, ZB_ZCL_ATTR_TYPE_BOOL, ZB_ZCL_ATTR_ACCESS_READ_ONLY, &(attrs->global_scene_ctrl));
+    zb_zcl_add_attribute(cluster, 0x4001, ZB_ZCL_ATTR_TYPE_U16, ZB_ZCL_ATTR_ACCESS_READ_WRITE, &(attrs->on_time));
+    zb_zcl_add_attribute(cluster, 0x4002, ZB_ZCL_ATTR_TYPE_U16, ZB_ZCL_ATTR_ACCESS_READ_WRITE, &(attrs->off_wait_time));
+    zb_zcl_add_attribute(cluster, 0x4003, ZB_ZCL_ATTR_TYPE_ENUM8, ZB_ZCL_ATTR_ACCESS_READ_WRITE, &(attrs->startup_on_off));
 }
 
 /**

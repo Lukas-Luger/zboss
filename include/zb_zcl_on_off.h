@@ -3,9 +3,21 @@
 #ifndef ZB_ZCL_ON_OFF_H
 #define ZB_ZCL_ON_OFF_H 1
 /**
+ * Server Attributes
+ */
+typedef struct  zb_zcl_on_off_srv_attr_s {
+    zb_bool_t on_off;
+    zb_bool_t global_scene_ctrl;
+    zb_uint16_t on_time;
+    zb_uint16_t off_wait_time;
+    zb_uint8_t startup_on_off;
+    zb_callback_t set_state;
+} zb_zcl_on_off_srv_attr_t;
+
+/**
  * Server Side
  */
-typedef enum zb_zcl_on_off_cmd_e{
+typedef enum zb_zcl_on_off_cmd_e {
     ZB_ZCL_ON_OFF_OFF                   = 0x00,
     ZB_ZCL_ON_OFF_ON                    = 0x01,
     ZB_ZCL_ON_OFF_TOGGLE                = 0x02,
@@ -13,6 +25,13 @@ typedef enum zb_zcl_on_off_cmd_e{
     ZB_ZCL_ON_OFF_ON_WITH_GLOB_SCENE    = 0x41,
     ZB_ZCL_ON_OFF_ON_WITH_TIMED_OFF     = 0x42,
 } zb_zcl_on_off_cmd_t;
+
+typedef enum zb_zcl_on_off_startup_on_off_e {
+    ZB_ZCL_ON_OFF_STARTUP_OFF       = 0x00,
+    ZB_ZCL_ON_OFF_STARTUP_ON        = 0x01,
+    ZB_ZCL_ON_OFF_STARTUP_TOGGLE    = 0x02,
+    ZB_ZCL_ON_OFF_STARTUP_PREVIOUS  = 0xff
+} zb_zcl_on_off_startup_on_off_t;
 
 typedef struct {
     zb_uint8_t effect_id;
@@ -30,7 +49,7 @@ typedef struct {
    @param ep - Endpoint of application
    @param set_st - Callback method for setting device state
  */
-void zb_zcl_on_off_srv_setup(zb_uint8_t ep, zb_callback_t set_st);
+void zb_zcl_on_off_srv_setup(zb_uint8_t ep, zb_zcl_on_off_srv_attr_t *attrs);
 
 /* Public Client Methods */
 /**
@@ -45,7 +64,7 @@ void zb_zcl_on_off_srv_setup(zb_uint8_t ep, zb_callback_t set_st);
 void zb_zcl_on_off_send_off(zb_uint8_t param, zb_uint16_t profile_id, zb_uint16_t dst_addr,
                             zb_uint8_t dst_ep, zb_uint8_t src_ep);
 /**
-   Sends Om Command
+   Sends On Command
 
    @param param - (new) out-buffer
    @param profile_id - Profile ID under which command is sent
