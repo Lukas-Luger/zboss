@@ -960,6 +960,8 @@ void zb_mac_resp_timeout(zb_uint8_t param) ZB_CALLBACK
                   sizeof(union zb_addr_u));
         data_req_cmd_params.cb_type = MAC_ASS_CONFIRM_CALLBACK;
         ZB_MAC_SET_ASS_REQUEST();
+        /* seems like we do not get acks from riot, this is very sketchy and just for testing purposes */
+        ZB_MAC_SET_PENDING_DATA();
         /* We could avoid checks for tx etc here, 'cause association is a monolithic process */
         ret = zb_mac_get_indirect_data(&data_req_cmd_params);
     }
