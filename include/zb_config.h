@@ -230,7 +230,7 @@ asdf
     #define ZB_TIMER_INSIDE_IDLE
 
     #define ZB_SECURITY
-
+   #define APS_FRAME_SECURITY
     /**
     If defined, switch on traffic dump
     */

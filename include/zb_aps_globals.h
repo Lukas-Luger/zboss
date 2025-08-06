@@ -113,6 +113,88 @@ typedef struct zb_aps_group_table_s {
 } zb_aps_group_table_t;
 
 /**
+   Key Attributes
+ */
+typedef enum zb_key_attr_e {
+    ZB_APS_PROVISIONAL_KEY  = 0x0,
+    ZB_APS_UNVERIFIED_KEY   = 0x1,
+    ZB_APS_VERIFIED_KEY     = 0x2,
+    ZB_APS_ANY_KEY          = 0x4,
+} zb_key_attr_t;
+
+/**
+   APS Link-Key Type
+ */
+typedef enum zb_aps_link_key_type_e {
+    ZB_APS_UNIQUE_LINK_KEY_TYPE = 0x0,
+    ZB_APS_GLOBAL_LINK_KEY_TYPE = 0x1,
+} zb_aps_link_key_type_t;
+
+/**
+   Initial Join Auth
+ */
+typedef enum zb_initial_join_auth_e {
+    ZB_NO_AUTH           = 0x0,
+    ZB_INSTALL_CODE_KEY  = 0x1,
+    ZB_ANONYMOUS_KEY_NEG = 0x2,
+    ZB_KEY_NEG_WITH_AUTH = 0x3,
+} zb_initial_join_auth_t;
+
+/**
+   Key negotiation state
+ */
+typedef enum zb_key_negotiation_state_e {
+    ZB_NO_KEY_NEGOTIATION       = 0x0,
+    ZB_START_KEY_NEGOTIATION    = 0x1,
+    ZB_COMPLETE_KEY_NEGOTIATION = 0x2,
+} zb_key_negotiation_state_t;
+
+/**
+   Post join key update method
+ */
+typedef enum zb_post_join_key_upd_method_e {
+    ZB_NOT_UPDATED    = 0x0,    /*!< Not Updated */
+    ZB_KEY_REQ_METHOD = 0x1,    /*!< Key Request Method */
+    ZB_UNAUTH_KEY_NEG = 0x2,    /*!< Unauthenticated Key Negotiation */
+    ZB_AUTH_KEY_NEG   = 0x3,    /*!< Authenticated Key Negotiation */
+    ZB_APP_DEFINED    = 0x4,    /*!< Application Defined Certificate
+                                    Based Mutual Authentication*/
+} zb_post_join_key_upd_method_t;
+
+/**
+   Key-Pair descriptor
+ */
+typedef struct zb_key_pair_desc_s {
+    zb_uint8_t features;                            /*!< When set to ‘1' the peer device supports
+                                                        APS frame counter synchronization; else,
+                                                        the peer device does not support APS frame
+                                                        counter synchronization.*/
+    zb_ieee_addr_t addr;                            /*!< (64-Bit) Device address*/
+    zb_key_attr_t key_attr;                         /*!< This indicates attributes about the key */
+    zb_uint8_t link_key[ZB_CCM_KEY_SIZE];           /*!< The actual value of the link key*/
+    zb_uint32_t outgoing_frame_counter;     
+    zb_uint32_t incoming_frame_counter;     
+    zb_aps_link_key_type_t link_key_type;           /*!< This will determine the security policies
+                                                        when sending and receiving APS messages.*/
+    zb_initial_join_auth_t init_join_auth;      
+    zb_uint8_t key_neg_method;                      /*!< The value of the selected TLV sent to 
+                                                        the device (0-8)*/
+    zb_key_negotiation_state_t neg_state;           
+    zb_uint8_t passphrase[16];                      /*!< Value used by both sides during dynamic
+                                                        key negotiation */
+    zb_uint16_t timeout;                            /*!< Timeout in seconds */
+    zb_bool_t pass_update_allowed;                  /*!< whether the particular KeyPair passphrase
+                                                        MAY be updated for the device*/
+    zb_bool_t verified_frame_ctr;                   /*!< whether the incoming frame counter value
+                                                        has been verified through a challenge response*/
+    zb_post_join_key_upd_method_t post_upd_method;  /*< indicates what Link Key update method was 
+                                                        used after the device joined the network*/
+    zb_uint8_t tc_swapout_link_key[ZB_CCM_KEY_SIZE];/*!< Key used to indicate a Trust Center
+                                                        Swap-out has occurred */
+    zb_bool_t is_virt_dev;                          /*!< If TRUE, the device identified by DeviceAddress
+                                                        is a Zigbee Direct Virtual Device */
+} zb_key_pair_desc_t;
+/**
    APS Informational Base memory-resident data structure
  */
 typedef struct zb_apsib_s {
@@ -140,6 +222,8 @@ typedef struct zb_apsib_s {
     
 
     zb_ieee_addr_t trust_center_address;
+    zb_key_pair_desc_t aps_device_key_pair_set[5]; /*!< apsDeviceKeyPairSet */
+    zb_uint8_t n_aps_device_key_pair_set;
 } zb_apsib_t;
 
 
