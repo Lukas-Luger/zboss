@@ -76,7 +76,7 @@ void zll_send_scan_resp(zb_uint8_t param)
             ZB_MEMCPY(&resp.extended_pan_id[i], &rand, sizeof(zb_uint16_t));
         }
     }
-     if (ZB_NIB_PAN_ID() == 0xffff || ZB_PIB_SHORT_PAN_ID() == 0xffff) {
+    if (ZB_NIB_PAN_ID() == 0xffff || ZB_PIB_SHORT_PAN_ID() == 0xffff) {
         /* to avoid pan id compression, as we are not on any network */
         ZB_PIB_SHORT_PAN_ID() = ZB_RANDOM();
         ZB_NIB_PAN_ID() = ZB_PIB_SHORT_PAN_ID();

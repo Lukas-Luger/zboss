@@ -121,8 +121,9 @@
 #define  ZDO_MGMT_LEAVE_RESP_CLID                   0x8034
 #define  ZDO_MGMT_PERMIT_JOINING_RESP_CLID          0x8036 // Needs adjustment
 #define  ZDO_MGMT_NWK_UPDATE_NOTIFY_CLID            0x8038
-#define  ZDO_MGMT_NWK_ENH_UPDATE_RESP_CLID          0x8039 // Not implemented
+#define  ZDO_MGMT_NWK_ENH_UPDATE_NOTIFY_CLID        0x8039 // Not implemented
 #define  ZDO_MGMT_NWK_IEEE_JOINING_LIST_RESP_CLID   0x803a // Not implemented
+#define  ZDO_MGMT_UNSOL_ENH_UPDATE_NOTIFY_CLID      0x803b // Not implemented
 #define  ZDO_MGMT_NWK_BEACON_SURVEY_RESP_CLID       0x803c // Not implemented
 /* 2.4.4.4 Security Server Services */
 #define  ZDO_SECUR_START_KEY_NEGOTIATION_RESP_CLID  0x8040 // Not implemented

@@ -662,13 +662,13 @@ void zb_zcl_zll_initiator_setup()
     ZLL_COMM().zigbee_info = (zb_uint8_t)0;
     /* enums do not work */
     switch ((zb_uint8_t)ZB_NIB_DEVICE_TYPE()) {
-    case 3: /* ZB_NWK_DEVICE_TYPE_COORDINATOR */
+    case 2: /* ZB_NWK_DEVICE_TYPE_COORDINATOR */
         ZLL_COMM().zigbee_info = ZB_ZCL_ZB_DEV_TYPE_COORD;
         break;
-    case 2: /* ZB_NWK_DEVICE_TYPE_ROUTER */
+    case 1: /* ZB_NWK_DEVICE_TYPE_ROUTER */
         ZLL_COMM().zigbee_info = ZB_ZCL_ZB_DEV_TYPE_ROUTER;
         break;
-    case 1: /* ZB_NWK_DEVICE_TYPE_ED */
+    case 0: /* ZB_NWK_DEVICE_TYPE_ED */
         ZLL_COMM().zigbee_info = ZB_ZCL_ZB_DEV_TYPE_ED;
         break;
     default:
