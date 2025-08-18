@@ -337,10 +337,13 @@ void zb_secur_send_nwk_key_switch(zb_uint8_t param) ZB_CALLBACK
                   "send key switch to #%hd unicast to all devices from n.t.",
                   (FMT__D, ZG->nwk.nib.active_key_seq_number));
         ZG->aps.tmp.neighbor_table_iterator = zb_nwk_neighbor_next_rx_on_i(0);
+#ifdef ZB_COORDINATOR_ROLE
         if (ZG->aps.tmp.neighbor_table_iterator != (zb_ushort_t) ~0) {
             secur_send_key_sw_next(param);
         }
-        else {
+        else 
+#endif
+        {
             TRACE_MSG(TRACE_SECUR3, "have nobody to send to", (FMT__0));
             zb_free_buf(ZB_BUF_FROM_REF(param));
         }

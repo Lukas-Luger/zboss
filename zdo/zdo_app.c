@@ -282,7 +282,7 @@ void zb_nlme_network_formation_confirm(zb_uint8_t param) ZB_CALLBACK
     }
     ZB_SCHEDULE_CALLBACK(zb_nlme_permit_joining_request, param);
 }
-
+#endif  /* ZB_COORDINATOR_ROLE */
 
 void zb_nlme_permit_joining_confirm(zb_uint8_t param) ZB_CALLBACK
 {
@@ -299,7 +299,6 @@ void zb_nlme_permit_joining_confirm(zb_uint8_t param) ZB_CALLBACK
     ZB_SCHEDULE_CALLBACK(zb_zdo_startup_complete, param);
 
 }
-#endif  /* ZB_COORDINATOR_ROLE */
 
 void zb_nlme_join_indication(zb_uint8_t param) ZB_CALLBACK
 {
@@ -473,7 +472,7 @@ void zdo_join_done(zb_uint8_t param) ZB_CALLBACK
     TRACE_MSG(TRACE_NWK1, "<<join_done", (FMT__0));
 }
 
-#ifndef ZB_ED_ROLE
+#if defined ZB_ROUTER_ROLE || defined ZB_COORDINATOR_ROLE
 void zb_nlme_start_router_confirm(zb_uint8_t param) ZB_CALLBACK
 {
     TRACE_MSG(TRACE_NWK1, ">> start_router_confirm", (FMT__0));

@@ -503,7 +503,7 @@ static void zb_nlme_rejoin(zb_uint8_t param) ZB_SDCC_REENTRANT
             request->capability_information;
 
         /* Extend neighor table. */
-#ifndef ZB_ED_ROLE
+#if defined ZB_ROUTER_ROLE || defined ZB_COORDINATOR_ROLE
         zb_nwk_exneighbor_start();
 #endif
 

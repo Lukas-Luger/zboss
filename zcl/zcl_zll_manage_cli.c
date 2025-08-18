@@ -170,8 +170,9 @@ void zll_handle_net_start_resp(zb_uint8_t param, zb_ieee_addr_t source)
      */
     ZB_SCHEDULE_ALARM(zll_timeout, 1, BDB_TL_MIN_STARTUP_DELAY_TIME);
     /* prepare rejoin */
+#if defined ZB_ROUTER_ROLE || defined ZB_COORDINATOR_ROLE
     zb_nwk_exneighbor_start();
-
+#endif
     /* adding device to neighbor table */
     zb_ext_neighbor_tbl_ent_t *enbt = NULL; /* shutup sdcc */
 

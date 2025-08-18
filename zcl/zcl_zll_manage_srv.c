@@ -367,7 +367,7 @@ void zll_start_router(zb_uint8_t param)
         zll_nwk_start_router_conf_cb();
         return;
     }
-    
+#ifdef ZB_ROUTER_ROLE
     /* avoid coord realignment for now */
     ZG->nwk.handle.router_started = 0;
 
@@ -378,6 +378,7 @@ void zll_start_router(zb_uint8_t param)
     request->superframe_order = 0x00;
     request->battery_life_extension = 0;
     ZB_SCHEDULE_CALLBACK(zb_nlme_start_router_request, param);
+#endif
 }
 
 void zll_nwk_disc_conf_cb(zb_uint8_t param)
@@ -454,7 +455,9 @@ void zll_finish()
     ZB_MAC_SET_INDIRECT_DATA_REQUEST();
     ZB_GET_OUT_BUF_DELAYED(zdo_send_device_annce);
     zb_buf_t *buf = zb_get_out_buf();
+#ifdef ZB_ROUTER_ROLE
     ZB_SCHEDULE_TX_CB(zb_nlme_send_link_status, ZB_REF_FROM_BUF(buf));
+#endif
     /* apsDeviceKeyPairset not present - skip */
     BDB_CTX().node_is_on_net = ZB_TRUE;
     /* save everything now */

@@ -148,8 +148,9 @@ zb_ret_t zb_save_formdesc_data(void)
 
     zb_address_short_by_ref(&short_parent_addr, ZG->nwk.handle.parent);
     zb_address_ieee_by_ref(ext_parent_addr, ZG->nwk.handle.parent);
-
+#if defined ZB_NWK_DISTRIBUTED_ADDRESS_ASSIGN && defined ZB_ROUTER_ROLE
     data.depth = ZB_NIB_DEPTH();
+#endif
     data.profile_in_use = profile_in_use;
     memcpy(&data.group_id, &g_group_id, sizeof(g_group_id));
     memcpy(&data.pan_id, &MAC_PIB().mac_pan_id, sizeof(data.pan_id));
@@ -190,8 +191,9 @@ zb_ret_t zb_read_formdesc_data(void)
     if (data.magic != 0x425a) {
         return RET_ERROR;
     }
-
+#if defined ZB_NWK_DISTRIBUTED_ADDRESS_ASSIGN && defined ZB_ROUTER_ROLE
     ZB_NIB_DEPTH() = data.depth;
+#endif
     memcpy(&g_group_id, &data.group_id, sizeof(g_group_id));
     memcpy(&MAC_PIB().mac_pan_id, &data.pan_id, sizeof(data.pan_id));
     memcpy(&ZB_AIB().aps_channel_mask, &data.channel_mask,
@@ -232,8 +234,9 @@ zb_ret_t zb_read_formdesc_data(void)
     LOG_DEBUG("restoring mac short address 0x%04x\n", MAC_PIB().mac_short_address);
     LOG_DEBUG("restoring mac pan id 0x%04x\n", MAC_PIB().mac_pan_id);
     LOG_DEBUG("restoring group id 0x%04x\n", g_group_id);
-
+#if defined ZB_NWK_DISTRIBUTED_ADDRESS_ASSIGN && defined ZB_ROUTER_ROLE
     LOG_DEBUG("restoring device depth %u\n", ZB_NIB_DEPTH());
+#endif
     LOG_DEBUG("restoring channel mask 0x%08lx\n", ZB_AIB().aps_channel_mask);
 
     return RET_OK;

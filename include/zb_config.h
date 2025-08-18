@@ -362,7 +362,13 @@ asdf
 
 //#define ZB_TRAFFIC_DUMP_ON
 
-
+#ifdef ZB_ROUTER_ROLE
+/* router supposes end device */
+/**
+    If defined, ZED+ZR role compiled
+ */
+#define ZB_ED_ROLE
+#endif
 #ifndef ZB_ED_ROLE
 /**
    If defined, ZC functionality is compiled
