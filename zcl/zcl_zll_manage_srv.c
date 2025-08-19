@@ -289,7 +289,7 @@ void zll_handle_net_join_req(zb_uint8_t param, zb_uint8_t cmd)
 
     /* BDB TL Target Step 18 (same as 12)*/
     if (BDB_CTX().node_is_on_net) {
-        zb_buf_t *buf = zb_get_out_buf();
+        buf = zb_get_out_buf();
         zb_nlme_leave_request_t *lr = ZB_GET_BUF_PARAM(buf, zb_nlme_leave_request_t);
         ZB_IEEE_ADDR_ZERO(&lr->device_address);
         lr->remove_children = ZB_FALSE;

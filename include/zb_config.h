@@ -461,7 +461,7 @@ asdf
  */
 #define ZB_MAC_MAX_FRAME_RETRIES 3
 
-#ifdef ZB_ED_ROLE
+#if defined ZB_ED_ROLE && !defined ZB_ROUTER_ROLE
 
 /**
    End device idle time-out
@@ -549,7 +549,7 @@ asdf
  */
 #define ZB_IEEE_ADDR_TABLE_SIZE 101
 
-#ifdef ZB_ED_ROLE
+#if defined ZB_ED_ROLE && !defined ZB_ROUTER_ROLE
 /* Only parent is meangful for ED */
 /**
    NWK: size of the neighbor table

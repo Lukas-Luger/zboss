@@ -916,7 +916,7 @@ void zb_nlme_status_indication(zb_uint8_t param) ZB_CALLBACK
     TRACE_MSG(TRACE_NWK1, "Got nwk status indication: status %hd address %d",
               (FMT__H_D, status->status, status->network_addr));
 
-#ifdef ZB_ED_ROLE
+#if defined ZB_ED_ROLE && !defined ZB_ROUTER_ROLE
     if (status->status == ZB_NWK_COMMAND_STATUS_PARENT_LINK_FAILURE) {
         ZDO_CTX().parent_link_failure++;
     }

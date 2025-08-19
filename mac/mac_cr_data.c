@@ -75,7 +75,7 @@ zb_ret_t pending_queue_is_empty()
     return ret;
 }
 
-#ifdef ZB_COORDINATOR_ROLE
+#if defined ZB_COORDINATOR_ROLE || defined ZB_ROUTER_ROLE
 
 void zb_accept_data_request_cmd(zb_uint8_t param) ZB_CALLBACK
 {

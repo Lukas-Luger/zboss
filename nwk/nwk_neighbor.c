@@ -71,7 +71,7 @@ void zb_nwk_neighbor_init() ZB_SDCC_REENTRANT
     ZB_MEMSET(&ZG->nwk.neighbor.addr_to_neighbor[0], -1,
               sizeof(ZG->nwk.neighbor.addr_to_neighbor));
     ZG->nwk.neighbor.base_neighbor_size = ZB_NEIGHBOR_TABLE_SIZE;
-#ifdef ZB_ED_ROLE
+#if defined ZB_ED_ROLE && !defined ZB_ROUTER_ROLE
     ZG->nwk.neighbor.ext_neighbor_size = ZB_EXT_NEIGHBOR_TABLE_SIZE;
 #endif
 }
@@ -634,7 +634,7 @@ ZB_SDCC_REENTRANT
     TRACE_MSG(TRACE_NWK1, ">>nb_ext_to_base_tmp %p", (FMT__P, ext_ent));
 
     /* TODO: check if it's ok */
-#ifdef ZB_ED_ROLE
+#if defined ZB_ED_ROLE && !defined ZB_ROUTER_ROLE
     ZG->nwk.neighbor.base_neighbor_used = 0;
 #else
     if (ZG->nwk.neighbor.base_neighbor_used >=
@@ -647,7 +647,7 @@ ZB_SDCC_REENTRANT
         zb_ieee_addr_t long_address;
         zb_address_ieee_ref_t addr_ref;
 
-#ifdef ZB_ED_ROLE
+#if defined ZB_ED_ROLE && !defined ZB_ROUTER_ROLE
         zb_neighbor_tbl_ent_t *ent = &ZG->nwk.neighbor.base_neighbor[0];
 #else
         zb_neighbor_tbl_ent_t *ent =
@@ -701,7 +701,7 @@ ZB_SDCC_REENTRANT
         && ZG->nwk.neighbor.base_neighbor[0].addr_ref == addr_ref
 #endif
         ) {
-#ifdef ZB_ED_ROLE
+#if defined ZB_ED_ROLE && !defined ZB_ROUTER_ROLE
         *nbt = &ZG->nwk.neighbor.base_neighbor[0];
 #endif
         return RET_OK;
@@ -721,7 +721,7 @@ zb_ret_t zb_nwk_neighbor_get_by_ieee(zb_ieee_addr_t long_addr,
         && ZG->nwk.neighbor.base_neighbor[0].addr_ref == addr_ref
 #endif
         ) {
-#ifdef ZB_ED_ROLE
+#if defined ZB_ED_ROLE && !defined ZB_ROUTER_ROLE
         *nbt = &ZG->nwk.neighbor.base_neighbor[0];
 #endif
         return RET_OK;

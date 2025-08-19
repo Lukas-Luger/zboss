@@ -714,10 +714,11 @@ void zb_mlme_command_accept(zb_uint8_t param) ZB_CALLBACK
                                                       7.3.4 Data request command
                                                     | MHR | cmd id |
                                                     */
-#ifdef ZB_COORDINATOR_ROLE
+#if defined ZB_COORDINATOR_ROLE || defined ZB_ROUTER_ROLE
         TRACE_MSG(TRACE_MAC3, "CMD_DATA_REQ", (FMT__0));
         ZB_SCHEDULE_TX_CB(zb_accept_data_request_cmd, param);
 #else
+        zb_free_buf(ZB_BUF_FROM_REF(param));
         TRACE_MSG(TRACE_MAC1, "data req cmd came. not ZC - skip", (FMT__0));
 #endif
     }
