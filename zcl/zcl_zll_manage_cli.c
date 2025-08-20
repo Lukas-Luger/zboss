@@ -159,6 +159,9 @@ void zll_handle_net_start_resp(zb_uint8_t param, zb_ieee_addr_t source)
     /* BDB TL Init Step 19 */
     if (ZB_GET_NODE_DESC_LOGICAL_TYPE(ZB_ZDO_NODE_DESC()) == ZB_END_DEVICE) {
         /* continue Step 26 */
+        ZG->nwk.handle.joined = 1;
+        zb_address_update(source, ZLL_COMM().responder_addr_short, ZB_TRUE,
+                &ZG->nwk.handle.parent);
         zb_free_buf(buf);
         zll_comm_signal(ZB_ZLL_COMM_SUCCESS);
         return;
@@ -610,6 +613,7 @@ void zll_comm_signal(zb_zll_comm_state_t state)
         /** BDB TL Init Step 26 
          * TODO: binding links
          */
+        ZB_NIB_SECURITY_LEVEL() = 5;
         BDB_CTX().node_is_on_net = ZB_TRUE;
         BDB_CTX().comm_status = SUCCESS;
         /* save everything now */
@@ -707,9 +711,17 @@ void zb_zcl_zll_initiator_setup()
      * from BDB 10.2.2: if TC is not known - commissionig process should set it to broadcast
      * TODO: move this to BDB logic when possible 
      */
+    ZB_AIB().trust_center_address[0] = 1;
     if (ZB_IEEE_ADDR_IS_ZERO(ZB_AIB().trust_center_address)) {
         ZB_IEEE_ADDR_COPY(ZB_AIB().trust_center_address, ZB_IEEE_ADDR_BROADCAST);
     }
+    //if (ZB_NIB_PAN_ID() == 0xffff || ZB_PIB_SHORT_PAN_ID() == 0xffff) {
+        /* to avoid pan id compression, as we are not on any network */
+        ZB_PIB_SHORT_PAN_ID() = ZB_RANDOM();
+        ZB_NIB_PAN_ID() = ZB_PIB_SHORT_PAN_ID();
+        zb_transceiver_set_pan_id(ZB_PIB_SHORT_PAN_ID());
+        ZB_UPDATE_PAN_ID();
+    //}
 }
 #endif /* ZB_LIMITED_FEATURES */
 /*! @} */

@@ -317,7 +317,7 @@ ZB_SDCC_REENTRANT
 void zb_set_default_ed_descriptor_values() ZB_SDCC_REENTRANT
 {
     TRACE_MSG(TRACE_ZDO3, "zb_set_default_ed_descriptor_values", (FMT__0));
-    zb_set_node_descriptor(ZB_END_DEVICE, 0, 1, 0);
+    zb_set_node_descriptor(ZB_END_DEVICE, 0, 1, 1);
     zb_set_node_power_descriptor(ZB_POWER_MODE_SYNC_ON_WHEN_IDLE,
                                  ZB_POWER_SRC_CONSTATNT,
                                  ZB_POWER_SRC_CONSTATNT, ZB_POWER_LEVEL_100);
