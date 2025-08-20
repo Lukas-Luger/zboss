@@ -210,10 +210,16 @@ zb_ret_t zb_read_formdesc_data(void)
     ZB_IEEE_ADDR_COPY(ZB_PIB_EXTENDED_ADDRESS(), data.ext_addr);
     ZB_UPDATE_LONGMAC();
     /* parent short & extended addr */
-    zb_address_update(data.ext_parent_addr, data.short_parent_addr, ZB_FALSE, 
-            &ZG->nwk.handle.parent);
+    zb_ret_t ret = zb_address_update(data.ext_parent_addr, data.short_parent_addr,
+            ZB_FALSE, &ZG->nwk.handle.parent);
+    if (ret != RET_OK) {
+        return ret;
+    }
     zb_neighbor_tbl_ent_t *nbt;
-    zb_nwk_neighbor_get(ZG->nwk.handle.parent, ZB_TRUE, &nbt);
+    ret = zb_nwk_neighbor_get(ZG->nwk.handle.parent, ZB_TRUE, &nbt);
+    if (ret != RET_OK) {
+        return ret;
+    }
     nbt->relationship = ZB_NWK_RELATIONSHIP_PARENT;
     nbt->device_type = ZB_NWK_DEVICE_TYPE_COORDINATOR;
     nbt->rx_on_when_idle = ZB_TRUE;
