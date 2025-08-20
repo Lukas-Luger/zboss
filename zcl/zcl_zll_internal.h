@@ -149,9 +149,6 @@ typedef struct zb_zll_net_join_resp_s {
 } ZB_PACKED_STRUCT
     zb_zll_net_join_resp_t;
 
-void zb_zcl_zll_initiator_setup();
-
-void zb_zcl_zll_target_setup();
 /**
  * returns true if no device information is present in scan response aka need to send dev info req
  */

@@ -766,6 +766,10 @@ void zll_nwk_start_router_conf_cb();
 
 void zll_nwk_disc_conf_cb(zb_uint8_t param);
 
+void zb_zcl_zll_initiator_setup();
+
+void zb_zcl_zll_target_setup();
+
 /*! @} */
 
 #endif /* ZB_ZCL_H */
