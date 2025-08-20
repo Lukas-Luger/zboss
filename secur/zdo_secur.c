@@ -189,31 +189,6 @@ void secur_tc_init()
     ZG->aps.authenticated = 1;
 }
 
-#ifdef ZB_TC_GENERATES_KEYS
-static void secur_generate_key(zb_uint8_t i, zb_uint_t key_seq)
-{
-    zb_ushort_t j;
-
-    for (j = 0; j < ZB_CCM_KEY_SIZE; ++j) {
-        ZG->nwk.nib.secur_material_set[i].key[j] = (ZB_RANDOM() >> 4) & 0xff;
-    }
-    ZG->nwk.nib.secur_material_set[i].key_seq_number = key_seq;
-}
-
-
-void secur_generate_keys()
-{
-    zb_ushort_t i;
-
-    for (i = 0; i < ZB_SECUR_N_SECUR_MATERIAL; ++i) {
-        /* active_key_seq_number, active_secur_material_i set to 0 by global init -
-           not need to init it here */
-        secur_generate_key(i, i);
-    }
-}
-#endif
-
-
 #endif  /* ZB_COORDINATOR_ROLE */
 
 
@@ -390,7 +365,30 @@ void secur_send_key_sw_next(zb_uint8_t param) ZB_CALLBACK
         zb_get_out_buf_delayed(secur_send_key_sw_next);
     }
 }
-#endif
+#endif /* ZB_ROUTER_ROLE */
+
+static void secur_generate_key(zb_uint8_t i, zb_uint_t key_seq)
+{
+    zb_ushort_t j;
+
+    for (j = 0; j < ZB_CCM_KEY_SIZE; ++j) {
+        ZG->nwk.nib.secur_material_set[i].key[j] = (ZB_RANDOM() >> 4) & 0xff;
+    }
+    ZG->nwk.nib.secur_material_set[i].key_seq_number = key_seq;
+}
+
+
+void secur_generate_keys()
+{
+    zb_ushort_t i;
+
+    for (i = 0; i < ZB_SECUR_N_SECUR_MATERIAL; ++i) {
+        /* active_key_seq_number, active_secur_material_i set to 0 by global init -
+           not need to init it here */
+        secur_generate_key(i, i);
+    }
+
+}
 
 void secur_nwk_key_switch(zb_uint8_t key_number)
 {

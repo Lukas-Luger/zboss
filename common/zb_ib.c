@@ -124,9 +124,7 @@ void zb_ib_set_defaults(zb_char_t *rx_pipe) ZB_CALLBACK
     ZB_IEEE_ADDR_ZERO(ZB_AIB().trust_center_address);
     /* see ZB 3.0 table 3-62 NIB Attr */
     ZB_NIB_UPDATE_ID() = 0;
-#if defined ZB_TC_GENERATES_KEYS && defined ZB_COORDINATOR_ROLE
     secur_generate_keys();
-#endif  /* ZB_TC_GENERATES_KEYS */
 
 #endif  /* security */
     /* BDB */
@@ -155,8 +153,8 @@ void zb_ib_set_defaults(zb_char_t *rx_pipe) ZB_CALLBACK
     APL_CTX().free_gr_id_range_end = 0xfeff;
     APL_CTX().dev_info_used = 0;
     ZB_BZERO(&APL_CTX().dev_info_tbl, sizeof(zb_apl_dev_info_ent_t)*ZB_APL_MAX_DEV_ENTRIES);
-#ifdef ZB_ROUTER_ROLE
     MAC_PIB().mac_rx_on_when_idle = 1;
+#ifdef ZB_ROUTER_ROLE
     ZG->nwk.nib.max_children = ZB_DEFAULT_MAX_CHILDREN;
 #endif
     ZB_NIB_DEVICE_TYPE() = ZB_NWK_DEVICE_TYPE_NONE;
