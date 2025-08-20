@@ -587,7 +587,7 @@ zb_ret_t zb_nwk_neighbor_get(zb_address_ieee_ref_t addr,
     if (n == (zb_uint8_t)-1) {
         if (create_if_absent) {
             if (ZG->nwk.neighbor.base_neighbor_used ==
-                ZG->nwk.neighbor.base_neighbor_size - 1) {
+                ZG->nwk.neighbor.base_neighbor_size) {
                 ret = RET_NO_MEMORY;
             }
             else {
