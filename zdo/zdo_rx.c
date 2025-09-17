@@ -60,8 +60,8 @@
 /*! \addtogroup ZB_ZDO */
 /*! @{ */
 
-#ifdef ZB_ROUTER_ROLE
 static void zdo_device_annce_srv(zb_uint8_t param, void *dt) ZB_SDCC_REENTRANT;
+#ifdef ZB_ROUTER_ROLE
 static void zdo_parent_annce(zb_uint8_t param) ZB_SDCC_REENTRANT;
 #endif
 
@@ -72,9 +72,7 @@ void zb_zdo_data_indication(zb_uint8_t param) ZB_CALLBACK
         (zb_apsde_data_indication_t *)ZB_GET_BUF_PARAM(asdu,
                                                        zb_apsde_data_indication_t);
 
-#ifdef ZB_ROUTER_ROLE
     zb_uint8_t *body;
-#endif
     zb_uint8_t skip_free_buf = 1;
     zb_ret_t ret;
     zb_uint8_t fc;
@@ -83,11 +81,8 @@ void zb_zdo_data_indication(zb_uint8_t param) ZB_CALLBACK
     TRACE_MSG(TRACE_ZDO1, "zdo_data_ind %hd clu 0x%hx",
               (FMT__H_H, param, ind->clusterid));
     fc = *ZB_BUF_BEGIN(asdu); /* APS FC is needed in some response functions */
-#ifdef ZB_ROUTER_ROLE
+
     ZB_APS_HDR_CUT_P(asdu, body);
-#else
-    ZB_APS_HDR_CUT(asdu);
-#endif
 /* seems like switch should be replaced. It's broken somehow */
 #if 0
     switch (ind->clusterid) {
@@ -221,7 +216,6 @@ void zb_zdo_data_indication(zb_uint8_t param) ZB_CALLBACK
 #endif
 
 
-#ifdef ZB_ROUTER_ROLE
     if ((ind->clusterid == ZDO_DEVICE_ANNCE_CLID) &&
         (!ZG->nwk.handle.joined_pro)) {
 //       printf("body:\n");
@@ -234,7 +228,6 @@ void zb_zdo_data_indication(zb_uint8_t param) ZB_CALLBACK
         skip_free_buf = 0;
     }
     else
-#endif
 #ifndef ZB_LIMITED_FEATURES
     if ((ind->clusterid == ZDO_NODE_DESC_REQ_CLID) ||
         (ind->clusterid == ZDO_POWER_DESC_REQ_CLID)) {
@@ -442,7 +435,6 @@ static void zdo_parent_annce(zb_uint8_t param) ZB_SDCC_REENTRANT
 }
 #endif /* ROUTER */
 
-#ifdef ZB_ROUTER_ROLE
 static void zdo_device_annce_srv(zb_uint8_t param, void *dt) ZB_SDCC_REENTRANT
 {
     zb_buf_t *buf = ZB_BUF_FROM_REF(param);
@@ -473,6 +465,7 @@ static void zdo_device_annce_srv(zb_uint8_t param, void *dt) ZB_SDCC_REENTRANT
              * packet - this is our sibling */
             ne->relationship = ZB_NWK_RELATIONSHIP_SIBLING;
         }
+#ifdef ZB_ROUTER_ROLE
         if (ne->relationship == ZB_NWK_RELATIONSHIP_CHILD
             || ne->relationship == ZB_NWK_RELATIONSHIP_UNAUTHENTICATED_CHILD
             || ne->relationship == ZB_NWK_RELATIONSHIP_PREVIOUS_CHILD) {
@@ -480,6 +473,7 @@ static void zdo_device_annce_srv(zb_uint8_t param, void *dt) ZB_SDCC_REENTRANT
                 ne->depth = ZG->nwk.nib.depth + 1;
             }
         }
+#endif
         if (ne->device_type == ZB_NWK_DEVICE_TYPE_ED) {
             ne->permit_joining = 0;
         }
@@ -546,6 +540,5 @@ zb_neighbor_tbl_ent_t *zdo_device_info_upd(zb_buf_t *buf,
     return NULL;
 }
 
-#endif
 
 /*! @} */
