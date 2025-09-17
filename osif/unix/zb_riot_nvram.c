@@ -64,7 +64,6 @@
 #if defined ZB_USE_NVRAM
 
 extern bool has_eeprom;
-extern uint16_t g_group_id;
 
 typedef struct __attribute__((packed)) {
     uint16_t        magic; /* always "ZB" 0x425a */
@@ -118,10 +117,13 @@ typedef struct __attribute__((packed)) {
     uint16_t            short_parent_addr;
     uint8_t             depth;
     uint16_t            pan_id;
+    zb_ext_pan_id_t     aps_use_ext_pan_id;
     zb_ext_pan_id_t     ext_pan_id;
     uint16_t            short_addr;
     zb_ieee_addr_t      ext_addr;
-    uint16_t            group_id;
+    /* aps group table */
+    zb_aps_group_table_ent_t groups[ZB_APS_GROUP_TABLE_SIZE];
+    zb_uint8_t          n_groups;
     zb_bool_t           bdb_node_on_net;
     uint8_t             nwk_update_id;
     uint8_t             nwk_security_level;
@@ -152,7 +154,6 @@ zb_ret_t zb_save_formdesc_data(void)
     data.depth = ZB_NIB_DEPTH();
 #endif
     data.profile_in_use = profile_in_use;
-    memcpy(&data.group_id, &g_group_id, sizeof(g_group_id));
     memcpy(&data.pan_id, &MAC_PIB().mac_pan_id, sizeof(data.pan_id));
     memcpy(&data.short_parent_addr, &short_parent_addr,
                                             sizeof(short_parent_addr));
@@ -162,7 +163,16 @@ zb_ret_t zb_save_formdesc_data(void)
                                                 sizeof(data.channel_mask));
     data.current_channel = MAC_CTX().current_channel;
     ZB_IEEE_ADDR_COPY(data.ext_parent_addr, ext_parent_addr);
-    ZB_IEEE_ADDR_COPY(data.ext_pan_id, ZB_AIB().aps_use_extended_pan_id);
+    for (zb_ushort_t i = 0; i < ZB_APS_GROUP_TABLE_SIZE; i++) {
+        data.groups[i].group_addr = ZG->aps.group.groups[i].group_addr;
+        for (zb_ushort_t j = 0; j < ZB_APS_ENDPOINTS_IN_GROUP_TABLE; j++) {
+            data.groups[i].endpoints[j] =  ZG->aps.group.groups[i].endpoints[j];
+        }
+        data.groups[i].n_endpoints = ZG->aps.group.groups[i].n_endpoints;
+    }
+    data.n_groups = (zb_uint8_t) ZG->aps.group.n_groups;
+    ZB_IEEE_ADDR_COPY(data.aps_use_ext_pan_id, ZB_AIB().aps_use_extended_pan_id);
+    ZB_IEEE_ADDR_COPY(data.ext_pan_id, ZB_NIB_EXT_PAN_ID());
 
     data.bdb_node_on_net = BDB_CTX().node_is_on_net;
     ZB_IEEE_ADDR_COPY(data.ext_addr, ZB_PIB_EXTENDED_ADDRESS());
@@ -194,7 +204,6 @@ zb_ret_t zb_read_formdesc_data(void)
 #if defined ZB_NWK_DISTRIBUTED_ADDRESS_ASSIGN && defined ZB_ROUTER_ROLE
     ZB_NIB_DEPTH() = data.depth;
 #endif
-    memcpy(&g_group_id, &data.group_id, sizeof(g_group_id));
     memcpy(&MAC_PIB().mac_pan_id, &data.pan_id, sizeof(data.pan_id));
     memcpy(&ZB_AIB().aps_channel_mask, &data.channel_mask,
                                                     sizeof(data.channel_mask));
@@ -204,11 +213,22 @@ zb_ret_t zb_read_formdesc_data(void)
 
     ZB_UPDATE_PAN_ID();
     ZB_UPDATE_SHORT_ADDR();
-    ZB_IEEE_ADDR_COPY(ZB_AIB().aps_use_extended_pan_id, data.ext_pan_id);
+    ZB_IEEE_ADDR_COPY(ZB_AIB().aps_use_extended_pan_id, data.aps_use_ext_pan_id);
     ZB_IEEE_ADDR_COPY(ZB_PIB_BEACON_PAYLOAD().extended_panid, data.ext_pan_id);
     ZB_IEEE_ADDR_COPY(ZB_NIB_EXT_PAN_ID(), data.ext_pan_id);
     ZB_IEEE_ADDR_COPY(ZB_PIB_EXTENDED_ADDRESS(), data.ext_addr);
     ZB_UPDATE_LONGMAC();
+    if (data.n_groups > ZB_APS_GROUP_TABLE_SIZE) {
+        return RET_ERROR;
+    }
+    for (zb_ushort_t i = 0; i < ZB_APS_GROUP_TABLE_SIZE; i++) {
+        ZG->aps.group.groups[i].group_addr = data.groups[i].group_addr;
+        for (zb_ushort_t j = 0; j < ZB_APS_ENDPOINTS_IN_GROUP_TABLE; j++) {
+            ZG->aps.group.groups[i].endpoints[j] = data.groups[i].endpoints[j];
+        }
+        ZG->aps.group.groups[i].n_endpoints = data.groups[i].n_endpoints;
+    }
+    ZG->aps.group.n_groups = (zb_ushort_t) data.n_groups;
     /* parent short & extended addr */
     zb_ret_t ret = zb_address_update(data.ext_parent_addr, data.short_parent_addr,
             ZB_FALSE, &ZG->nwk.handle.parent);
@@ -239,7 +259,6 @@ zb_ret_t zb_read_formdesc_data(void)
 
     LOG_DEBUG("restoring mac short address 0x%04x\n", MAC_PIB().mac_short_address);
     LOG_DEBUG("restoring mac pan id 0x%04x\n", MAC_PIB().mac_pan_id);
-    LOG_DEBUG("restoring group id 0x%04x\n", g_group_id);
 #if defined ZB_NWK_DISTRIBUTED_ADDRESS_ASSIGN && defined ZB_ROUTER_ROLE
     LOG_DEBUG("restoring device depth %u\n", ZB_NIB_DEPTH());
 #endif

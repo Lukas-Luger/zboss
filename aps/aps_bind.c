@@ -320,6 +320,7 @@ void zb_apsme_add_group_request(zb_uint8_t param) ZB_CALLBACK
 
 done:
     {
+        zb_save_formdesc_data();
         zb_apsme_add_group_conf_t *conf = ZB_GET_BUF_PARAM(ZB_BUF_FROM_REF(
                                                                param),
                                                            zb_apsme_add_group_conf_t);
@@ -389,6 +390,7 @@ void zb_apsme_remove_group_request(zb_uint8_t param) ZB_CALLBACK
     }
 done:
     {
+        zb_save_formdesc_data();
         zb_apsme_remove_group_conf_t *conf = ZB_GET_BUF_PARAM(ZB_BUF_FROM_REF(
                                                                param),
                                                            zb_apsme_remove_group_conf_t);
@@ -436,6 +438,7 @@ void zb_apsme_remove_all_groups_request(zb_uint8_t param) ZB_CALLBACK
 
     /* subtract at end, to go though the whole list, bc this can hit multiple groups */
     ZG->aps.group.n_groups -= group_num;
+    zb_save_formdesc_data();
     zb_apsme_remove_all_groups_conf_t *conf = ZB_GET_BUF_PARAM(ZB_BUF_FROM_REF(
                                                             param),
                                                         zb_apsme_remove_all_groups_conf_t);

@@ -64,7 +64,6 @@ static uint8_t _packet_buf_size;
 
 uint8_t g_zc_addr[8] __attribute__ ((aligned(4)));
 // zb_ieee_addr_t extended_pan_id;
-uint16_t g_group_id;
 
 /* tradfri remote network key */
 // zb_uint8_t g_key[16] = { 0x8c, 0xb0, 0x6d, 0x62, 0x93, 0x7b, 0x10, 0x83, 0x76, 0x04, 0xa8, 0x64, 0xc2, 0x7c, 0x71, 0xdf};
@@ -218,7 +217,6 @@ void zb_zdo_startup_complete(zb_uint8_t param)
         // zb_apsme_add_group_req_t *req;
         // zb_buf_reuse(buf);
         // req = ZB_GET_BUF_PARAM(buf, zb_apsme_add_group_req_t);
-        // req->group_address = g_group_id;
         // req->endpoint = 1;
         // req->confirm_cb = group_add_conf1;
         // zb_zdo_add_group_req(param);
@@ -827,7 +825,6 @@ int cmd_zconfig(int argc, char *argv[])
     printf("out buffers used: \t %i/%i\n", ZG->bpool.bufs_allocated[0],
                                             ZB_IOBUF_POOL_SIZE / 2);
     printf("channel: \t\t %d\n",  zb_transceiver_get_channel());
-    printf("Group ID \t\t 0x%04x\n", g_group_id);
     printf("PAN ID \t\t 0x%04x\n", MAC_PIB().mac_pan_id);
     zb_pretty_long_address(addr, sizeof(addr),
                                             ZB_NIB_EXT_PAN_ID());
