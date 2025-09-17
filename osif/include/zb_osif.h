@@ -122,8 +122,8 @@ zb_ret_t zb_read_up_counter();
 
 zb_ret_t zb_reset();
 
-zb_uint8_t zb_read_nvram(zb_uint8_t pos, void *buf, zb_uint8_t len);
-zb_uint8_t zb_write_nvram(zb_uint8_t pos, void *buf, zb_uint8_t len);
+zb_uint8_t zb_read_nvram(zb_uint16_t pos, void *buf, zb_uint16_t len);
+zb_uint8_t zb_write_nvram(zb_uint16_t pos, void *buf, zb_uint16_t len);
 
 /* config section (for nvram routines */
 #define ZB_CONFIG_SIZE 9

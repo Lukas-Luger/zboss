@@ -18,7 +18,7 @@
 /* some mcus can only write to the "other half" from where the firmware is */
 #define NV_FLASH_PAGE_0 (FLASHPAGE_NUMOF / 2 - 1)
 #define NV_FLASH_PAGE_1 (FLASHPAGE_NUMOF - 1)
-static uint16_t _flash_page;
+static unsigned _flash_page;
 #elif defined MODULE_AT24CXXX
 #include "at24cxxx.h"
 #include "at24cxxx_params.h"
@@ -547,8 +547,9 @@ int zb_inject_packet(int argc, char **argv)
 }
 
 uint8_t pagebuf[FLASHPAGE_SIZE];
+FLASH_WRITABLE_INIT(backing_mem, 0x1);
 
-zb_uint8_t zb_write_nvram (zb_uint8_t pos, void *buf, zb_uint8_t len)
+zb_uint8_t zb_write_nvram (zb_uint16_t pos, void *buf, zb_uint16_t len)
 {
 #ifdef MODULE_PERIPH_FLASHPAGE
     /* get the existing page data */
@@ -578,7 +579,7 @@ zb_uint8_t zb_write_nvram (zb_uint8_t pos, void *buf, zb_uint8_t len)
     return len;
 }
 
-zb_uint8_t zb_read_nvram(zb_uint8_t pos, void *buf, zb_uint8_t len)
+zb_uint8_t zb_read_nvram(zb_uint16_t pos, void *buf, zb_uint16_t len)
 {
 #ifdef MODULE_PERIPH_FLASHPAGE
     flashpage_read(_flash_page, pagebuf);
@@ -605,7 +606,7 @@ void zboss_init(void)
 {
 #ifdef MODULE_PERIPH_FLASHPAGE
 
-    _flash_page = NV_FLASH_PAGE_1;
+    _flash_page = flashpage_page((void *)backing_mem);
     has_eeprom = true;
 
 #ifdef MODULE_RIOTBOOT
