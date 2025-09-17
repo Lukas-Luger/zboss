@@ -459,7 +459,6 @@ void zll_finish()
     ZB_SCHEDULE_TX_CB(zb_nlme_send_link_status, ZB_REF_FROM_BUF(buf));
 #endif
     /* apsDeviceKeyPairset not present - skip */
-    BDB_CTX().node_is_on_net = ZB_TRUE;
     /* save everything now */
     zb_write_security_key();
     zb_save_formdesc_data();
@@ -560,7 +559,7 @@ void zb_zcl_zll_target_setup()
     ZLL_COMM().zigbee_info |= (0x1 & ZB_PIB_RX_ON_WHEN_IDLE()) << 2;
     /* 0x00 we are not initiator */
     ZLL_COMM().touchlink_info = 0x00;
-    if (ZB_TOUCHLINK_FACT_NEW) {
+    if (ZB_TOUCHLINK_FACT_NEW && !BDB_CTX().node_is_on_net) {
         ZLL_COMM().touchlink_info |= 1;
         ZB_NIB_UPDATE_ID() = 0;
         ZB_PIB_SHORT_ADDRESS() = 0xffff;

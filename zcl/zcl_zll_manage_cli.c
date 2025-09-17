@@ -156,7 +156,7 @@ void zll_handle_net_start_resp(zb_uint8_t param, zb_ieee_addr_t source)
         zb_transceiver_set_pan_id(resp->pan_id);
     }
     ZB_SCHEDULE_ALARM_CANCEL(zll_timeout, 0);
-    /* BDB TL Init Step 19 */
+    /* BDB TL Init Step 19 finish if not ED */
     if (ZB_GET_NODE_DESC_LOGICAL_TYPE(ZB_ZDO_NODE_DESC()) == ZB_END_DEVICE) {
         /* continue Step 26 */
         ZG->nwk.handle.joined = 1;
@@ -715,13 +715,13 @@ void zb_zcl_zll_initiator_setup()
     if (ZB_IEEE_ADDR_IS_ZERO(ZB_AIB().trust_center_address)) {
         ZB_IEEE_ADDR_COPY(ZB_AIB().trust_center_address, ZB_IEEE_ADDR_BROADCAST);
     }
-    //if (ZB_NIB_PAN_ID() == 0xffff || ZB_PIB_SHORT_PAN_ID() == 0xffff) {
+    if (ZB_NIB_PAN_ID() == 0xffff || ZB_PIB_SHORT_PAN_ID() == 0xffff) {
         /* to avoid pan id compression, as we are not on any network */
         ZB_PIB_SHORT_PAN_ID() = ZB_RANDOM();
         ZB_NIB_PAN_ID() = ZB_PIB_SHORT_PAN_ID();
         zb_transceiver_set_pan_id(ZB_PIB_SHORT_PAN_ID());
         ZB_UPDATE_PAN_ID();
-    //}
+    }
 }
 #endif /* ZB_LIMITED_FEATURES */
 /*! @} */
