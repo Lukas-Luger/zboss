@@ -753,6 +753,11 @@ void zb_apsde_data_confirm(zb_uint8_t param) ZB_CALLBACK
             ZG->zdo.handle.started = 1;
             ZB_GET_OUT_BUF_DELAYED(zdo_send_device_annce);
             ZB_GET_OUT_BUF_DELAYED(zdo_schedule_parent_annce);
+            BDB_CTX().node_is_on_net = ZB_TRUE;
+            BDB_CTX().comm_status = SUCCESS;
+            /* save everything now */
+            zb_save_formdesc_data();
+            zb_save_nvram_config();
             ZB_SCHEDULE_CALLBACK(zb_zdo_startup_complete, param);
         }
     }
