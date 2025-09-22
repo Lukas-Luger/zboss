@@ -564,9 +564,6 @@ void zb_zcl_zll_target_setup()
         ZB_NIB_UPDATE_ID() = 0;
         ZB_PIB_SHORT_ADDRESS() = 0xffff;
         zb_transceiver_update_short_addr(0xffff);
-    } else {
-        ZB_PIB_SHORT_ADDRESS() = 0x0002;
-        zb_transceiver_update_short_addr(0x0002);
     }
     /* 0x02 addr assignment capable */
     if (ZB_MAC_CAP_GET_ALLOCATE_ADDRESS(ZB_ZDO_NODE_DESC()->mac_capability_flags)) {
