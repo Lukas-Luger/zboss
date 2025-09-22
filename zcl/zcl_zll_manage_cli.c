@@ -148,8 +148,8 @@ void zll_handle_net_start_resp(zb_uint8_t param, zb_ieee_addr_t source)
     if (resp->channel != zb_transceiver_get_channel()) {
         ZB_TRANSCEIVER_SET_CHANNEL(resp->channel);
     }
-    if (!ZB_IEEE_ADDR_CMP(resp->ext_pan_id, ZB_AIB().aps_use_extended_pan_id)) {
-        ZB_IEEE_ADDR_COPY(&ZB_AIB().aps_use_extended_pan_id, resp->ext_pan_id);
+    if (!ZB_IEEE_ADDR_CMP(resp->ext_pan_id, ZB_NIB_EXT_PAN_ID())) {
+        ZB_IEEE_ADDR_COPY(ZB_NIB_EXT_PAN_ID(), resp->ext_pan_id);
     }
     if (resp->pan_id != ZB_PIB_SHORT_PAN_ID()) {
         ZB_PIB_SHORT_PAN_ID() = resp->pan_id;
