@@ -233,6 +233,7 @@ void zb_free_buf(zb_buf_t *buf)
 
 //     memset(buf, 0x55, sizeof(*buf));
 //     printf("free(%u): 0x%lx (last head 0x%lx)\n", buf->u.hdr.is_in_buf, (uint32_t)buf, (uint32_t)ZG->bpool.head);
+    zb_uint8_t was_in = buf->u.hdr.is_in_buf;
     VERIFY_BUF(buf);
     buf->u.next = ZG->bpool.head;
     ZB_ASSERT(buf->u.next);
@@ -240,7 +241,7 @@ void zb_free_buf(zb_buf_t *buf)
     ZB_ASSERT(ZG->bpool.head);
     VERIFY_BUFS();
 
-    if (buf->u.hdr.is_in_buf) {
+    if (was_in) {
         /* if we need a buffer for rx packet, we should not pass it to some */
         /* other callback */
         if (!MAC_CTX().rx_need_buf) {
@@ -252,7 +253,7 @@ void zb_free_buf(zb_buf_t *buf)
     }
     if (ent) {
         ZB_SCHEDULE_CALLBACK(ent->func,
-                             ZB_REF_FROM_BUF(zb_get_buf(buf->u.hdr.is_in_buf)));
+                             ZB_REF_FROM_BUF(zb_get_buf(was_in)));
         ZB_STK_PUSH(ZG->sched.buf_freelist, next, ent);
     }
 

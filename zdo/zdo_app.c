@@ -681,10 +681,14 @@ void zdo_schedule_parent_annce(zb_uint8_t param) ZB_CALLBACK
 {
     if (ZB_AIB().aps_parent_annce_timer) {
         ZB_SCHEDULE_ALARM_CANCEL(zdo_send_parent_annce, ZB_ALARM_ANY_PARAM);
+        if (ZG->zdo.handle.parent_annce) {
+            zb_free_buf(ZB_BUF_FROM_REF(ZG->zdo.handle.parent_annce));
+        }
     }
     do {
         ZB_AIB().aps_parent_annce_timer = ZB_RANDOM();
     } while (ZB_AIB().aps_parent_annce_timer >= ZB_APS_PARENT_ANNCE_JITTER_MAX);
+    ZG->zdo.handle.parent_annce = param;
     ZB_AIB().aps_parent_annce_timer += ZB_APS_PARENT_ANNCE_BASE_TIMER;
     ZB_SCHEDULE_ALARM(zdo_send_parent_annce, param, ZB_AIB().aps_parent_annce_timer);
 }
@@ -759,6 +763,9 @@ void zb_apsde_data_confirm(zb_uint8_t param) ZB_CALLBACK
             zb_save_formdesc_data();
             zb_save_nvram_config();
             ZB_SCHEDULE_CALLBACK(zb_zdo_startup_complete, param);
+        }
+        else {
+            zb_free_buf(buf);
         }
     }
 #if defined ZB_SECURITY && defined ZB_COORDINATOR_ROLE

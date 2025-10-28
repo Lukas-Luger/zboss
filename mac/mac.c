@@ -791,6 +791,7 @@ void zb_mlme_command_accept(zb_uint8_t param) ZB_CALLBACK
 #endif
     {
         TRACE_MSG(TRACE_MAC1, "ERROR unsupp cmd %hu", (FMT__H, *cmd_ptr));
+        zb_free_buf(ZB_BUF_FROM_REF(param));
     }
 
     TRACE_MSG(TRACE_MAC2, "<<mlme_cmd_acc", (FMT__0));

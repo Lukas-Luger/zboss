@@ -228,7 +228,9 @@ void zll_handle_net_start_req(zb_uint8_t param)
         ZB_WAIT_FOR_TX();
     }
     zb_mac_main_loop();
-    
+    if (!ZLL_COMM().net_p_buf) {
+        ZLL_COMM().net_p_buf = zb_get_in_buf();
+    }
     ZB_BUF_COPY(ZLL_COMM().net_p_buf, buf);
     zb_zll_net_start_req_t *req = (zb_zll_net_start_req_t *)ZB_BUF_BEGIN(buf);
     /* BDB TL Target Step 9 - decide if we want a new network (skip)*/
@@ -280,6 +282,9 @@ void zll_handle_net_join_req(zb_uint8_t param, zb_uint8_t cmd)
     ZLL_COMM().received_join_net = ZB_TRUE;
 
     zb_buf_t *buf = ZB_BUF_FROM_REF(param);
+    if (!ZLL_COMM().net_p_buf) {
+        ZLL_COMM().net_p_buf = zb_get_in_buf();
+    }
     ZB_BUF_COPY(ZLL_COMM().net_p_buf, buf);
     zb_free_buf(buf);
     /* BDB TL Target Step 16 - reject network by app specific means (skip) */
@@ -463,6 +468,7 @@ void zll_finish()
     zb_write_security_key();
     zb_save_formdesc_data();
     zb_save_nvram_config();
+    zb_free_buf(ZLL_COMM().net_p_buf);
 }
 
 void zll_nwk_start_router_conf_cb()
@@ -576,7 +582,6 @@ void zb_zcl_zll_target_setup()
     ZLL_COMM().received_join_net = ZB_FALSE;
     ZB_BZERO(&ZLL_COMM().scan_response, sizeof(ZLL_COMM().scan_response));
     ZLL_COMM().state = ZB_ZLL_COMM_SCAN;
-    ZLL_COMM().net_p_buf = zb_get_in_buf();
     (void)zb_zcl_register_cluster(1 /* EP 1 */, ZB_ZLL_CLUSTER_ID /* TL Cluster */,
                                   ZB_ZCL_SERVER_ROLE, handle_zll_srv, NULL /* action */);
     /**

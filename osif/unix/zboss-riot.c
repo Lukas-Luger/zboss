@@ -230,9 +230,9 @@ void zb_zdo_startup_complete(zb_uint8_t param)
         // zb_zdo_add_group_req(ZB_REF_FROM_BUF(buf2));
     }
     else {
-        zb_free_buf(buf);
         LOG_ERROR("ZDO start FAILED status %d\n", buf->u.hdr.status);
     }
+    zb_free_buf(buf);
 }
 
 #define ZB_MSG_SCHEDULE_ALARM (0x4)

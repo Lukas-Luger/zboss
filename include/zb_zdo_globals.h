@@ -112,6 +112,8 @@ typedef struct zp_zdo_handle_s {
                                      * buffer id  */
     zb_uint8_t key_sw;              /*!< if !0, key switch is sent and must switch
                                      * the key after this buffer sent  */
+    zb_uint8_t parent_annce;        /*!< if !0, parent annce is scheduled, must
+                                     * free this buffer on reschedule */
     zb_uint8_t started;             /*!< if !0, zdo_startup_complete was called
                                      * already */
     zb_bitfield_t allow_auth : 1;   /*!< if !0, auth is allowed */
