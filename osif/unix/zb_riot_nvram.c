@@ -128,6 +128,7 @@ typedef struct __attribute__((packed)) {
     uint8_t             nwk_update_id;
     uint8_t             nwk_security_level;
     uint8_t             nwk_active_key_snum;
+    uint8_t             nwk_dev_type;
     uint16_t            apl_group_begin;
     uint16_t            apl_group_end;
     uint16_t            apl_addr_begin;
@@ -179,6 +180,7 @@ zb_ret_t zb_save_formdesc_data(void)
     data.nwk_update_id = ZB_NIB_UPDATE_ID();
     data.nwk_security_level = (uint8_t) ZB_NIB_SECURITY_LEVEL();
     data.nwk_active_key_snum = ZG->nwk.nib.active_key_seq_number;
+    data.nwk_dev_type = ZB_NIB_DEVICE_TYPE();
     ZB_IEEE_ADDR_COPY(data.aps_tc_addr, ZB_AIB().trust_center_address);
     data.apl_group_begin = APL_CTX().free_gr_id_range_begin;
     data.apl_group_end = APL_CTX().free_gr_id_range_end;
@@ -248,6 +250,7 @@ zb_ret_t zb_read_formdesc_data(void)
     ZB_NIB_UPDATE_ID() = data.nwk_update_id;
     ZB_NIB_SECURITY_LEVEL() = data.nwk_security_level;
     ZG->nwk.nib.active_key_seq_number = data.nwk_active_key_snum;
+    ZB_NIB_DEVICE_TYPE() = data.nwk_dev_type;
     ZB_IEEE_ADDR_COPY(ZB_AIB().trust_center_address, data.aps_tc_addr);
     APL_CTX().free_gr_id_range_begin = data.apl_group_begin;
     APL_CTX().free_gr_id_range_end = data.apl_group_end;
