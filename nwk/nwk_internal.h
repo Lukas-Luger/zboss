@@ -456,6 +456,19 @@ void zb_nlme_rejoin_resp_sent(zb_uint8_t param) ZB_CALLBACK;
 void zb_nlme_orphan_scan_confirm(zb_uint8_t param) ZB_CALLBACK;
 
 /**
+   zb_nlme_ed_timeout_response
+
+   @param param - buffer
+   @return nothing
+ */
+void zb_nlme_ed_timeout_response(zb_uint8_t param) ZB_CALLBACK;
+
+
+#define ZB_NWK_ED_TIMEOUT_TO_BEACON_INTERVAL(enum) \
+    ((enum == 0) ? (zb_uint16_t)(ZB_TIME_ONE_SECOND * 10) : \
+        ((zb_uint16_t)(1l << enum) * ZB_TIME_ONE_SECOND * 60)    \
+    )
+/**
    zb_nwk_nib_init
 
    @return nothing

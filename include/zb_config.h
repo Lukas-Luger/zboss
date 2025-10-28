@@ -252,7 +252,16 @@ asdf
 //     #define ZB_LINUX_SPIDEV_INTR_TIMEOUT 1
 
     #define ZB_SECURITY
-
+    /**
+    End device timeout period in enum from Table 3-54
+    */
+    #define ZB_ED_TIMEOUT_PERIOD (8)
+    /**
+    End device keepalive period in enum from Table 3-54
+    (manufacturer defined)
+    Recommended: one third of timeout
+    */
+    #define ZB_ED_KEEPALIVE_PERIOD (6)
 
 #elif defined ZB_PLATFORM_8051_SIM
 

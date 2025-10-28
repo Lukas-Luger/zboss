@@ -355,6 +355,14 @@ void zb_nlme_send_status(zb_uint8_t param) ZB_CALLBACK;
  */
 void zb_nlme_send_link_status(zb_uint8_t param) ZB_CALLBACK;
 
+/**
+   Send end-device timeout request after (re-)joining
+
+   @param param - buffer
+   @return nothing
+ */
+void zb_nlme_ed_timeout_request(zb_uint8_t param) ZB_CALLBACK;
+
 /*! @} */
 
 /*! \addtogroup nwk_ib */
@@ -886,7 +894,9 @@ typedef enum zb_nwk_cmd_e {
     ZB_NWK_CMD_REJOIN_RESPONSE  = 0x07,
     ZB_NWK_CMD_LINK_STATUS      = 0x08,
     ZB_NWK_CMD_NETWORK_REPORT   = 0x09,
-    ZB_NWK_CMD_NETWORK_UPDATE   = 0x0a
+    ZB_NWK_CMD_NETWORK_UPDATE   = 0x0a,
+    ZB_NWK_CMD_ED_TIMEOUT_REQUEST  = 0x0b,
+    ZB_NWK_CMD_ED_TIMEOUT_RESPONSE = 0x0c
 } ZB_PACKED_STRUCT
 zb_nwk_cmd_t;
 
@@ -952,6 +962,24 @@ typedef struct zb_nwk_rejoin_response_s {
     zb_uint8_t rejoin_status;   /*!< rejoin status */
 } ZB_PACKED_STRUCT
 zb_nwk_rejoin_response_t;
+
+/**
+   End device timeout request command
+ */
+typedef struct zb_nwk_ed_timeout_request_s {
+    zb_uint8_t time;
+    zb_uint8_t configuration;
+} ZB_PACKED_STRUCT
+zb_nwk_ed_timeout_request_t;
+
+/**
+   End device timeout respose command
+ */
+typedef struct zb_nwk_ed_timeout_response_s {
+    zb_uint8_t status;
+    zb_uint8_t parent_information;
+} ZB_PACKED_STRUCT
+zb_nwk_ed_timeout_response_t;
 
 #define ZB_NWK_COMMAND_SIZE(payload_size) (1 + payload_size)
 #define ZB_NWK_ALLOC_COMMAND_GET_PAYLOAD_PTR(buf, cmd_id, cmd_size, payload) \

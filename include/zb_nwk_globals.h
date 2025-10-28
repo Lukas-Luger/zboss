@@ -466,6 +466,19 @@ typedef struct zb_nib_s {
                                                  * LQI values reported by the MAC
                                                  * layer; otherwise, it shall report
                                                  * a constant value. */
+    zb_uint8_t nwk_parent_information;          /*!< For an RFD, this records the
+                                                 * information receivedin an End
+                                                 * Device Timeout Response command
+                                                 * indicating the parent information.
+                                                 * The bit-mask values are defined 
+                                                 * in Table 3-58. For an FFD, this
+                                                 * records the device’s local capa-
+                                                 * bilities. */
+    zb_uint8_t nwk_ed_timeout_default;          /*!< This is an index into Table 3-54.
+                                                 * It indicates the default timeout
+                                                 * in minutes for any end device that
+                                                 * does not negotiate a different
+                                                 * timeout value.*/
 } zb_nib_t;
 
 /* NWK Broadcast delivery time See 3.5.2.1 */

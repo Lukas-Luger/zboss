@@ -524,6 +524,9 @@ void zb_nlme_join_confirm(zb_uint8_t param) ZB_CALLBACK
         {
             ZB_SCHEDULE_CALLBACK(zdo_join_done, param);
         }
+        if (ZB_GET_NODE_DESC_LOGICAL_TYPE(ZB_ZDO_NODE_DESC()) == ZB_END_DEVICE) {
+            ZB_GET_OUT_BUF_DELAYED(zb_nlme_ed_timeout_request);
+        }
     }
     else if (ZG->zdo.handle.rejoin && ZB_AIB().aps_insecure_join) {
         zb_nlme_network_discovery_request_t *req = ZB_GET_BUF_PARAM(ZB_BUF_FROM_REF(

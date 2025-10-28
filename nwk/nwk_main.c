@@ -128,7 +128,8 @@ void zb_nwk_nib_init()
 #ifdef  ZB_NWK_MESH_ROUTING
     ZG->nwk.nib.aps_rreq_addr = -1;
 #endif
-
+    ZG->nwk.nib.nwk_parent_information = 0;
+    ZG->nwk.nib.nwk_ed_timeout_default = 8;
     TRACE_MSG(TRACE_NWK1, "<<nib_init", (FMT__0));
 }
 
@@ -1558,7 +1559,15 @@ void nwk_frame_indication(zb_uint8_t param) ZB_CALLBACK
         }
         else
 #endif  /* ZB_LIMITED_FEATURES */
-        {
+        if (command_id == ZB_NWK_CMD_ED_TIMEOUT_REQUEST) {
+            puts("not supported ed timeout req");
+            zb_free_buf(buf);
+        }
+        else if (command_id == ZB_NWK_CMD_ED_TIMEOUT_RESPONSE) {
+            TRACE_MSG(TRACE_NWK3, "got ed timeout response cmd", (FMT__0));
+            zb_nlme_ed_timeout_response(param);
+        }
+        else {
             TRACE_MSG(TRACE_ERROR, "unknown cmd %hd - drop", (FMT__H,
                                                               command_id));
             zb_free_buf(buf);
