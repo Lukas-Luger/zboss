@@ -216,8 +216,8 @@ void zb_zdo_data_indication(zb_uint8_t param) ZB_CALLBACK
 #endif
 
 
-    if ((ind->clusterid == ZDO_DEVICE_ANNCE_CLID) &&
-        (!ZG->nwk.handle.joined_pro)) {
+    if ((ind->clusterid == ZDO_DEVICE_ANNCE_CLID)) {
+        //&& (!ZG->nwk.handle.joined_pro)) {
 //       printf("body:\n");
 //       od_hex_dump(body, 32, 16);
         zdo_device_annce_srv(param, (void *)(body));

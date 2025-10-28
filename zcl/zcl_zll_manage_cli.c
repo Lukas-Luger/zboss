@@ -157,7 +157,7 @@ void zll_handle_net_start_resp(zb_uint8_t param, zb_ieee_addr_t source)
     }
     ZB_SCHEDULE_ALARM_CANCEL(zll_timeout, 0);
     /* BDB TL Init Step 19 finish if not ED */
-    if (ZB_GET_NODE_DESC_LOGICAL_TYPE(ZB_ZDO_NODE_DESC()) == ZB_END_DEVICE) {
+    if (ZB_GET_NODE_DESC_LOGICAL_TYPE(ZB_ZDO_NODE_DESC()) != ZB_END_DEVICE) {
         /* continue Step 26 */
         ZG->nwk.handle.joined = 1;
         zb_address_update(source, ZLL_COMM().responder_addr_short, ZB_TRUE,
@@ -181,6 +181,7 @@ void zll_handle_net_start_resp(zb_uint8_t param, zb_ieee_addr_t source)
 
     zb_address_pan_id_ref_t panid_ref;
     zb_ret_t ret = zb_address_set_pan_id(resp->pan_id, resp->ext_pan_id, &panid_ref);
+    ZB_EXTPANID_COPY( ZB_AIB().aps_use_extended_pan_id, resp->ext_pan_id);
     if (ret == RET_ALREADY_EXISTS) {
         ret = RET_OK;
     }
@@ -410,6 +411,9 @@ void zll_nwk_rejoin()
     ZB_IEEE_ADDR_COPY(request->extended_pan_id, ZB_AIB().aps_use_extended_pan_id);
     request->scan_channels = 0x00000000;
     ZB_MAC_CAP_SET_ALLOCATE_ADDRESS(request->capability_information, 1); //FIXME
+    if (MAC_PIB().mac_rx_on_when_idle) {
+        ZB_MAC_CAP_SET_RX_ON_WHEN_IDLE(request->capability_information, 1);
+    }
     request->rejoin_network = ZB_NLME_REJOIN_METHOD_REJOIN;
     request->scan_duration = 0x00;
     request->security_enabled = ZB_TRUE;
@@ -596,6 +600,21 @@ void zll_comm_signal(zb_zll_comm_state_t state)
         ZG->aps.transaction_id = (zb_uint32_t)ZB_RANDOM() | (ZB_RANDOM() << 16);
         ZLL_COMM().v_scan_channels = BDB_CTX().primary_channel_set;
         ZLL_COMM().v_is_first_ch = ZB_TRUE;
+        if (ZB_NIB_PAN_ID() == 0xffff || ZB_PIB_SHORT_PAN_ID() == 0xffff) {
+            /* to avoid pan id compression, as we are not on any network */
+            ZB_PIB_SHORT_PAN_ID() = ZB_RANDOM();
+            ZB_NIB_PAN_ID() = ZB_PIB_SHORT_PAN_ID();
+            zb_transceiver_set_pan_id(ZB_PIB_SHORT_PAN_ID());
+            ZB_UPDATE_PAN_ID();
+        }
+        /**
+         * Lets assign ourelves the address of 1
+         */
+        if (ZB_PIB_SHORT_ADDRESS() != 1) { // FIXME
+            ZB_PIB_SHORT_ADDRESS() = APL_CTX().free_addr_range_begin;
+            zb_transceiver_update_short_addr(APL_CTX().free_addr_range_begin);
+            APL_CTX().free_addr_range_begin++;
+        }
         ZB_SCHEDULE_CALLBACK(zll_scan_step, 0);
         return;
     case ZB_ZLL_COMM_SCAN_DONE:
@@ -666,14 +685,14 @@ void zb_zcl_zll_initiator_setup()
 {
     ZLL_COMM().zigbee_info = (zb_uint8_t)0;
     /* enums do not work */
-    switch ((zb_uint8_t)ZB_NIB_DEVICE_TYPE()) {
-    case 2: /* ZB_NWK_DEVICE_TYPE_COORDINATOR */
+    switch (ZB_GET_NODE_DESC_LOGICAL_TYPE(ZB_ZDO_NODE_DESC())) {
+    case 0: /* ZB_COORDINATOR */
         ZLL_COMM().zigbee_info = ZB_ZCL_ZB_DEV_TYPE_COORD;
         break;
-    case 1: /* ZB_NWK_DEVICE_TYPE_ROUTER */
+    case 1: /* ZB_ROUTER */
         ZLL_COMM().zigbee_info = ZB_ZCL_ZB_DEV_TYPE_ROUTER;
         break;
-    case 0: /* ZB_NWK_DEVICE_TYPE_ED */
+    case 2: /* ZB_END_DEVICE */
         ZLL_COMM().zigbee_info = ZB_ZCL_ZB_DEV_TYPE_ED;
         break;
     default:
@@ -697,14 +716,6 @@ void zb_zcl_zll_initiator_setup()
 
     ZB_BZERO(&ZLL_COMM().scan_response, sizeof(ZLL_COMM().scan_response));
     ZLL_COMM().state = ZB_ZLL_COMM_SCAN;
-    /**
-     * Lets assign ourelves the address of 1
-     */
-    if (ZB_PIB_SHORT_ADDRESS() != 1) { // FIXME
-        ZB_PIB_SHORT_ADDRESS() = APL_CTX().free_addr_range_begin;
-        zb_transceiver_update_short_addr(APL_CTX().free_addr_range_begin);
-        APL_CTX().free_addr_range_begin++;
-    }
     (void)zb_zcl_register_cluster(1 /* EP 1 */, ZB_ZLL_CLUSTER_ID /* TL Cluster */,
                                   ZB_ZCL_CLIENT_ROLE, handle_zll_cli, NULL /* action */);
     /**
@@ -714,13 +725,6 @@ void zb_zcl_zll_initiator_setup()
     ZB_AIB().trust_center_address[0] = 1;
     if (ZB_IEEE_ADDR_IS_ZERO(ZB_AIB().trust_center_address)) {
         ZB_IEEE_ADDR_COPY(ZB_AIB().trust_center_address, ZB_IEEE_ADDR_BROADCAST);
-    }
-    if (ZB_NIB_PAN_ID() == 0xffff || ZB_PIB_SHORT_PAN_ID() == 0xffff) {
-        /* to avoid pan id compression, as we are not on any network */
-        ZB_PIB_SHORT_PAN_ID() = ZB_RANDOM();
-        ZB_NIB_PAN_ID() = ZB_PIB_SHORT_PAN_ID();
-        zb_transceiver_set_pan_id(ZB_PIB_SHORT_PAN_ID());
-        ZB_UPDATE_PAN_ID();
     }
 }
 #endif /* ZB_LIMITED_FEATURES */

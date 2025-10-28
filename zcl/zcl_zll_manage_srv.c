@@ -81,7 +81,6 @@ void zll_send_scan_resp(zb_uint8_t param)
         ZB_PIB_SHORT_PAN_ID() = ZB_RANDOM();
         ZB_NIB_PAN_ID() = ZB_PIB_SHORT_PAN_ID();
         zb_transceiver_set_pan_id(ZB_PIB_SHORT_PAN_ID());
-        ZB_UPDATE_PAN_ID();
     }
 
     resp.pan_id = ZB_NIB_PAN_ID();
@@ -459,8 +458,8 @@ void zll_finish()
     ZG->nwk.handle.joined = ZB_TRUE;
     ZB_MAC_SET_INDIRECT_DATA_REQUEST();
     ZB_GET_OUT_BUF_DELAYED(zdo_send_device_annce);
-    zb_buf_t *buf = zb_get_out_buf();
 #ifdef ZB_ROUTER_ROLE
+    zb_buf_t *buf = zb_get_out_buf();
     ZB_SCHEDULE_TX_CB(zb_nlme_send_link_status, ZB_REF_FROM_BUF(buf));
 #endif
     /* apsDeviceKeyPairset not present - skip */
