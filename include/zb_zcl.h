@@ -754,8 +754,6 @@ void zb_zcl_deinit();
 
 void zll_start_tl_scan();
 
-void zll_nwk_rejoin();
-
 void zll_nwk_rejoin_cb();
 
 void zll_nwk_direct_join_cb();

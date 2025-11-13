@@ -477,9 +477,6 @@ static void zdo_device_annce_srv(zb_uint8_t param, void *dt) ZB_SDCC_REENTRANT
         if (ne->device_type == ZB_NWK_DEVICE_TYPE_ED) {
             ne->permit_joining = 0;
         }
-        if(ZLL_COMM().state == ZB_ZLL_COMM_REJOIN) {
-            zll_nwk_rejoin();
-        }
         TRACE_MSG(TRACE_ZDO3,
                   "DEV_ANNCE: upd addr " TRACE_FORMAT_64 "/%d ne %p dev_t %hd, rx.o.i %hd rel %hd",
                   (FMT__A_D_P_H_H_H, TRACE_ARG_64(da->ieee_addr), addr, ne,

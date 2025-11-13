@@ -134,6 +134,70 @@ void zll_send_net_start_req(zb_uint8_t param)
     ZB_SCHEDULE_CALLBACK(zb_intrp_data_request, param);
 }
 
+void zll_net_start_resp_continue(zb_uint8_t param)
+{
+    zb_buf_t *buf = ZB_BUF_FROM_REF(param);
+    zb_zll_net_start_resp_t *resp = (zb_zll_net_start_resp_t *)ZB_BUF_BEGIN(buf);
+    /* BDB TL Init Step 19 finish if not ED */
+    if (ZB_GET_NODE_DESC_LOGICAL_TYPE(ZB_ZDO_NODE_DESC()) != ZB_END_DEVICE) {
+        /* continue Step 26 */
+        ZG->nwk.handle.joined = 1;
+        zb_address_update(ZLL_COMM().responder_addr, ZLL_COMM().responder_addr_short, ZB_TRUE,
+                &ZG->nwk.handle.parent);
+        zb_free_buf(buf);
+        zll_comm_signal(ZB_ZLL_COMM_SUCCESS);
+        return;
+    }
+    /* BDB TL Init Step 20 */
+#if defined ZB_ROUTER_ROLE || defined ZB_COORDINATOR_ROLE
+    zb_nwk_exneighbor_start();
+#endif
+    /* adding device to neighbor table */
+    zb_ext_neighbor_tbl_ent_t *enbt = NULL; /* shutup sdcc */
+
+    zb_address_pan_id_ref_t panid_ref;
+    zb_ret_t ret = zb_address_set_pan_id(resp->pan_id, resp->ext_pan_id, &panid_ref);
+    ZB_EXTPANID_COPY( ZB_AIB().aps_use_extended_pan_id, resp->ext_pan_id);
+    if (ret == RET_ALREADY_EXISTS) {
+        ret = RET_OK;
+    }
+    if (ret == RET_OK) {
+        ret = zb_nwk_exneighbor_by_ieee(panid_ref, ZLL_COMM().responder_addr, &enbt);
+    }
+    if (ret == RET_OK) {
+        enbt->lqi = ZB_MAC_GET_LQI(buf);
+        enbt->potential_parent = 1;
+        enbt->short_addr = ZLL_COMM().responder_addr_short;
+        zb_ieee_addr_compress(ZLL_COMM().responder_addr, &enbt->long_addr);
+        enbt->panid_ref = panid_ref;
+        enbt->logical_channel = resp->channel;
+        TRACE_MSG(TRACE_NWK2, "ch %hd", (FMT__H, enbt->logical_channel));
+        enbt->permit_joining = 1;
+        /* fields for the Network Descriptor - table 3.8 */
+        enbt->stack_profile = 1;
+        enbt->router_capacity = 1;
+        enbt->end_device_capacity = 1;
+        enbt->device_type = ZB_ZCL_GET_ZB_DEV_TYPE(ZLL_COMM().scan_response.zigbee_information);
+        enbt->update_id = ZB_NIB_UPDATE_ID();
+    }
+    zb_free_buf(buf);
+    zll_comm_signal(ZB_ZLL_COMM_REJOIN);
+    ZG->nwk.nib.security_level = 5;
+
+    zb_buf_t *rejoin_buf = zb_get_out_buf();
+    zb_nlme_join_request_t *request = ZB_GET_BUF_PARAM(rejoin_buf, zb_nlme_join_request_t);
+    ZB_IEEE_ADDR_COPY(request->extended_pan_id, ZB_AIB().aps_use_extended_pan_id);
+    request->scan_channels = 0x00000000;
+    ZB_MAC_CAP_SET_ALLOCATE_ADDRESS(request->capability_information, 1); //FIXME
+    if (MAC_PIB().mac_rx_on_when_idle) {
+        ZB_MAC_CAP_SET_RX_ON_WHEN_IDLE(request->capability_information, 1);
+    }
+    request->rejoin_network = ZB_NLME_REJOIN_METHOD_REJOIN;
+    request->scan_duration = 0x00;
+    request->security_enabled = ZB_TRUE;
+    ZB_SCHEDULE_CALLBACK(zb_nlme_join_request, param);
+}
+
 void zll_handle_net_start_resp(zb_uint8_t param, zb_ieee_addr_t source)
 {
     zb_buf_t *buf = ZB_BUF_FROM_REF(param);
@@ -156,56 +220,9 @@ void zll_handle_net_start_resp(zb_uint8_t param, zb_ieee_addr_t source)
         zb_transceiver_set_pan_id(resp->pan_id);
     }
     ZB_SCHEDULE_ALARM_CANCEL(zll_timeout, 0);
-    /* BDB TL Init Step 19 finish if not ED */
-    if (ZB_GET_NODE_DESC_LOGICAL_TYPE(ZB_ZDO_NODE_DESC()) != ZB_END_DEVICE) {
-        /* continue Step 26 */
-        ZG->nwk.handle.joined = 1;
-        zb_address_update(source, ZLL_COMM().responder_addr_short, ZB_TRUE,
-                &ZG->nwk.handle.parent);
-        zb_free_buf(buf);
-        zll_comm_signal(ZB_ZLL_COMM_SUCCESS);
-        return;
-    }
-    /** 
-     * BDB TL Init Step 18 schedule "start network" timeout
-     * since we only have a rejoin callback and no other indication that a
-     * network has started, we do this after step 19
-     */
-    ZB_SCHEDULE_ALARM(zll_timeout, 1, BDB_TL_MIN_STARTUP_DELAY_TIME);
-    /* prepare rejoin */
-#if defined ZB_ROUTER_ROLE || defined ZB_COORDINATOR_ROLE
-    zb_nwk_exneighbor_start();
-#endif
-    /* adding device to neighbor table */
-    zb_ext_neighbor_tbl_ent_t *enbt = NULL; /* shutup sdcc */
-
-    zb_address_pan_id_ref_t panid_ref;
-    zb_ret_t ret = zb_address_set_pan_id(resp->pan_id, resp->ext_pan_id, &panid_ref);
-    ZB_EXTPANID_COPY( ZB_AIB().aps_use_extended_pan_id, resp->ext_pan_id);
-    if (ret == RET_ALREADY_EXISTS) {
-        ret = RET_OK;
-    }
-    if (ret == RET_OK) {
-        ret = zb_nwk_exneighbor_by_ieee(panid_ref, source, &enbt);
-    }
-    if (ret == RET_OK) {
-        enbt->lqi = ZB_MAC_GET_LQI(buf);
-        enbt->potential_parent = 1;
-        enbt->short_addr = ZLL_COMM().responder_addr_short;
-        zb_ieee_addr_compress(ZLL_COMM().responder_addr, &enbt->long_addr);
-        enbt->panid_ref = panid_ref;
-        enbt->logical_channel = resp->channel;
-        TRACE_MSG(TRACE_NWK2, "ch %hd", (FMT__H, enbt->logical_channel));
-        enbt->permit_joining = 1;
-        /* fields for the Network Descriptor - table 3.8 */
-        enbt->stack_profile = 1;
-        enbt->router_capacity = 1;
-        enbt->end_device_capacity = 1;
-        enbt->device_type = ZB_ZCL_GET_ZB_DEV_TYPE(ZLL_COMM().scan_response.zigbee_information);
-        enbt->update_id = ZB_NIB_UPDATE_ID();
-    }
-    zb_free_buf(buf);
-    zll_comm_signal(ZB_ZLL_COMM_REJOIN);
+    /* BDB TL Init Step 18 wait some time for target to "start network" */
+    ZB_IEEE_ADDR_COPY(ZLL_COMM().responder_addr, source);
+    ZB_SCHEDULE_ALARM(zll_net_start_resp_continue, param, BDB_TL_MIN_STARTUP_DELAY_TIME);
 }
 
 void zll_send_net_update(zb_uint8_t param)
@@ -401,28 +418,8 @@ void zll_send_reset_fac_new_req(zb_uint8_t param)
     ZB_SCHEDULE_CALLBACK(zb_intrp_data_request, param);
 }
 
-void zll_nwk_rejoin()
-{
-    /* BDB TL Init Step 20 */
-    ZG->nwk.nib.security_level = 5;
-
-    zb_buf_t *buf = zb_get_out_buf();
-    zb_nlme_join_request_t *request = ZB_GET_BUF_PARAM(buf, zb_nlme_join_request_t);
-    ZB_IEEE_ADDR_COPY(request->extended_pan_id, ZB_AIB().aps_use_extended_pan_id);
-    request->scan_channels = 0x00000000;
-    ZB_MAC_CAP_SET_ALLOCATE_ADDRESS(request->capability_information, 1); //FIXME
-    if (MAC_PIB().mac_rx_on_when_idle) {
-        ZB_MAC_CAP_SET_RX_ON_WHEN_IDLE(request->capability_information, 1);
-    }
-    request->rejoin_network = ZB_NLME_REJOIN_METHOD_REJOIN;
-    request->scan_duration = 0x00;
-    request->security_enabled = ZB_TRUE;
-    ZB_SCHEDULE_CALLBACK(zb_nlme_join_request, ZB_REF_FROM_BUF(buf));
-}
-
 void zll_nwk_rejoin_cb()
 {
-    ZB_SCHEDULE_ALARM_CANCEL(zll_timeout, 1);
     /* continue Step 26 */
     zll_comm_signal(ZB_ZLL_COMM_SUCCESS);
 }
