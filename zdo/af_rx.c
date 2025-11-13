@@ -173,9 +173,7 @@ void zb_apsde_data_acknowledged(zb_uint8_t param) ZB_CALLBACK
     else
 #endif  /* ZB_LIMITED_FEATURES2 */
     {
-        if (zdo_af_resp(param) != RET_OK) {
-            zb_free_buf(asdu);
-        }
+        zb_free_buf(asdu);
     }
 
     TRACE_MSG(TRACE_APS3, "<<apsde_data_acked", (FMT__0));

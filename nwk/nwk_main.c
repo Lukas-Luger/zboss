@@ -268,7 +268,7 @@ void zb_nlde_data_request(zb_uint8_t param)   ZB_CALLBACK
         ZB_SCHEDULE_CALLBACK(zb_mcps_data_request, ZB_REF_FROM_BUF(nsdu));
     }
     else {
-        /* check that we are associated */
+        /* check that we are associated (3.6.2.1; 3.2.1.1.3) */
         if (!ZG->nwk.handle.joined) {
             NWK_CONFIRM_STATUS(nsdu, ZB_NWK_STATUS_INVALID_REQUEST,
                                zb_nlde_data_confirm);

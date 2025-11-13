@@ -91,7 +91,8 @@ typedef enum zb_nwk_status_e {
                                                      * issued a request that is
                                                      * invalid or cannot be executed
                                                      * given  the current state of
-                                                     * the  NWK layer. */
+                                                     * the  NWK layer. No NWK header
+                                                     * shall be present at this point. */
     ZB_NWK_STATUS_NOT_PERMITTED             = 0xC3, /*!< An NLME-JOIN.request has
                                                      * been  disallowed. */
     ZB_NWK_STATUS_STARTUP_FAILURE           = 0xC4, /*!< An

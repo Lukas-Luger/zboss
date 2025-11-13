@@ -552,13 +552,16 @@ void zb_nlde_data_confirm(zb_uint8_t param) ZB_CALLBACK
 
     TRACE_MSG(TRACE_APS2, "+zb_nlde_data_confirm %hd status %hd",
               (FMT__H_H, param, nsdu->u.hdr.status));
-
-    {
+    if (nsdu->u.hdr.status == ZB_NWK_STATUS_INVALID_REQUEST) {
+        /* assumption: we do not have any hdrs built outside of aps */
+        fc_p = ZB_BUF_BEGIN(nsdu);
+    }
+    else {
         zb_nwk_hdr_t *nwk_hdr;
         ZB_MAC_CUT_HDR_WITHOUT_TRAILER(nsdu, nwk_hdr);
         ZVUNUSED(nwk_hdr);
+        ZB_NWK_HDR_CUT(nsdu, fc_p);
     }
-    ZB_NWK_HDR_CUT(nsdu, fc_p);
 
     if (ZB_APS_FC_GET_FRAME_TYPE(*fc_p) == ZB_APS_FRAME_ACK) {
         /* This is APS ACK - free it */
