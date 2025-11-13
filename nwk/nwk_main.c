@@ -945,8 +945,12 @@ void zb_mcps_data_confirm(zb_uint8_t param) ZB_CALLBACK
         && ZG->nwk.handle.state == ZB_NLME_STATE_REJOIN) {
         TRACE_MSG(TRACE_NWK1, "schedule zb_nlme_rejoin_response_timeout %d",
                   (FMT__D, ZB_NWK_REJOIN_TIMEOUT));
+        if (ZG->nwk.handle.tmp.rejoin.buf) {
+            zb_free_buf(ZB_BUF_FROM_REF(ZG->nwk.handle.tmp.rejoin.buf));
+        }
         ZB_SCHEDULE_ALARM_CANCEL(zb_nlme_rejoin_response_timeout,
                                  ZB_ALARM_ANY_PARAM);
+        ZG->nwk.handle.tmp.rejoin.buf = param;
         ZB_SCHEDULE_ALARM(zb_nlme_rejoin_response_timeout, param,
                           ZB_NWK_REJOIN_TIMEOUT);
     }

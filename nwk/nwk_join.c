@@ -868,6 +868,10 @@ void zb_nlme_rejoin_response(zb_uint8_t param) ZB_CALLBACK
         }
 
         /* cancel rejoin timeout */
+        if (ZG->nwk.handle.tmp.rejoin.buf) {
+            zb_free_buf(ZB_BUF_FROM_REF(ZG->nwk.handle.tmp.rejoin.buf));
+            ZG->nwk.handle.tmp.rejoin.buf = 0;
+        }
         ZB_SCHEDULE_ALARM_CANCEL(zb_nlme_rejoin_response_timeout,
                                  ZB_ALARM_ANY_PARAM);
     }

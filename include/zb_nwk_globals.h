@@ -179,6 +179,7 @@ typedef struct zb_nwk_handle_s {
             zb_ext_pan_id_t extended_pan_id;
             zb_mac_capability_info_t capability_information;
             zb_ext_neighbor_tbl_ent_t *parent;
+            zb_uint8_t buf;
         } rejoin;
         struct formation_s {
             zb_uint8_t energy_detect[ ZB_MAC_SUPPORTED_CHANNELS ]; /*!< Channel energy scan
