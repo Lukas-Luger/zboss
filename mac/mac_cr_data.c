@@ -382,9 +382,9 @@ send_data_resp:
    ret = ZB_TRANS_SEND_COMMAND(mhr_pend_len, b_tmp); TX waiting callback could
    be scheduled before or after sending, because there's no option for
    scheduler_loop, which calls tx-waiting callback, to be called. */
-        if (data_found) {
-            MAC_CTX().tx_wait_cb = zb_handle_data_request_cmd_continue;
-        }
+        //if (data_found) {
+        MAC_CTX().tx_wait_cb = zb_handle_data_request_cmd_continue;
+        //}
         TRACE_MSG(TRACE_MAC2,
                   "<< zb_handle_data_request_cmd ret, continue scheduled",
                   (FMT__0));
