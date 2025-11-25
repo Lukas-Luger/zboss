@@ -972,6 +972,56 @@ int cmd_zconfig(int argc, char *argv[])
     return 0;
 }
 
+int cmd_buffers(int argc, char *argv[])
+{
+    zb_buf_t *tmp;
+    zb_ushort_t i;
+    zb_uint8_t in_cnt = 0, out_cnt = 0;
+    for (i = 0; i < ZB_IOBUF_POOL_SIZE; i++) {
+        tmp = &ZG->bpool.pool[i];
+        if (ZB_BUF_IS_FREE(tmp)) {
+            continue;
+        }
+        if (tmp == MAC_CTX().pending_buf) {
+            printf("MAC pend Buf ");
+        }
+        if (tmp == MAC_CTX().recv_buf) {
+            printf("MAC Recv Buf ");
+        }
+        if (tmp == MAC_CTX().operation_buf) {
+            printf("MAC Op Buf ");
+        }
+        if (tmp == MAC_CTX().operation_recv_buf) {
+            printf("MAC Op Rcv Buf ");
+        }
+        if (tmp == MAC_CTX().encryption_buf) {
+            printf("MAC Encr Buf ");
+        }
+        if (tmp == ZLL_COMM().net_p_buf) {
+            printf("ZLL Net param Buf ");
+        }
+        if (i == MAC_CTX().tx_wait_cb_arg) {
+            printf("MAC cb arg Buf for 0x%x ", MAC_CTX().tx_wait_cb);
+        }
+        if (i == ZG->zdo.handle.parent_annce) {
+            printf("ZDO Parent annce Buf ");
+        }
+        if (tmp->u.hdr.is_in_buf) {
+            printf("IN Buffer %d (size: %d)\n", i, ZB_BUF_LEN(tmp));
+            in_cnt++;
+        } else {
+            printf("OUT Buffer %d (size: %d)\n", i, ZB_BUF_LEN(tmp));
+            out_cnt++;
+        }
+        if (ZB_BUF_LEN(tmp) > 0 ) {
+            od_hex_dump(ZB_BUF_BEGIN(tmp), ZB_BUF_LEN(tmp), 16);
+        } else{
+            od_hex_dump(tmp->buf, ZB_IO_BUF_SIZE, 16);
+        }
+    }
+    printf("\nshown %d/%d IN  Buffers\nshown %d/%d OUT Buffers\n",in_cnt, ZG->bpool.bufs_allocated[1], out_cnt, ZG->bpool.bufs_allocated[0]);
+}
+
 int cmd_dev_info(int argc, char *argv[])
 {
     zb_apl_dev_info_ent_t *ent;
