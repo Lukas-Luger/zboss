@@ -121,7 +121,7 @@ extern ZB_SDCC_XDATA zb_intr_globals_t g_izb;
 #include "zb_cc25xx.h"
 #endif
 #ifdef RIOT
-#include "zb_mac_riot.h"
+#include "zb_riot_submac.h"
 #endif
 
 #else

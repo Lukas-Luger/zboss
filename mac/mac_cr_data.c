@@ -475,12 +475,16 @@ void zb_handle_data_request_cmd_continue(zb_uint8_t param) ZB_CALLBACK
 
             ZB_SCHEDULE_ALARM_CANCEL(zb_mac_pending_data_timeout,
                                      data_found_index);
+#ifdef ZB_MAC_RIOT
+            ZB_CLEAR_PENDING_BIT(data_found_index);
+#else
             ZB_CLEAR_PENDING_QUEUE_SLOT(data_found_index);
 
             if (pending_queue_is_empty()) {
                 TRACE_MSG(TRACE_MAC1, "Clearing pending bit", (FMT__0));
                 ZB_CLEAR_PENDING_BIT();
             }
+#endif
         }
     }
 

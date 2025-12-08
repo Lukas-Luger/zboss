@@ -57,7 +57,7 @@
 #include "zb_ubec24xx.h"
 #endif
 #ifdef RIOT
-#include "zb_mac_riot.h"
+#include "zb_riot_submac.h"
 #endif
 #ifdef ZB_CC25XX
 #include "zb_cc25xx.h"
@@ -151,7 +151,11 @@ void zb_mac_init() /* __reentrant for sdcc, to save DSEG space */
 #endif
 #ifndef ZB_NS_BUILD
     /* TODO: move HW init to the mcps.start */
+#ifdef RIOT
+    init_submac();
+#else
     init_zu2400();
+#endif
 #endif
     MAC_PIB().mac_dsn = ZB_RANDOM();
     MAC_PIB().mac_bsn = ZB_RANDOM();

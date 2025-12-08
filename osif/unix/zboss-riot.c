@@ -6,11 +6,7 @@
 #include "luid.h"
 #include "ztimer.h"
 #include "memarray.h"
-#include "net/netif.h"
-#include "net/gnrc/netif.h"
-#include "net/gnrc/netreg.h"
-#include "net/gnrc/pktbuf.h"
-#include "net/gnrc.h"
+
 
 #ifdef MODULE_PERIPH_FLASHPAGE
 #include "periph/flashpage.h"
@@ -47,22 +43,15 @@ bool has_eeprom;
 #define ZB_IS_COORDINATOR (0)
 #endif
 
-kernel_pid_t _zb_iface_id;
-
 #define QUEUE_SIZE (16)
 static msg_t _zb_msg_queue[QUEUE_SIZE];
 
 static pid_t _zb_pid;
-static netdev_t *netdev;
-static gnrc_netif_t *netif;
-static netdev_driver_t *driver;
-static uint8_t payload_buf[256];
 static char _zigbee_thread_stack [THREAD_STACKSIZE_DEFAULT + 512];
 
 static uint8_t _packet_buf[256];
 static uint8_t _packet_buf_size;
 
-uint8_t g_zc_addr[8] __attribute__ ((aligned(4)));
 // zb_ieee_addr_t extended_pan_id;
 
 /* tradfri remote network key */
@@ -95,83 +84,11 @@ static memarray_t _callback_memarray;
 static uint8_t _callback_memarray_buf[sizeof(callback_msg_t) *
                                       CALLBACK_BUF_SIZE];
 
-void sleep_radio(uint8_t arg)
-{
-    bool sleep = arg;
-    netopt_state_t state = NETOPT_STATE_IDLE;
-    if (sleep) {
-        state = NETOPT_STATE_SLEEP;
-    }
-    gnrc_netapi_set(_zb_iface_id, NETOPT_STATE, 0, &state, sizeof(netopt_state_t));
-}
-
 void extend_poll_timer(uint8_t arg)
 {
     ZDO_CTX().conf_attr.nwk_indirect_poll_rate = ZB_TIME_ONE_SECOND * arg;
 }
 
-void zb_transceiver_set_pan_id(uint16_t pan_id)
-{
-    gnrc_netapi_set(_zb_iface_id, NETOPT_NID, 0, &pan_id, sizeof(uint16_t));
-    LOG_INFO("NID set: 0x%x\n", pan_id);
-}
-
-void zb_uz2400_fifo_read(zb_uint8_t tx_fifo, zb_buf_t *buf, zb_uint8_t length)
-{
-    (void)tx_fifo;
-    (void)length;
-
-    // uint8_t packet[] = "\x00\x80\x63\xff\x01\x00\x00\xff\xcf\x00\x00\x00\x20\x84\x73\x65\x6e\x73\x6f\x72\x00\x00\xff\xff\xff\x00";
-    // uint8_t packet[] = {0x03, 0x08, 0x06, 0xff, 0xff, 0xff, 0xff, 0x07};
-    // int len = sizeof(packet) + 1;
-
-    zb_buf_initial_alloc(buf, _packet_buf_size + 1);
-//  LOG_DEBUG("zb_uz2400_fifo_read()\n");
-//     printf("in: ");
-//     od_hex_dump(_packet_buf, _packet_buf_size, 16);
-    memcpy(ZB_BUF_BEGIN(buf) + 1, _packet_buf, _packet_buf_size);
-
-    /* this tells the zigbee stack that the last ack had the data pending bit set
-     * which is usually a lie since we didn't check */
-//     ZG->mac.mac_ctx.mac_flags |= ZB_MAC_PEND_DATA_MASK; /* FIXME */
-}
-
-
-
-void zb_transceiver_update_long_addr(uint8_t *addr)
-{
-    char buf[24];
-
-    zb_pretty_long_address(buf, sizeof(buf), addr);
-    LOG_INFO("long hwaddr set: %s\n", buf);
-
-    uint8_t address[8];
-    address[0] = addr[7];
-    address[1] = addr[6];
-    address[2] = addr[5];
-    address[3] = addr[4];
-    address[4] = addr[3];
-    address[5] = addr[2];
-    address[6] = addr[1];
-    address[7] = addr[0];
-
-    gnrc_netapi_set(_zb_iface_id, NETOPT_ADDRESS_LONG, 0, &address, 8);
-}
-
-void zb_transceiver_update_short_addr(uint16_t addr)
-{
-    LOG_INFO("short hwaddr set: 0x%x\n", addr);
-    /* gnrc_netapi_set() expects little endian */
-    addr = byteorder_swaps(addr);
-    gnrc_netapi_set(_zb_iface_id, NETOPT_ADDRESS, 0, &addr, 2);
-}
-
-void zb_set_pending_bit(int set)
-{
-    bool set_b = set;
-
-    gnrc_netapi_set(_zb_iface_id, NETOPT_ACK_PENDING, 0, &set_b, sizeof(set_b));
-}
 
 #define ZB_BEACON_INTERVAL_USEC 15360
 uint16_t zb_timer_get(void)
@@ -350,13 +267,13 @@ static void *_zb_thread(void *arg)
     (void)arg;
     msg_init_queue(_zb_msg_queue, QUEUE_SIZE);
 
-    gnrc_netreg_entry_t entry;
-    entry.target.pid = thread_getpid();
-    entry.demux_ctx = GNRC_NETREG_DEMUX_CTX_ALL;
-#if defined(MODULE_GNRC_NETAPI_MBOX) || defined(MODULE_GNRC_NETAPI_CALLBACKS)
-    entry.type = GNRC_NETREG_TYPE_DEFAULT;
-#endif
-    gnrc_netreg_register(GNRC_NETTYPE_UNDEF, &entry);
+//     gnrc_netreg_entry_t entry;
+//     entry.target.pid = thread_getpid();
+//     entry.demux_ctx = GNRC_NETREG_DEMUX_CTX_ALL;
+// #if defined(MODULE_GNRC_NETAPI_MBOX) || defined(MODULE_GNRC_NETAPI_CALLBACKS)
+//     entry.type = GNRC_NETREG_TYPE_DEFAULT;
+// #endif
+//     gnrc_netreg_register(GNRC_NETTYPE_UNDEF, &entry);
 
     while (1) {
         /* sleep until a callback needs to run */
@@ -410,30 +327,6 @@ static void *_zb_thread(void *arg)
             // printf("running zb_mac_main_loop()\n");
             // zb_handle_data_request_cmd();
             zb_mac_main_loop();
-            continue;
-        }
-        else if (msg.type == GNRC_NETAPI_MSG_TYPE_RCV) {
-            gnrc_pktsnip_t *pkt = msg.content.ptr;
-            _packet_buf_size = pkt->size;
-            memcpy(_packet_buf, pkt->data, _packet_buf_size);
-
-            /* get lqi and rssi */
-            gnrc_pktsnip_t *netif;
-            netif = gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_NETIF);
-            gnrc_netif_hdr_t *netif_hdr = netif->data;
-            _packet_buf[_packet_buf_size] = netif_hdr->lqi;
-            _packet_buf[_packet_buf_size + 1] = netif_hdr->rssi;
-            _packet_buf_size += 2;
-
-            DEBUG("received packet len %u size %u snips %u\n",
-                        gnrc_pkt_len(pkt), pkt->size, gnrc_pkt_count(pkt));
-//             od_hex_dump(_packet_buf, _packet_buf_size, 16);
-
-            gnrc_pktbuf_release(pkt);
-
-            zb_buf_t *buf = zb_get_in_buf();
-            zb_mac_recv_data(ZB_REF_FROM_BUF(buf));
-//          LOG_INFO("finished receiving packet\n");
             continue;
         }
     }
@@ -500,25 +393,22 @@ void send_packet(uint8_t *buf, uint32_t length)
 //     };
 //     driver->send(netdev, &iolist);
 
-    gnrc_pktsnip_t *pkt = gnrc_pktbuf_add(NULL, buf, length,
-                                                        GNRC_NETTYPE_UNDEF);
 
 //     gnrc_pktsnip_t netif_hdr = gnrc_netif_hdr_build(src, src_len, dst, dst_len);
 //     netif_hdr.next = pkt;
 
 //     if (!ZB_PIB_RX_ON_WHEN_IDLE()) {
-        sleep_radio(false);
+//      sleep_radio(false);
 //     }
 
-    gnrc_netapi_send(netif->pid, pkt);
 //     gnrc_netapi_dispatch_send(GNRC_NETTYPE_NETIF, GNRC_NETREG_TYPE_DEFAULT,
 //                                                                 netif_hdr);
 
-    if (!ZB_PIB_RX_ON_WHEN_IDLE()) {
-        ZB_SCHEDULE_ALARM(sleep_radio, true,
-                                ZB_MILLISECONDS_TO_BEACON_INTERVAL(200));
-        ZB_SCHEDULE_ALARM(extend_poll_timer, 180, ZB_TIME_ONE_SECOND * 15);
-    }
+//    if (!ZB_PIB_RX_ON_WHEN_IDLE()) {
+//        ZB_SCHEDULE_ALARM(sleep_radio, true,
+//                                ZB_MILLISECONDS_TO_BEACON_INTERVAL(200));
+//        ZB_SCHEDULE_ALARM(extend_poll_timer, 180, ZB_TIME_ONE_SECOND * 15);
+//    }
 }
 
 int zb_inject_packet(int argc, char **argv)
@@ -647,67 +537,15 @@ LOG_INFO("using page %u of internal flash as nonvolatile storage\n",
     }
 #endif
 
-    /* net netif to register */
-    netif = gnrc_netif_iter(NULL); /* FIXME only works on first interface */
-
-    /* register netif to receive our 802.15.4 packets */
-    gnrc_netreg_entry_t netreg;
-    netreg.demux_ctx = GNRC_NETREG_DEMUX_CTX_ALL;
-#if defined(MODULE_GNRC_NETAPI_MBOX) || defined(MODULE_GNRC_NETAPI_CALLBACKS)
-    netreg.type = GNRC_NETREG_TYPE_DEFAULT;
-#endif
-    netreg.target.pid = netif->pid;
-    gnrc_netreg_register(GNRC_NETTYPE_NETIF, &netreg);
-
-    netdev = netif->dev;
-    driver = (netdev_driver_t *)netdev->driver;
-    _zb_iface_id = netif->pid;
-
-    // uint16_t channel = 25;
-    // gnrc_netapi_set(_zb_iface_id, NETOPT_CHANNEL, 0, &channel,
-    //                                                         sizeof(uint16_t));
-    // int ret = gnrc_netif_set_from_netdev(netif, &opt);
-    // printf("raw returned %i\n", ret);
-
-    netopt_enable_t set = NETOPT_ENABLE;
-    netopt_enable_t unset = NETOPT_DISABLE;
-    gnrc_netapi_set(_zb_iface_id, NETOPT_CSMA, 0, &set,
-                    sizeof(netopt_enable_t));
-    gnrc_netapi_set(_zb_iface_id, NETOPT_RAWMODE, 0, &set,
-                    sizeof(netopt_enable_t));
-    gnrc_netapi_set(_zb_iface_id, NETOPT_ACK_REQ, 0, &set,
-                    sizeof(netopt_enable_t));
-    gnrc_netapi_set(_zb_iface_id, NETOPT_AUTOACK, 0, &set,
-                    sizeof(netopt_enable_t));
-//  gnrc_netapi_set(_zb_iface_id, NETOPT_PROMISCUOUSMODE, 0, &set, sizeof(netopt_enable_t));
 
     // uint8_t omg[] = {0x03, 0x08, 0x77, 0xff, 0xff, 0xff, 0xff, 0x07};
     // send_packet(omg, sizeof(omg));
 
     LOG_INFO("starting zigbee stack\n");
 
-    /* copy long mac from radio to zigbee stack */
-    uint8_t addr_long[8];
-    gnrc_netapi_get(_zb_iface_id, NETOPT_ADDRESS_LONG, 0, addr_long, 8);
-    for (int i = 0; i < 8; ++i) {
-        g_zc_addr[i] = addr_long[7 - i];
-    }
-    // od_hex_dump(g_zc_addr, 8, 8);
-    char buf[24];
-    zb_pretty_long_address(buf, sizeof(buf), g_zc_addr);
-
-    /* get addr_short from hardware */
-    uint16_t addr_short;
-    gnrc_netapi_get(_zb_iface_id, NETOPT_ADDRESS, 0, (uint8_t *)&addr_short, 2);
-    LOG_INFO("got hw short address 0x%04x\n", addr_short);
-    MAC_PIB().mac_short_address = addr_short;
-    zb_transceiver_update_short_addr(addr_short);
-
     zb_init("omg", "3", "3");
     //should be set in zb-ib.c:119 via zb_config.h!
     //ZG->nwk.nib.security_level = 0;
-
-    ZB_IEEE_ADDR_COPY(ZB_PIB_EXTENDED_ADDRESS(), &g_zc_addr);
 
 //     zb_secur_setup_preconfigured_key(g_key, 0);
 //     zb_read_security_key();
@@ -769,7 +607,7 @@ LOG_INFO("using page %u of internal flash as nonvolatile storage\n",
 
 int cmd_zconfig(int argc, char *argv[])
 {
-    char addr[IPV6_ADDR_MAX_STR_LEN];
+    char addr[ZB_PRETTY_ADDR_LEN];
     printf("manual ack:\t\t");
 #ifdef ZB_MANUAL_ACK
     printf(" 1\n");
