@@ -108,7 +108,7 @@ void zll_send_scan_resp(zb_uint8_t param)
     intrp->profileid = ZB_ZLL_PROFILE_ID;
     intrp->src_addr_mode = ZB_ADDR_64BIT_DEV;
     intrp->dst_addr_mode = ZB_ADDR_64BIT_DEV;
-    ZB_IEEE_ADDR_COPY(&intrp->dst_addr.addr_long, &ZLL_COMM().responder_addr);
+    zb_address_ieee_by_ref(intrp->dst_addr.addr_long, ZLL_COMM().responder_aref);
 
     ZB_SCHEDULE_CALLBACK(zb_intrp_data_request, param);
 }
@@ -120,7 +120,7 @@ void zll_handle_scan_req(zb_uint8_t param, zb_ieee_addr_t source)
     zb_zll_scan_req_t *req = (zb_zll_scan_req_t *)ZB_BUF_BEGIN(buf);
     /* BDB TL Target Step 2 */
     ZG->aps.transaction_id = req->transaction_id;
-    ZB_IEEE_ADDR_COPY(ZLL_COMM().responder_addr, source);
+    zb_address_by_ieee(source, ZB_TRUE, ZB_TRUE, &ZLL_COMM().responder_aref);
     /* only answer scan requests that are nearby */
     if (ZB_MAC_GET_RSSI(buf) <= -60 || ZB_ZLL_TL_INFO_GET_LINK_INITIATOR(req->touchlink_information) == 0) {
         zb_free_buf(buf);
@@ -169,7 +169,7 @@ void zll_send_dev_info_resp(zb_uint8_t param)
     intrp->profileid = ZB_ZLL_PROFILE_ID;
     intrp->src_addr_mode = ZB_ADDR_64BIT_DEV;
     intrp->dst_addr_mode = ZB_ADDR_64BIT_DEV;
-    ZB_IEEE_ADDR_COPY(&intrp->dst_addr.addr_long, &ZLL_COMM().responder_addr);
+    zb_address_ieee_by_ref(intrp->dst_addr.addr_long, ZLL_COMM().responder_aref);
 
     ZB_SCHEDULE_CALLBACK(zb_intrp_data_request, param);
 }
@@ -208,7 +208,7 @@ void zll_send_net_start_resp(zb_uint8_t param)
     intrp->profileid = ZB_ZLL_PROFILE_ID;
     intrp->src_addr_mode = ZB_ADDR_64BIT_DEV;
     intrp->dst_addr_mode = ZB_ADDR_64BIT_DEV;
-    ZB_IEEE_ADDR_COPY(intrp->dst_addr.addr_long, ZLL_COMM().responder_addr);
+    zb_address_ieee_by_ref(intrp->dst_addr.addr_long, ZLL_COMM().responder_aref);
 
     ZB_SCHEDULE_CALLBACK(zb_intrp_data_request, param);
 
@@ -265,7 +265,7 @@ void zll_send_net_join_resp(zb_uint8_t cmd)
     intrp->profileid = ZB_ZLL_PROFILE_ID;
     intrp->src_addr_mode = ZB_ADDR_64BIT_DEV;
     intrp->dst_addr_mode = ZB_ADDR_64BIT_DEV;
-    ZB_IEEE_ADDR_COPY(intrp->dst_addr.addr_long, ZLL_COMM().responder_addr);
+    zb_address_ieee_by_ref(intrp->dst_addr.addr_long, ZLL_COMM().responder_aref);
 
     ZB_SCHEDULE_CALLBACK(zb_intrp_data_request, ZB_REF_FROM_BUF(buf));
 
@@ -481,7 +481,7 @@ void zll_nwk_start_router_conf_cb()
     zb_nlme_direct_join_request_t *req;
     zb_buf_t *buf = zb_get_in_buf();
     ZB_BUF_INITIAL_ALLOC(buf, sizeof(zb_nlme_direct_join_request_t), req);
-    ZB_IEEE_ADDR_COPY(req->device_address, ZLL_COMM().responder_addr);
+    zb_address_ieee_by_ref(req->device_address, ZLL_COMM().responder_aref);
     ZB_SCHEDULE_CALLBACK(zb_nlme_direct_join_request, ZB_REF_FROM_BUF(buf));
 }
 

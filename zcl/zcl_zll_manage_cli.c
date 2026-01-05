@@ -92,7 +92,7 @@ void zll_send_net_start_req(zb_uint8_t param)
     get_enc_network_key(req->enc_network_key);
     req->channel = zb_transceiver_get_channel();
     req->pan_id = 0x0000;
-    req->network_address = ZLL_COMM().responder_addr_short;
+    zb_address_short_by_ref(&req->network_address, ZLL_COMM().responder_aref);
     req->group_id_begin = APL_CTX().free_gr_id_range_begin;
     req->group_id_end = APL_CTX().free_gr_id_range_begin + ZLL_COMM().scan_response.subdevices - 1;
     APL_CTX().free_gr_id_range_begin += ZLL_COMM().scan_response.subdevices;
@@ -119,9 +119,6 @@ void zll_send_net_start_req(zb_uint8_t param)
 
     (void)zcl_alloc_and_fill_hdr(buf, ZB_ZCL_FRAME_TYPE_CLUSTER_SPECIFIED,
                                  ZB_ZCL_FRAME_DIRECTION_TO_SRV, ZB_TRUE, ZB_ZLL_NET_START_REQ_CMD_ID);
-    /* Update address map */
-    zb_address_ieee_ref_t addr_ref;
-    zb_address_update(ZLL_COMM().responder_addr, ZLL_COMM().responder_addr_short, ZB_FALSE, &addr_ref);
 
     zb_intrp_data_req_params_t *intrp;
     intrp = ZB_GET_BUF_TAIL(buf, sizeof(zb_intrp_data_req_params_t));
@@ -129,7 +126,8 @@ void zll_send_net_start_req(zb_uint8_t param)
     intrp->profileid = ZB_ZLL_PROFILE_ID;
     intrp->src_addr_mode = ZB_ADDR_64BIT_DEV;
     intrp->dst_addr_mode = ZB_ADDR_64BIT_DEV;
-    ZB_IEEE_ADDR_COPY(&intrp->dst_addr.addr_long, &ZLL_COMM().responder_addr);
+    /* Update address map */
+    zb_address_ieee_by_ref(intrp->dst_addr.addr_long, ZLL_COMM().responder_aref);
 
     ZB_SCHEDULE_CALLBACK(zb_intrp_data_request, param);
 }
@@ -142,8 +140,7 @@ void zll_net_start_resp_continue(zb_uint8_t param)
     if (ZB_GET_NODE_DESC_LOGICAL_TYPE(ZB_ZDO_NODE_DESC()) != ZB_END_DEVICE) {
         /* continue Step 26 */
         ZG->nwk.handle.joined = 1;
-        zb_address_update(ZLL_COMM().responder_addr, ZLL_COMM().responder_addr_short, ZB_TRUE,
-                &ZG->nwk.handle.parent);
+        ZG->nwk.handle.parent = ZLL_COMM().responder_aref;
         zb_free_buf(buf);
         zll_comm_signal(ZB_ZLL_COMM_SUCCESS);
         return;
@@ -158,17 +155,19 @@ void zll_net_start_resp_continue(zb_uint8_t param)
     zb_address_pan_id_ref_t panid_ref;
     zb_ret_t ret = zb_address_set_pan_id(resp->pan_id, resp->ext_pan_id, &panid_ref);
     ZB_EXTPANID_COPY( ZB_AIB().aps_use_extended_pan_id, resp->ext_pan_id);
+    zb_ieee_addr_t long_addr;
+    zb_address_ieee_by_ref(long_addr, ZLL_COMM().responder_aref);
     if (ret == RET_ALREADY_EXISTS) {
         ret = RET_OK;
     }
     if (ret == RET_OK) {
-        ret = zb_nwk_exneighbor_by_ieee(panid_ref, ZLL_COMM().responder_addr, &enbt);
+        ret = zb_nwk_exneighbor_by_ieee(panid_ref, long_addr, &enbt);
     }
-    if (ret == RET_OK) {
+    if (ret == RET_OK || ret == RET_ALREADY_EXISTS) {
         enbt->lqi = ZB_MAC_GET_LQI(buf);
         enbt->potential_parent = 1;
-        enbt->short_addr = ZLL_COMM().responder_addr_short;
-        zb_ieee_addr_compress(ZLL_COMM().responder_addr, &enbt->long_addr);
+        zb_address_short_by_ref(&enbt->short_addr, ZLL_COMM().responder_aref);
+        zb_ieee_addr_compress(long_addr, &enbt->long_addr);
         enbt->panid_ref = panid_ref;
         enbt->logical_channel = resp->channel;
         TRACE_MSG(TRACE_NWK2, "ch %hd", (FMT__H, enbt->logical_channel));
@@ -221,7 +220,7 @@ void zll_handle_net_start_resp(zb_uint8_t param, zb_ieee_addr_t source)
     }
     ZB_SCHEDULE_ALARM_CANCEL(zll_timeout, 0);
     /* BDB TL Init Step 18 wait some time for target to "start network" */
-    ZB_IEEE_ADDR_COPY(ZLL_COMM().responder_addr, source);
+    zb_address_by_ieee(source, ZB_TRUE, ZB_TRUE, &ZLL_COMM().responder_aref);
     ZB_SCHEDULE_ALARM(zll_net_start_resp_continue, param, BDB_TL_MIN_STARTUP_DELAY_TIME);
 }
 
@@ -251,7 +250,7 @@ void zll_send_net_join(zb_uint8_t param)
         req->channel = zb_transceiver_get_channel();
     }
     req->pan_id = ZB_NIB_PAN_ID();
-    req->network_address = ZLL_COMM().responder_addr_short;
+    zb_address_short_by_ref(&req->network_address, ZLL_COMM().responder_aref);
     req->group_id_begin = APL_CTX().free_gr_id_range_begin;
     req->group_id_end = APL_CTX().free_gr_id_range_begin + ZLL_COMM().scan_response.subdevices - 1;
     APL_CTX().free_gr_id_range_begin += ZLL_COMM().scan_response.subdevices;
@@ -276,9 +275,6 @@ void zll_send_net_join(zb_uint8_t param)
 
     (void)zcl_alloc_and_fill_hdr(buf, ZB_ZCL_FRAME_TYPE_CLUSTER_SPECIFIED,
                                  ZB_ZCL_FRAME_DIRECTION_TO_SRV, ZB_TRUE, cmd);
-    /* Update address map */
-    zb_address_ieee_ref_t addr_ref;
-    zb_address_update(ZLL_COMM().responder_addr, ZLL_COMM().responder_addr_short, ZB_FALSE, &addr_ref);
 
     zb_intrp_data_req_params_t *intrp;
     intrp = ZB_GET_BUF_TAIL(buf, sizeof(zb_intrp_data_req_params_t));
@@ -286,7 +282,8 @@ void zll_send_net_join(zb_uint8_t param)
     intrp->profileid = ZB_ZLL_PROFILE_ID;
     intrp->src_addr_mode = ZB_ADDR_64BIT_DEV;
     intrp->dst_addr_mode = ZB_ADDR_64BIT_DEV;
-    ZB_IEEE_ADDR_COPY(&intrp->dst_addr.addr_long, &ZLL_COMM().responder_addr);
+    /* Update address map */
+    zb_address_ieee_by_ref(intrp->dst_addr.addr_long, ZLL_COMM().responder_aref);
 
     ZB_SCHEDULE_CALLBACK(zb_intrp_data_request, param);
 
@@ -337,7 +334,7 @@ void zll_send_dev_info_req(zb_uint8_t param)
     intrp->profileid = ZB_ZLL_PROFILE_ID;
     intrp->src_addr_mode = ZB_ADDR_64BIT_DEV;
     intrp->dst_addr_mode = ZB_ADDR_64BIT_DEV;
-    ZB_IEEE_ADDR_COPY(intrp->dst_addr.addr_long, ZLL_COMM().responder_addr);
+    zb_address_ieee_by_ref(intrp->dst_addr.addr_long, ZLL_COMM().responder_aref);
 
     ZB_SCHEDULE_CALLBACK(zb_intrp_data_request, param);
 }
@@ -392,7 +389,7 @@ void zll_handle_scan_resp(zb_uint8_t param, zb_ieee_addr_t source)
     zb_zll_scan_resp_t *resp = (zb_zll_scan_resp_t *)ZB_BUF_BEGIN(buf);
     zb_ushort_t frame_size = ZB_ZLL_TL_GET_SCAN_RESP_SIZE(resp);
     ZB_MEMCPY(&ZLL_COMM().scan_response, resp, frame_size);
-    ZB_IEEE_ADDR_COPY(ZLL_COMM().responder_addr, source);
+    zb_address_by_ieee(source, ZB_TRUE, ZB_TRUE, &ZLL_COMM().responder_aref);
     ZB_BZERO(&ZLL_COMM().v_scan_channels, sizeof(zb_uint32_t));
     zb_free_buf(buf);
 }
@@ -488,7 +485,7 @@ void zll_finish_scan()
     }
     /* add info to dev_info_tbl */
     zb_apl_dev_info_ent_t *ent = &APL_CTX().dev_info_tbl[APL_CTX().dev_info_used];
-    ZB_IEEE_ADDR_COPY(ent->long_addr, ZLL_COMM().responder_addr);
+    zb_address_ieee_by_ref(ent->long_addr, ZLL_COMM().responder_aref);
     ent->endpoint = ZLL_COMM().scan_response.endpoint;
     ent->profile_id = ZLL_COMM().scan_response.profile_id;
     ent->device_id = ZLL_COMM().scan_response.device_id;
@@ -510,9 +507,8 @@ void zll_initiate_network()
         }
         else {
             /* updating addresses */
-            zb_address_ieee_ref_t addr_ref;
-            zb_address_update(ZLL_COMM().responder_addr, ZLL_COMM().scan_response.network_address,
-                              ZB_FALSE, &addr_ref);
+            zb_address_by_short(ZLL_COMM().scan_response.network_address, ZB_TRUE, ZB_FALSE,
+                                &ZLL_COMM().responder_aref);
         }
         if (ZLL_COMM().scan_response.network_update_id > ZB_NIB_UPDATE_ID()) {
             ZB_NIB_UPDATE_ID() = ZLL_COMM().scan_response.network_update_id;
@@ -537,7 +533,8 @@ void zll_initiate_network()
         return;
     }
     /* lets assing an address to target which can be used in requests */
-    ZLL_COMM().responder_addr_short = APL_CTX().free_addr_range_begin;
+    zb_address_by_short(APL_CTX().free_addr_range_begin, ZB_TRUE, ZB_FALSE,
+                        &ZLL_COMM().responder_aref);
     APL_CTX().free_addr_range_begin++;
     /* BDB TL Init Step 12 */
     if (BDB_CTX().node_is_on_net) {
