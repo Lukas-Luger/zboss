@@ -167,20 +167,39 @@ static void _submac_task_finished(zb_uint8_t param)
     }
     /* for now just set it to rx (small brain move) */
     int res = ieee802154_set_rx(&TRANS_CTX().submac);
-    printf("set rx ret: %d\n", res);
 }
 
 static void submac_rx_done(ieee802154_submac_t *submac)
 {
     ieee802154_rx_info_t rx_info;
     zb_uint8_t buf[IEEE802154_FRAME_LEN_MAX];
-    zb_uint8_t len = ieee802154_read_frame(submac, TRANS_CTX().buffer,
-                                IEEE802154_FRAME_LEN_MAX, &rx_info);
-    if (len < 0) {
+    TRANS_CTX().b_size = ieee802154_read_frame(submac, TRANS_CTX().buffer,
+                                IEEE802154_FRAME_LEN_MAX, &rx_info) + 2;
+    if (TRANS_CTX().b_size < 0) {
         puts("Couldn't read frame");
         return;
     }
-    puts("received");
+
+    TRANS_CTX().buffer[TRANS_CTX().b_size] = rx_info.lqi;
+    TRANS_CTX().buffer[TRANS_CTX().b_size + 1] = rx_info.rssi;
+
+    /* need to send ack here, zboss uses mac_main_loop (too slow)*/
+    if (TRANS_CTX().buffer[0] & 0x20) {
+        printf("need ack for dsn: %d aka 0x%x\n", TRANS_CTX().buffer[2], TRANS_CTX().buffer[2]);
+        ieee802154_set_idle(&TRANS_CTX().submac);
+        zb_uint8_t ack[3];
+        ack[0] = 0x02; // | 0x10 for pending data ;
+        ack[1] = 0x00;
+        ack[2] = TRANS_CTX().buffer[2];
+
+        iolist_t pkt;
+        pkt.iol_next = NULL;
+        pkt.iol_base = &ack;
+        pkt.iol_len = sizeof(ack);
+
+        zb_uint8_t res = ieee802154_send(&TRANS_CTX().submac, &pkt);
+        printf("res from sending ack: %x\n", res);
+    }
     ZB_UBEC_SET_RX_DATA_STATUS();
     ZB_SCHEDULE_CALLBACK(_submac_task_finished, 0);
 }
@@ -256,7 +275,6 @@ static void _hal_radio_cb(ieee802154_dev_t *dev, ieee802154_trx_ev_t status)
         ZB_SCHEDULE_CALLBACK(_tx_done_handler, 0);
         break;
     case IEEE802154_RADIO_INDICATION_RX_DONE:
-        puts("got rx done ev");
         ZB_SCHEDULE_CALLBACK(_rx_done_handler, 0);
         break;
     case IEEE802154_RADIO_INDICATION_CRC_ERROR:
@@ -277,7 +295,7 @@ void init_devs(ieee802154_dev_t *radio)
 #endif
 
 #ifdef MODULE_ESP_IEEE802154
-    if (radio) ){
+    if (radio){
         esp_ieee802154_setup(radio);
         esp_ieee802154_init();
     }
@@ -342,10 +360,10 @@ void init_submac(void)
 
     init_devs(&(TRANS_CTX().submac.dev));
 
-    int res = ieee802154_submac_init(&TRANS_CTX().submac, &short_addr, ext_addr);
+    int res = ieee802154_submac_init(&TRANS_CTX().submac, &short_addr, &ext_addr);
     
     ZB_ADDR_REALIGN(ZB_PIB_EXTENDED_ADDRESS(), &ext_addr.uint8[0]);
-    ZB_MEM_COPY(&MAC_PIB().mac_short_address, &short_addr);
+    ZB_SHORT_ADDR_REALIGN(&MAC_PIB().mac_short_address, &short_addr);
 
     LOG_INFO("got hw short address 0x%04x\n", MAC_PIB().mac_short_address);
     ZB_ASSERT(res == 0);
@@ -415,7 +433,6 @@ void zb_transceiver_set_channel(zb_uint8_t channel_number)
     MAC_CTX().current_channel = channel_number;
     // mutex_lock(&TRANS_CTX().lock);
     int ret = ieee802154_set_channel_number(&TRANS_CTX().submac, (uint16_t)channel_number);
-    printf("set ch res: %d\n", ret);
     // mutex_unlock(&TRANS_CTX().lock);
 }
 
@@ -427,7 +444,9 @@ uint8_t zb_transceiver_get_channel(void)
 void zb_transceiver_update_short_addr(uint16_t addr)
 {
     // mutex_lock(&TRANS_CTX().lock);
-    ieee802154_set_short_addr(&TRANS_CTX().submac, (network_uint16_t *)addr);
+    network_uint16_t set_addr;
+    ZB_SHORT_ADDR_REALIGN(&set_addr, &addr);
+    ieee802154_set_short_addr(&TRANS_CTX().submac, &set_addr);
     // mutex_unlock(&TRANS_CTX().lock);
     MAC_PIB().mac_short_address = addr;
 }
@@ -435,7 +454,7 @@ void zb_transceiver_update_short_addr(uint16_t addr)
 void zb_transceiver_set_pan_id(uint16_t pan_id)
 {
     // mutex_lock(&TRANS_CTX().lock);
-    ieee802154_set_panid(&TRANS_CTX().submac, (uint16_t *)pan_id);
+    ieee802154_set_panid(&TRANS_CTX().submac, &pan_id);
     // mutex_unlock(&TRANS_CTX().lock);
 }
 

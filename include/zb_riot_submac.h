@@ -66,6 +66,10 @@
     *((zb_uint8_t *)(ptr) + 1) = *((zb_uint8_t *)(val) + 6),  \
     *((zb_uint8_t *)(ptr)) = *((zb_uint8_t *)(val) + 7)
 
+#define ZB_SHORT_ADDR_REALIGN(ptr, val)                                \
+    *((zb_uint8_t *)(ptr) + 1) = *((zb_uint8_t *)(val)),  \
+    *((zb_uint8_t *)(ptr)) = *((zb_uint8_t *)(val) + 1)
+
 #define ZB_RXFLUSH() \
     (ZB_READ_SHORT_REG(ZB_SREG_RXFLUSH), \
      ZB_MAC_GET_BYTE_VALUE() |= 0x01,      \
