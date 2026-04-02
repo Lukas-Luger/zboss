@@ -173,8 +173,9 @@ static void submac_rx_done(ieee802154_submac_t *submac)
 {
     ieee802154_rx_info_t rx_info;
     zb_uint8_t buf[IEEE802154_FRAME_LEN_MAX];
-    TRANS_CTX().b_size = ieee802154_read_frame(submac, TRANS_CTX().buffer,
-                                IEEE802154_FRAME_LEN_MAX, &rx_info) + 2;
+    TRANS_CTX().b_size = ieee802154_get_frame_length(submac) + 2;
+    ieee802154_read_frame(submac, TRANS_CTX().buffer,
+                                TRANS_CTX().b_size, &rx_info);
     if (TRANS_CTX().b_size < 0) {
         puts("Couldn't read frame");
         return;
