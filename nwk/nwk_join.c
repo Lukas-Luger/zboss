@@ -1039,7 +1039,6 @@ void zb_nlme_direct_join_confirm(zb_uint8_t param) ZB_CALLBACK
 
 void zb_nlme_direct_join_request(zb_uint8_t param) ZB_CALLBACK
 {
-    // TODO: What shall we do with capability_information?
     zb_nlme_direct_join_request_t *request = ZB_GET_BUF_PARAM((zb_buf_t *)ZB_BUF_FROM_REF(
                                                                 param),
                                                             zb_nlme_direct_join_request_t);
@@ -1047,6 +1046,8 @@ void zb_nlme_direct_join_request(zb_uint8_t param) ZB_CALLBACK
     zb_address_ieee_ref_t dev_addr;
     zb_address_by_ieee(request->device_address, ZB_TRUE, ZB_FALSE, &dev_addr);
     zb_ret_t ret = zb_nwk_neighbor_get(dev_addr, ZB_TRUE, &nbt);
+    nbt->rx_on_when_idle = (request->capability_information & 0x4) >> 2;
+    nbt->device_type = request->capability_information & 0x3;
     zb_nlme_direct_join_confirm_t *resp = ZB_GET_BUF_PARAM((zb_buf_t *)ZB_BUF_FROM_REF(
                                                                 param),
                                                             zb_nlme_direct_join_confirm_t);
