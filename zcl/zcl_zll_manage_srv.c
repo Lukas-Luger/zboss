@@ -478,9 +478,9 @@ void zll_nwk_start_router_conf_cb()
 
     }
     /* BDB TL Target Step 14 - add device to neighbortable */
-    zb_nlme_direct_join_request_t *req;
     zb_buf_t *buf = zb_get_in_buf();
-    ZB_BUF_INITIAL_ALLOC(buf, sizeof(zb_nlme_direct_join_request_t), req);
+    zb_nlme_direct_join_request_t *req = ZB_GET_BUF_PARAM(buf, zb_nlme_direct_join_request_t);
+    req->capability_information = ZLL_COMM().initiator_zb_info;
     zb_address_ieee_by_ref(req->device_address, ZLL_COMM().responder_aref);
     ZB_SCHEDULE_CALLBACK(zb_nlme_direct_join_request, ZB_REF_FROM_BUF(buf));
 }

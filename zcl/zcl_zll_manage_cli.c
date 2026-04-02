@@ -533,7 +533,9 @@ void zll_initiate_network()
         return;
     }
     /* lets assing an address to target which can be used in requests */
-    zb_address_by_short(APL_CTX().free_addr_range_begin, ZB_TRUE, ZB_FALSE,
+    zb_ieee_addr_t source;
+    zb_address_ieee_by_ref(source, ZLL_COMM().responder_aref);
+    zb_address_update(source, APL_CTX().free_addr_range_begin, ZB_FALSE,
                         &ZLL_COMM().responder_aref);
     APL_CTX().free_addr_range_begin++;
     /* BDB TL Init Step 12 */
