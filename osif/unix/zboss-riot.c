@@ -8,7 +8,7 @@
 #include "memarray.h"
 
 
-#ifdef MODULE_PERIPH_FLASHPAGE
+#if defined MODULE_PERIPH_FLASHPAGE && defined MODULE_PERIPH_FLASHPAGE_IN_ADDRESS_SPACE
 #include "periph/flashpage.h"
 #include "riotboot/slot.h"
 /* some mcus can only write to the "other half" from where the firmware is */
@@ -434,12 +434,14 @@ int zb_inject_packet(int argc, char **argv)
     send_packet(buf, packet_len);
 }
 
-uint8_t pagebuf[FLASHPAGE_SIZE];
+#if defined MODULE_PERIPH_FLASHPAGE && defined MODULE_PERIPH_FLASHPAGE_IN_ADDRESS_SPACE
+static uint8_t pagebuf[FLASHPAGE_SIZE] __attribute__((aligned(FLASHPAGE_WRITE_BLOCK_ALIGNMENT)));
 FLASH_WRITABLE_INIT(backing_mem, 0x1);
+#endif
 
 zb_uint8_t zb_write_nvram (zb_uint16_t pos, void *buf, zb_uint16_t len)
 {
-#ifdef MODULE_PERIPH_FLASHPAGE
+#if defined MODULE_PERIPH_FLASHPAGE && defined MODULE_PERIPH_FLASHPAGE_IN_ADDRESS_SPACE
     /* get the existing page data */
 //     printf("read\n");
     flashpage_read(_flash_page, pagebuf);
@@ -469,7 +471,7 @@ zb_uint8_t zb_write_nvram (zb_uint16_t pos, void *buf, zb_uint16_t len)
 
 zb_uint8_t zb_read_nvram(zb_uint16_t pos, void *buf, zb_uint16_t len)
 {
-#ifdef MODULE_PERIPH_FLASHPAGE
+#if defined MODULE_PERIPH_FLASHPAGE && defined MODULE_PERIPH_FLASHPAGE_IN_ADDRESS_SPACE
     flashpage_read(_flash_page, pagebuf);
     memcpy(buf, pagebuf + pos, len);
 
@@ -485,19 +487,22 @@ zb_uint8_t zb_read_nvram(zb_uint16_t pos, void *buf, zb_uint16_t len)
 void zb_erase_nvram(zb_uint8_t page)
 {
     (void)page;
-#ifdef MODULE_PERIPH_FLASHPAGE
+#if defined MODULE_PERIPH_FLASHPAGE && defined MODULE_PERIPH_FLASHPAGE_IN_ADDRESS_SPACE
     flashpage_erase(_flash_page);
 #endif
 }
 
 void zboss_init(void)
 {
-#ifdef MODULE_PERIPH_FLASHPAGE
+#if defined MODULE_PERIPH_FLASHPAGE && defined MODULE_PERIPH_FLASHPAGE_IN_ADDRESS_SPACE
 
     _flash_page = flashpage_page((void *)backing_mem);
+    if (_flash_page > FLASHPAGE_NUMOF) {
+        _flash_page = FLASHPAGE_NUMOF -1;
+    }
     has_eeprom = true;
 
-#ifdef MODULE_RIOTBOOT
+# ifdef MODULE_RIOTBOOT
     if (riotboot_slot_current() == 0) {
         _flash_page = NV_FLASH_PAGE_1;
     }
@@ -507,7 +512,7 @@ void zboss_init(void)
     else {
         assert(0);
     }
-#endif
+# endif
 
 LOG_INFO("using page %u of internal flash as nonvolatile storage\n",
            _flash_page);
