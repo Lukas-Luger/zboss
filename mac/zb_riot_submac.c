@@ -186,7 +186,6 @@ static void submac_rx_done(ieee802154_submac_t *submac)
     TRANS_CTX().b_size += 2;
     /* need to send ack here, zboss uses mac_main_loop (too slow)*/
     if (TRANS_CTX().buffer[0] & 0x20) {
-        printf("need ack for dsn: %d aka 0x%x\n", TRANS_CTX().buffer[2], TRANS_CTX().buffer[2]);
         ieee802154_set_idle(&TRANS_CTX().submac);
         zb_uint8_t ack[3];
         ack[0] = 0x02; // | 0x10 for pending data ;
@@ -199,7 +198,6 @@ static void submac_rx_done(ieee802154_submac_t *submac)
         pkt.iol_len = sizeof(ack);
 
         zb_uint8_t res = ieee802154_send(&TRANS_CTX().submac, &pkt);
-        printf("res from sending ack: %x\n", res);
     }
     ZB_UBEC_SET_RX_DATA_STATUS();
     ZB_SCHEDULE_CALLBACK(_submac_task_finished, 0);
@@ -215,15 +213,12 @@ static void submac_tx_done(ieee802154_submac_t *submac, int status,
         ZB_CLEAR_TX_STATUS();
         ZB_MAC_SET_ACK_OK();
         ZB_MAC_CLEAR_PENDING_DATA();
-        puts("Tx complete");
         break;
     case TX_STATUS_FRAME_PENDING:
         ZB_MAC_SET_PENDING_DATA();
-        puts("Tx complete with pending data");
         break;
     case TX_STATUS_MEDIUM_BUSY:
         ZB_SET_TX_CHANNEL_BUSY();
-        puts("Medium Busy");
         break;
     case TX_STATUS_NO_ACK:
         ZB_SET_MAC_STATUS(MAC_NO_ACK);
@@ -401,7 +396,7 @@ zb_ret_t zb_transceiver_send_packet(zb_uint8_t header_length, zb_buf_t *buf) ZB_
     pkt.iol_next = NULL;
     pkt.iol_base = ZB_BUF_BEGIN(buf);
     pkt.iol_len = ZB_BUF_LEN(buf);
-  
+
     // mutex_lock(&TRANS_CTX().lock);
     /* this will automatically wake receiver */
     zb_uint8_t res = ieee802154_send(&TRANS_CTX().submac, &pkt);
