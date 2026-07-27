@@ -173,7 +173,7 @@ static void submac_rx_done(ieee802154_submac_t *submac)
 {
     ieee802154_rx_info_t rx_info;
     zb_uint8_t buf[IEEE802154_FRAME_LEN_MAX];
-    TRANS_CTX().b_size = ieee802154_get_frame_length(submac) + 2;
+    TRANS_CTX().b_size = ieee802154_get_frame_length(submac);
     ieee802154_read_frame(submac, TRANS_CTX().buffer,
                                 TRANS_CTX().b_size, &rx_info);
     if (TRANS_CTX().b_size < 0) {
@@ -183,7 +183,7 @@ static void submac_rx_done(ieee802154_submac_t *submac)
 
     TRANS_CTX().buffer[TRANS_CTX().b_size] = rx_info.lqi;
     TRANS_CTX().buffer[TRANS_CTX().b_size + 1] = rx_info.rssi;
-
+    TRANS_CTX().b_size += 2;
     /* need to send ack here, zboss uses mac_main_loop (too slow)*/
     if (TRANS_CTX().buffer[0] & 0x20) {
         printf("need ack for dsn: %d aka 0x%x\n", TRANS_CTX().buffer[2], TRANS_CTX().buffer[2]);
