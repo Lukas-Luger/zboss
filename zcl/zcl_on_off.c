@@ -152,13 +152,12 @@ void handle_on_with_timed_off(zb_uint8_t param)
     }
 
 }
-void handle_on_off_srv(zb_uint16_t src_addr, zb_uint8_t src_ep,
-                zb_uint16_t profile_id, zb_uint8_t param,
-                zb_zcl_cluster_t *cluster)
+
+zb_bool_t handle_on_off_srv(zb_uint8_t param)
 {
     zb_buf_t *buf = ZB_BUF_FROM_REF(param);
     zb_zcl_parsed_hdr_t *zcl_hdr = ZB_GET_BUF_PARAM(buf, zb_zcl_parsed_hdr_t);
-
+    zb_bool_t is_handled = ZB_TRUE;
     switch (zcl_hdr->cmd_id) {
     case ZB_ZCL_ON_OFF_OFF: /* 0 Off*/
         handle_off(param);
@@ -178,15 +177,17 @@ void handle_on_off_srv(zb_uint16_t src_addr, zb_uint8_t src_ep,
     case ZB_ZCL_ON_OFF_ON_WITH_TIMED_OFF: /* 0x42 On with timed off */
         handle_on_with_timed_off(param);
     default:
+        is_handled = ZB_FALSE;
         break;
     }
+    return is_handled;
 }
 
-void zb_zcl_on_off_srv_setup(zb_uint8_t ep, zb_zcl_on_off_srv_attr_t *attrs)
+void zb_zcl_on_off_srv_setup(zb_zcl_cluster_t *cluster)
 {
+    zb_zcl_reg_cl_handlers(ZB_ON_OFF_CLUSTER_ID, ZB_ZCL_SERVER_ROLE, handle_on_off_srv);
+    zb_zcl_on_off_srv_attr_t *attrs = (zb_zcl_on_off_srv_attr_t *)cluster->data;
     local_attrs = attrs;
-    zb_zcl_cluster_t *cluster = zb_zcl_register_cluster(ep, ZB_ON_OFF_CLUSTER_ID,
-                                  ZB_ZCL_SERVER_ROLE, handle_on_off_srv, NULL);
     on_off_global_attrs.cluster_revision = ZB_ZCL_DEFAULT_CLUSTER_REVISION();
     on_off_global_attrs.reporting_status = ZB_ZCL_ATTR_REPORTING_COMPLETE;
     zb_zcl_add_attribute(cluster, 0xfffd, ZB_ZCL_ATTR_TYPE_U16, ZB_ZCL_ATTR_ACCESS_READ_ONLY, &(on_off_global_attrs.cluster_revision));
@@ -340,10 +341,11 @@ void zb_zcl_on_off_send_on_with_timed_off(zb_uint8_t param, zb_uint16_t profile_
 
     ZB_SCHEDULE_CALLBACK(zb_apsde_data_request, ZB_REF_FROM_BUF(buf));
 }
-void zb_zcl_on_off_cli_setup(zb_uint8_t ep)
+void zb_zcl_on_off_cli_setup(zb_zcl_cluster_t *cluster)
 {
-    (void)zb_zcl_register_cluster(ep, ZB_ON_OFF_CLUSTER_ID,
-                                ZB_ZCL_CLIENT_ROLE, NULL, NULL);
+    (void)cluster;
+    zb_zcl_reg_cl_handlers(ZB_ON_OFF_CLUSTER_ID,
+                                ZB_ZCL_CLIENT_ROLE, NULL);
 }
 #endif /* LIMITED_FEATURES */
 /*! @} */

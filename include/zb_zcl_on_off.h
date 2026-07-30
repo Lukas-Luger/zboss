@@ -43,13 +43,14 @@ typedef struct {
     zb_uint16_t on_time;
     zb_uint16_t off_wait_time;
 } ZB_PACKED_STRUCT zb_zcl_on_off_on_with_timed_off_req_t;
+
 /**
    Setup Method for Server
 
-   @param ep - Endpoint of application
-   @param set_st - Callback method for setting device state
+   @param cluster - Cluster with values to copy into attribute descriptors
  */
-void zb_zcl_on_off_srv_setup(zb_uint8_t ep, zb_zcl_on_off_srv_attr_t *attrs);
+void zb_zcl_on_off_srv_setup(zb_zcl_cluster_t *cluster);
+#define ZB_ON_OFF_CLUSTER_ID_SRV_SETUP zb_zcl_on_off_srv_setup
 
 /* Public Client Methods */
 /**
@@ -128,7 +129,9 @@ void zb_zcl_on_off_send_on_with_timed_off(zb_uint8_t param, zb_uint16_t profile_
 /**
    Setup Method for Client
 
-   @param ep - Endpoint of application
+   @param cluster - Cluster with values to copy into attribute descriptors
  */
-void zb_zcl_on_off_cli_setup(zb_uint8_t ep);
+void zb_zcl_on_off_cli_setup(zb_zcl_cluster_t *cluster);
+#define ZB_ON_OFF_CLUSTER_ID_CLI_SETUP zb_zcl_on_off_cli_setup
+
 #endif
