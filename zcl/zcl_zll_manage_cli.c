@@ -641,9 +641,7 @@ void zll_comm_signal(zb_zll_comm_state_t state)
     }
 }
 
-void handle_zll_cli(zb_uint16_t src_addr, zb_uint8_t src_ep,
-                zb_uint16_t profile_id, zb_uint8_t param,
-                zb_zcl_cluster_t *cluster)
+zb_bool_t handle_zll_cli(zb_uint8_t param)
 {
     zb_buf_t *buf = ZB_BUF_FROM_REF(param);
     zb_uint8_t *ptr = ZB_BUF_BEGIN(buf);
@@ -654,7 +652,7 @@ void handle_zll_cli(zb_uint16_t src_addr, zb_uint8_t src_ep,
     zb_parse_mhr(&mac_hdr, buf->buf + buf->u.hdr.mac_hdr_offset);
     zb_ieee_addr_t source;
     ZB_IEEE_ADDR_COPY(&source, &mac_hdr.src_addr.addr_long);
-
+    zb_bool_t is_handled = ZB_TRUE;
     /* commands received */
     switch (hdr->cmd_id) {
     case ZB_ZLL_SCAN_RESP_CMD_ID: /* scan response */
@@ -673,12 +671,15 @@ void handle_zll_cli(zb_uint16_t src_addr, zb_uint8_t src_ep,
         zll_handle_net_join_resp(param);
         break;
     default:
+        is_handled = ZB_FALSE;
         zb_free_buf(buf);
     }
+    return is_handled;
 }
 
-void zb_zcl_zll_initiator_setup()
+void zb_zcl_zll_initiator_setup(zb_zcl_cluster_t *cluster)
 {
+    (void)cluster;
     ZLL_COMM().zigbee_info = (zb_uint8_t)0;
     /* enums do not work */
     switch (ZB_GET_NODE_DESC_LOGICAL_TYPE(ZB_ZDO_NODE_DESC())) {
@@ -712,8 +713,8 @@ void zb_zcl_zll_initiator_setup()
 
     ZB_BZERO(&ZLL_COMM().scan_response, sizeof(ZLL_COMM().scan_response));
     ZLL_COMM().state = ZB_ZLL_COMM_SCAN;
-    (void)zb_zcl_register_cluster(1 /* EP 1 */, ZB_ZLL_CLUSTER_ID /* TL Cluster */,
-                                  ZB_ZCL_CLIENT_ROLE, handle_zll_cli, NULL /* action */);
+    zb_zcl_reg_cl_handlers(ZB_ZLL_CLUSTER_ID /* TL Cluster */,
+                                  ZB_ZCL_CLIENT_ROLE, handle_zll_cli);
     /**
      * from BDB 10.2.2: if TC is not known - commissionig process should set it to broadcast
      * TODO: move this to BDB logic when possible 

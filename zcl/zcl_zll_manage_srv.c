@@ -491,9 +491,7 @@ void zll_nwk_direct_join_cb()
     zll_finish();
 }
 /* ----- ZLL COMMISSIONING LOGIC -------*/
-void handle_zll_srv(zb_uint16_t src_addr, zb_uint8_t src_ep,
-                    zb_uint16_t profile_id, zb_uint8_t param,
-                    zb_zcl_cluster_t *cluster)
+zb_bool_t handle_zll_srv(zb_uint8_t param)
 {
     zb_buf_t *buf = ZB_BUF_FROM_REF(param);
     zb_uint8_t *ptr = ZB_BUF_BEGIN(buf);
@@ -503,13 +501,14 @@ void handle_zll_srv(zb_uint16_t src_addr, zb_uint8_t src_ep,
     zb_parse_mhr(&mac_hdr, buf->buf + buf->u.hdr.mac_hdr_offset);
     zb_ieee_addr_t source;
     ZB_IEEE_ADDR_COPY(&source, &mac_hdr.src_addr.addr_long);
+    zb_bool_t is_handled = ZB_TRUE;
 
     zb_uint32_t *trans_id = (zb_uint32_t *)ZB_BUF_BEGIN(buf);
     /* BDB TL Target Step 4 */
     if (hdr->cmd_id != ZB_ZLL_SCAN_REQ_CMD_ID && *trans_id != ZG->aps.transaction_id) {
         puts("wrong transaction id");
         zb_free_buf(buf);
-        return;
+        return ZB_FALSE;
     }
     /* commands received */
     switch (hdr->cmd_id) {
@@ -539,12 +538,15 @@ void handle_zll_srv(zb_uint16_t src_addr, zb_uint8_t src_ep,
             zll_handle_net_update_req(param);
             break;
         default:
+            is_handled = ZB_FALSE;
             zb_free_buf(buf);
     }
+    return is_handled;
 }
 
-void zb_zcl_zll_target_setup()
+void zb_zcl_zll_target_setup(zb_zcl_cluster_t *cluster)
 {
+    (void)cluster;
     ZLL_COMM().zigbee_info = (zb_uint8_t)0;
     /* enums do not work */
     switch ((zb_uint8_t)ZB_NIB_DEVICE_TYPE()) {
@@ -581,8 +583,8 @@ void zb_zcl_zll_target_setup()
     ZLL_COMM().received_join_net = ZB_FALSE;
     ZB_BZERO(&ZLL_COMM().scan_response, sizeof(ZLL_COMM().scan_response));
     ZLL_COMM().state = ZB_ZLL_COMM_SCAN;
-    (void)zb_zcl_register_cluster(1 /* EP 1 */, ZB_ZLL_CLUSTER_ID /* TL Cluster */,
-                                  ZB_ZCL_SERVER_ROLE, handle_zll_srv, NULL /* action */);
+    zb_zcl_reg_cl_handlers(ZB_ZLL_CLUSTER_ID /* TL Cluster */,
+                                  ZB_ZCL_SERVER_ROLE, handle_zll_srv);
     /**
      * from BDB 10.2.2: if TC is not known - commissionig process should set it to broadcast
      * TODO: move this to BDB logic when possible 

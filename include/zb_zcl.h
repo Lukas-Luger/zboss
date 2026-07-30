@@ -768,10 +768,11 @@ void zll_nwk_start_router_conf_cb();
 
 void zll_nwk_disc_conf_cb(zb_uint8_t param);
 
-void zb_zcl_zll_initiator_setup();
+void zb_zcl_zll_initiator_setup(zb_zcl_cluster_t *cluster);
+#define ZB_ZLL_CLUSTER_ID_CLI_SETUP zb_zcl_zll_initiator_setup
 
-void zb_zcl_zll_target_setup();
-
+void zb_zcl_zll_target_setup(zb_zcl_cluster_t *cluster);
+#define ZB_ZLL_CLUSTER_ID_SRV_SETUP zb_zcl_zll_target_setup
 /*! @} */
 
 #endif /* ZB_ZCL_H */
