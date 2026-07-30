@@ -71,9 +71,10 @@ typedef struct {
 /**
    Setup Method for Server
 
-   @param ep - Endpoint of application
+   @param cluster - Cluster with values to copy into attribute descriptors
  */
-void zb_zcl_groups_srv_setup(zb_uint8_t ep, zb_zcl_groups_srv_attr_t *attrs);
+void zb_zcl_groups_srv_setup(zb_zcl_cluster_t *cluster);
+#define ZB_GROUPS_CLUSTER_ID_SRV_SETUP zb_zcl_groups_srv_setup
 
 /* Public Client Methods */
 /**
@@ -153,9 +154,9 @@ void zb_zcl_groups_send_add_group_iid(zb_uint8_t param, zb_uint16_t profile_id, 
 /**
    Setup Method for Client
 
-   @param ep - Endpoint of application
+   @param cluster - Cluster with values to copy into attribute descriptors
  */
-void zb_zcl_groups_cli_setup(zb_uint8_t ep);
-
+void zb_zcl_groups_cli_setup(zb_zcl_cluster_t *cluster);
+#define ZB_GROUPS_CLUSTER_ID_CLI_SETUP zb_zcl_groups_cli_setup
 
 #endif /* ZB_ZCL_GROUPS_H */

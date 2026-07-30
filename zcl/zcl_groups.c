@@ -227,13 +227,11 @@ void handle_remove_all_groups(zb_uint8_t param)
     ZB_SCHEDULE_CALLBACK(zb_zdo_remove_all_groups_req, param);
 }
 
-void handle_groups_srv(zb_uint16_t src_addr, zb_uint8_t src_ep,
-                zb_uint16_t profile_id, zb_uint8_t param,
-                zb_zcl_cluster_t *cluster)
+zb_bool_t handle_groups_srv(zb_uint8_t param)
 {
     zb_buf_t *buf = ZB_BUF_FROM_REF(param);
     zb_zcl_parsed_hdr_t *zcl_hdr = ZB_GET_BUF_PARAM(buf, zb_zcl_parsed_hdr_t);
-
+    zb_bool_t is_handled = ZB_TRUE;
     switch (zcl_hdr->cmd_id) {
     case ZB_ZCL_GROUPS_ADD_GROUP: /* add group */
         puts("adding group");
@@ -256,14 +254,16 @@ void handle_groups_srv(zb_uint16_t src_addr, zb_uint8_t src_ep,
         handle_add_group(param);
         break;
     default:
+        is_handled = ZB_FALSE;
         break;
     }
+    return is_handled;
 }
 
-void zb_zcl_groups_srv_setup(zb_uint8_t ep, zb_zcl_groups_srv_attr_t *attrs)
+void zb_zcl_groups_srv_setup(zb_zcl_cluster_t *cluster)
 {
-    zb_zcl_cluster_t *cluster = zb_zcl_register_cluster(ep, ZB_GROUPS_CLUSTER_ID,
-                                  ZB_ZCL_SERVER_ROLE, handle_groups_srv, NULL);
+    zb_zcl_reg_cl_handlers(ZB_GROUPS_CLUSTER_ID, ZB_ZCL_SERVER_ROLE, handle_groups_srv);
+    zb_zcl_groups_srv_attr_t *attrs = (zb_zcl_groups_srv_attr_t *)cluster->data;
     groups_global_attrs.cluster_revision = ZB_ZCL_DEFAULT_CLUSTER_REVISION();
     groups_global_attrs.reporting_status = ZB_ZCL_ATTR_REPORTING_COMPLETE;
     zb_zcl_add_attribute(cluster, 0xfffd, ZB_ZCL_ATTR_TYPE_U16, ZB_ZCL_ATTR_ACCESS_READ_ONLY, &(groups_global_attrs.cluster_revision));
@@ -410,8 +410,9 @@ void zb_zcl_groups_send_add_group_iid(zb_uint8_t param, zb_uint16_t profile_id, 
     ZB_SCHEDULE_CALLBACK(zb_apsde_data_request, param);
 }
 
-void zb_zcl_groups_cli_setup(zb_uint8_t ep)
+void zb_zcl_groups_cli_setup(zb_zcl_cluster_t *cluster)
 {
-    (void)zb_zcl_register_cluster(ep, ZB_GROUPS_CLUSTER_ID,
-                                ZB_ZCL_CLIENT_ROLE, NULL, NULL);
+    (void)cluster;
+    zb_zcl_reg_cl_handlers(ZB_GROUPS_CLUSTER_ID,
+                                ZB_ZCL_CLIENT_ROLE, NULL);
 }
