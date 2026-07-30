@@ -49,6 +49,8 @@
 #ifndef ZB_ZCL_H
 #define ZB_ZCL_H 1
 
+#include "zb_af_globals.h"
+
 /*! \addtogroup ZB_ZCL */
 /*! @{ */
 
@@ -517,22 +519,37 @@ typedef struct zb_zcl_global_attrs_s {
     zb_uint16_t cluster_revision;
     zb_zcl_attr_reporting_status_t reporting_status;
 } zb_zcl_global_attrs_t;
+
 /**
    ZCL cluster structure
  */
 typedef struct zb_zcl_cluster_s zb_zcl_cluster_t;
 
+/**
+   Cluster init function
+ */
+typedef void (*zb_zcl_cluster_init_t)(zb_zcl_cluster_t *cluster);
+
+/**
+  Cluster handler function
+ */
+typedef zb_bool_t (*zb_zcl_cluster_handler_t)(zb_uint8_t param);
+
 struct zb_zcl_cluster_s {
-    zb_uint8_t ep;              /*!< Endpoint that cluster belongs to */
+    zb_void_t *data;            /*!< Attribute data store */
     zb_uint16_t cluster_id;     /*!< Cluster ID */
     zb_zcl_cluster_role_t role; /*!< Cluster role (Server or Client)*/
     zb_zcl_attr_t attr_list[64];   /*!< Cluster attribute list */
     zb_uint8_t attr_count;
-    zb_void_t (*handle)(zb_uint16_t, zb_uint8_t, zb_uint16_t, zb_uint8_t,
-                        zb_zcl_cluster_t *) ZB_SDCC_REENTRANT;                                  /*!< Function to handle frames addressed to that cluster */
-    zb_void_t (*action)(zb_uint16_t, zb_uint8_t, zb_uint16_t, zb_uint8_t,
-                        zb_zcl_cluster_t *);                                                    /*!< Cluster action handler */
+    zb_zcl_cluster_init_t init;/*!< Cluster initialization function */                                          /*!< Cluster action handler */
 };
+
+typedef struct zcl_cluster_handlers_s
+{
+  zb_uint16_t cluster_id;
+  zb_uint8_t role;
+  zb_zcl_cluster_handler_t handle;
+} zcl_cluster_handlers_t;
 
 /**
    ZCL frame control field
@@ -566,6 +583,20 @@ typedef struct zb_zcl_hdr_s {
     zb_uint8_t command_id;          /*!< Command Identifier Field */
 } ZB_PACKED_STRUCT
 zb_zcl_hdr_t;
+
+/**
+   Generate a zb_zcl_cluster_t type.
+ */
+#define ZB_ZCL_CLUSTER_DESC(data, cluster_id, cluster_role)   \
+{                                                       \
+    (data),                                             \
+    (cluster_id),                                       \
+    (cluster_role),                                     \
+    { },                                                \
+    0,                                                  \
+    (((cluster_role) == ZB_ZCL_SERVER_ROLE) ? cluster_id##_SRV_SETUP : \
+    (((cluster_role) == ZB_ZCL_CLIENT_ROLE) ? cluster_id##_CLI_SETUP : NULL)) \
+}
 
 /**
    Get ZCL frame type
@@ -641,39 +672,16 @@ zb_zcl_hdr_t;
 void zb_zcl_init();
 
 /**
-   Register new cluster
+   Register new cluster handlers
 
-   @param ep - Endpoint that cluster belogs to
    @param cluster_id - Cluster ID
-   @param attr_list - Pointer to cluster attribute list @see zb_zcl_attr_t
+   @param role - Server or client cluster @see zb_zcl_cluster_role_t
    @param handle - Cluster handle function. All frames for this cluster will go
    here to get processed
-   @param action - Cluster action handle.
-
-   @return Pointer to cluster structure on success, NULL otherwise
  */
-zb_zcl_cluster_t *zb_zcl_register_cluster(zb_uint8_t ep,
-                                          zb_uint16_t cluster_id,
-                                          zb_zcl_cluster_role_t role,
-                                          void (*handle)(zb_uint16_t,
-                                                         zb_uint8_t,
-                                                         zb_uint16_t,
-                                                         zb_uint8_t,
-                                                         zb_zcl_cluster_t *),
-                                          void (*action)(zb_uint16_t,
-                                                         zb_uint8_t,
-                                                         zb_uint16_t,
-                                                         zb_uint8_t,
-                                                         zb_zcl_cluster_t *));
-
-/**
-   Find cluster by cluster_id
-
-   @param cluster_id - Cluster ID to be found
-
-   @return Pointer to cluster structure if cluster found, NULL otherwise
- */
-zb_zcl_cluster_t *zb_zcl_find_cluster(zb_uint16_t cluster_id);
+void zb_zcl_reg_cl_handlers(zb_uint16_t cluster_id,
+                            zb_zcl_cluster_role_t role,
+                            zb_zcl_cluster_handler_t handle);
 
 /**
    Find attribute by attribute_id
@@ -712,15 +720,12 @@ void zb_zcl_add_attribute(zb_zcl_cluster_t *cluster, zb_uint16_t attr_id,
 /**
    Main function to handle ZCL commands
 
-   @param src_addr - Addrees of the device that send this frame
-   @param src_ep - Endpoint of the source device
-   @param profile_id - Profile ID
-   @param buf - Incoming buffer with ZCL frame
+   @param param - Refernce to incoming buffer with ZCL frame
    @param cluster - Pointer to the cluster that buffer belogs to
 
-   @return nothing
+   @return status
  */
-void zb_zcl_handle(zb_uint8_t param, zb_zcl_cluster_t *cluster);
+zb_zcl_status_t zb_zcl_handle(zb_uint8_t param, zb_zcl_cluster_t *cluster);
 
 
 /**

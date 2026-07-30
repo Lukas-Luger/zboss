@@ -61,6 +61,8 @@
 
 void zb_zdo_data_indication(zb_uint8_t param) ZB_CALLBACK;
 
+void zb_zcl_rx(zb_uint8_t param) ZB_CALLBACK;
+
 void zb_apsde_data_indication(zb_uint8_t param) ZB_CALLBACK
 {
     zb_buf_t *asdu = (zb_buf_t *)ZB_BUF_FROM_REF(param);
@@ -71,7 +73,7 @@ void zb_apsde_data_indication(zb_uint8_t param) ZB_CALLBACK
               (FMT__P_H_H_H, (zb_buf_t *)asdu, asdu->u.hdr.handle,
                ZB_BUF_LEN(asdu), ind->dst_endpoint));
     if(ZB_APS_FC_GET_FRAME_TYPE(ind->fc) == ZB_APS_FRAME_INTERPAN){
-        // not shure how to handle frames propery: when to use ZDO, ZDP, AF or ZCL handling
+        // not sure how to handle frames propery: when to use ZDO, ZDP, AF or ZCL handling
         ind->dst_endpoint = -1; //sketchy workaround to omit zdo handling
     }
     switch (ind->dst_endpoint) {
@@ -93,11 +95,9 @@ void zb_apsde_data_indication(zb_uint8_t param) ZB_CALLBACK
             if (ZG->zdo.af_data_cb) {
                 TRACE_MSG(TRACE_ERROR, "APS pkt for ep %hd - call %p",
                           (FMT__H_P, ind->dst_endpoint, ZG->zdo.af_data_cb));
-                zb_schedule_callback(ZG->zdo.af_data_cb, param);
+                ZB_SCHEDULE_CALLBACK(ZG->zdo.af_data_cb, param);
             }
-            zb_zcl_cluster_t *cluster = zb_zcl_find_cluster(ind->clusterid);
-            zb_zcl_handle(ZB_REF_FROM_BUF(asdu), cluster);
-            
+            ZB_SCHEDULE_CALLBACK(zb_zcl_rx, param);
             break;
     }
 }

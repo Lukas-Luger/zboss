@@ -24,8 +24,7 @@ void zb_zcl_cib_init()
     TRACE_MSG(TRACE_ZCL1, ">>cib_init", (FMT__0));
     /* initialize params here using ZG->zcl */
     ZG->zcl.seq_number = 0;
-    ZG->zcl.cluster_num = 0;
-    ZB_BZERO(&ZG->zcl.cluster, ZB_ZCL_CLUSTER_NUM);
+    ZB_BZERO(&ZG->zcl.device_ctx, sizeof(zb_zcl_globals_t)*ZB_MAX_EP_NUMBER);
 
     TRACE_MSG(TRACE - ZCL1, "<<cib_init", (FMT__0));
 }
@@ -362,82 +361,160 @@ zb_zcl_status_t zb_zcl_handle_general_cmd(zb_uint8_t param, zb_zcl_cluster_t *cl
 
 }
 
-void zb_zcl_handle(zb_uint8_t param, zb_zcl_cluster_t *cluster)
+zb_zcl_cluster_handler_t zb_zcl_get_cluster_handler(zb_uint16_t cluster_id,
+                                                    zb_zcl_cluster_role_t role)
+{
+    zb_uint8_t i;
+    zb_zcl_cluster_handler_t ret = NULL;
+    for (i = 0; i < ZG->zcl.handler_count; i++) {
+        if (ZG->zcl.handlers[i].cluster_id == cluster_id &&
+            ZG->zcl.handlers[i].role == role)
+        {
+            ret = ZG->zcl.handlers[i].handle;
+            break;
+        }
+    }
+    return ret;
+}
+
+zb_zcl_status_t zb_zcl_handle(zb_uint8_t param, zb_zcl_cluster_t *cluster)
+{
+    zb_buf_t *buf = ZB_BUF_FROM_REF(param);
+    zb_zcl_parsed_hdr_t *zcl_hdr;
+    zb_zcl_status_t status = ZB_ZCL_STATUS_SUCCESS;
+    zcl_hdr = ZB_GET_BUF_PARAM(buf, zb_zcl_parsed_hdr_t);
+    
+    zb_ushort_t hdr_size = ZB_ZCL_FRAME_HDR_GET_SIZE(ZB_BUF_BEGIN(buf));
+    ZB_BUF_CUT_LEFT2(buf, hdr_size);
+   
+    zb_zcl_cluster_handler_t handler = zb_zcl_get_cluster_handler(zcl_hdr->cluster_id,
+            (zcl_hdr->direction == ZB_ZCL_FRAME_DIRECTION_TO_SRV) ?
+                                  ZB_ZCL_SERVER_ROLE : ZB_ZCL_CLIENT_ROLE);
+    // here we have to decide if its a common command or should be handled by the cluster itself
+    if (handler && zcl_hdr->type == ZB_ZCL_FRAME_TYPE_CLUSTER_SPECIFIED) {
+        (void)handler(param);
+    }
+    if (zcl_hdr->type == ZB_ZCL_FRAME_TYPE_COMMON) {
+        status = zb_zcl_handle_general_cmd(param, cluster);
+    }
+    return status;
+}
+
+zb_af_ep_desc_t *zb_af_get_ep_desc(zb_uint8_t ep)
+{
+    zb_uint8_t i;
+    zb_af_ep_desc_t *ret = NULL;
+    for (i = 0; i < ZCL_CTX().device_ctx.ep_count; i++) {
+        if (ZCL_CTX().device_ctx.ep_list[i]->ep_id == ep) {
+            ret = ZCL_CTX().device_ctx.ep_list[i];
+            break;
+        }
+    }
+    return ret;
+}
+
+zb_zcl_cluster_t *zb_get_cluster_desc(zb_af_ep_desc_t *endpoint, zb_uint16_t cluster_id,
+                                      zb_zcl_cluster_role_t role)
+{
+    zb_uint8_t i;
+    zb_zcl_cluster_t *ret = NULL;
+    for (i = 0; i < endpoint->cluster_count; i++) {
+        
+        if (endpoint->clusters[i].role == role && 
+            endpoint->clusters[i].cluster_id == cluster_id)
+        {
+            ret = &(endpoint->clusters[i]);
+            break;
+        }
+    }
+    return ret;
+}
+
+zb_af_ep_desc_t *zb_get_ep_by_cluster(zb_uint16_t cluster_id, zb_zcl_cluster_role_t role)
+{
+    zb_uint8_t i,j;
+    for (i = 0; i < ZCL_CTX().device_ctx.ep_count; i++) {
+        for (j = 0; j < ZCL_CTX().device_ctx.ep_list[i]->cluster_count; j++) {
+            if (ZCL_CTX().device_ctx.ep_list[i]->clusters[j].cluster_id == cluster_id &&
+                ZCL_CTX().device_ctx.ep_list[i]->clusters[j].role == role)
+                {
+                    return ZCL_CTX().device_ctx.ep_list[i];
+                }
+        }
+    }
+    return NULL;
+}
+
+void zb_zcl_rx(zb_uint8_t param)
 {
     zb_buf_t *buf = ZB_BUF_FROM_REF(param);
     zb_zcl_parsed_hdr_t zcl_hdr;
-    zb_zcl_status_t status = ZB_ZCL_STATUS_SUCCESS;
+    zb_zcl_status_t status = ZB_ZCL_STATUS_FAIL;
+    zb_af_ep_desc_t *ep;
+
     zcl_parse_hdr(param, &zcl_hdr);
-    if (!cluster ||
-        (cluster->role == ZB_ZCL_SERVER_ROLE && zcl_hdr.direction != ZB_ZCL_FRAME_DIRECTION_TO_SRV) ||
-        (cluster->role == ZB_ZCL_CLIENT_ROLE && zcl_hdr.direction != ZB_ZCL_FRAME_DIRECTION_TO_CLI))
-    {
-        printf("Cluster not found %x\n", zcl_hdr.cluster_id);
-        zb_free_buf(buf);
-        status = ZB_ZCL_STATUS_UNSUPPORTED_CLUSTER;
-        goto done;
+    /* handle broadcast EP */
+    if (zcl_hdr.dst_endpoint == 0xFF) {
+        /* find fitting cluster */
+        ep = zb_get_ep_by_cluster(zcl_hdr.cluster_id, (zcl_hdr.direction ==
+                                ZB_ZCL_FRAME_DIRECTION_TO_SRV) ?
+                                ZB_ZCL_SERVER_ROLE : ZB_ZCL_CLIENT_ROLE);
+        /* overwrite endpoint in hdr for later use */
+        zcl_hdr.dst_endpoint = ep->ep_id;
     }
-    zb_ushort_t hdr_size = ZB_ZCL_FRAME_HDR_GET_SIZE(ZB_BUF_BEGIN(buf));
-    ZB_BUF_CUT_LEFT2(buf, hdr_size);
+    else {
+        ep = zb_af_get_ep_desc(zcl_hdr.dst_endpoint);
+    }
+    
     zb_buf_assign_param(buf, (zb_uint8_t *)&zcl_hdr, sizeof(zb_zcl_parsed_hdr_t));
-    // here we have to decide if its a common command or should be handled by the cluster itself
-    if (cluster->handle && zcl_hdr.type == ZB_ZCL_FRAME_TYPE_CLUSTER_SPECIFIED) {
-        cluster->handle(zcl_hdr.src_addr, zcl_hdr.src_endpoint, zcl_hdr.profile_id, param, cluster);
+
+    if (!ep) {
+        zb_free_buf(buf);
+        status = ZB_ZCL_STATUS_NOT_FOUND;
+        goto send_response;
     }
-    if (cluster->action) {
-        cluster->action(zcl_hdr.src_addr, zcl_hdr.src_endpoint, zcl_hdr.profile_id, param, cluster);
+    zb_zcl_cluster_t *cl = zb_get_cluster_desc(ep, zcl_hdr.cluster_id,
+                                (zcl_hdr.direction == ZB_ZCL_FRAME_DIRECTION_TO_SRV) ?
+                                  ZB_ZCL_SERVER_ROLE : ZB_ZCL_CLIENT_ROLE);
+    if (!cl) {
+        zb_free_buf(buf);
+        status = ZB_ZCL_STATUS_NOT_FOUND;
+        goto send_response;
     }
-    if (zcl_hdr.type == ZB_ZCL_FRAME_TYPE_COMMON) {
-        status = zb_zcl_handle_general_cmd(param, cluster);
-    }
-done:
-    if (!zcl_hdr.disable_default_resp) {
+    status = zb_zcl_handle(param, cl);
+
+send_response:
+    if (status != ZB_ZCL_STATUS_SUCCESS || !zcl_hdr.disable_default_resp) {
         zb_buf_t *sec_buf = zb_get_out_buf();
         ZB_ASSERT(sec_buf);
         zb_zcl_send_default_resp(ZB_REF_FROM_BUF(sec_buf), zcl_hdr, status);
     }
 }
 
-zb_zcl_cluster_t *zb_zcl_register_cluster(zb_uint8_t ep,
-                                          zb_uint16_t cluster_id,
-                                          zb_zcl_cluster_role_t role,
-                                          void (*handle)(zb_uint16_t,
-                                                         zb_uint8_t,
-                                                         zb_uint16_t,
-                                                         zb_uint8_t,
-                                                         zb_zcl_cluster_t *),
-                                          void (*action)(zb_uint16_t,
-                                                         zb_uint8_t,
-                                                         zb_uint16_t,
-                                                         zb_uint8_t,
-                                                         zb_zcl_cluster_t *))
+void zb_zcl_init_ep(zb_af_ep_desc_t *ep)
 {
-    ZB_ASSERT(ZB_ZCL_CLUSTER_NUM > ZG->zcl.cluster_num);
+    zb_uint8_t i;
+    for (i = 0; i < ep->cluster_count; i++) {
+        ep->clusters[i].init(&(ep->clusters[i]));
+    }
+    ZCL_CTX().device_ctx.ep_list[ZCL_CTX().device_ctx.ep_count] = ep;
+    ZCL_CTX().device_ctx.ep_count++;
+    zb_add_simple_descriptor(ep->simple_desc);
+}
 
-    //zb_uint8_t attr_list_size = zb_zcl_get_attribute_size(attr_list);
-    zb_zcl_cluster_t *cl = &ZG->zcl.cluster[ZG->zcl.cluster_num];
-    cl->ep = ep;
+/* rewrite to register EP */
+void zb_zcl_reg_cl_handlers(zb_uint16_t cluster_id,
+                             zb_zcl_cluster_role_t role,
+                             zb_zcl_cluster_handler_t handle)
+{
+    ZB_ASSERT(ZB_ZCL_CLUSTER_NUM > ZG->zcl.handler_count);
+
+    zcl_cluster_handlers_t *cl = &ZG->zcl.handlers[ZG->zcl.handler_count];
     cl->cluster_id = cluster_id;
     cl->role = role;
     cl->handle = handle;
-    cl->action = action;
 
-    ZG->zcl.cluster_num++;
-    /* TODO: add (simple) descriptor in APP!*/
-    return cl;
-}
-
-zb_zcl_cluster_t *zb_zcl_find_cluster(zb_uint16_t cluster_id)
-{
-    zb_ushort_t i;
-    zb_zcl_cluster_t *ret = NULL;
-    for (i = 0; i < ZG->zcl.cluster_num; i++) {
-        if (ZG->zcl.cluster[i].cluster_id == cluster_id) {
-            ret = &ZG->zcl.cluster[i];
-            break;
-        }
-    }
-    return ret;
+    ZG->zcl.handler_count++;
 }
 
 zb_zcl_attr_t *zb_zcl_find_attribute(zb_zcl_cluster_t *cluster,
@@ -577,6 +654,9 @@ void zcl_parse_hdr(zb_uint8_t param, zb_zcl_parsed_hdr_t *zcl_hdr)
         zcl_hdr->dst_addr = ind->dst_addr; // choose ind->group_addr
         zcl_hdr->src_endpoint = ind->src_endpoint;
         zcl_hdr->dst_endpoint = ind->dst_endpoint;
+    }
+    else {
+        zcl_hdr->dst_endpoint = 0xFF;
     }
     zcl_hdr->cluster_id = ind->clusterid;
     zcl_hdr->profile_id = ind->profileid;

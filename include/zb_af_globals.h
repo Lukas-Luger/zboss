@@ -51,7 +51,7 @@
 
 #include "zb_mac.h"
 #include "zb_test_profile.h"
-
+#include "zb_zcl.h"
 /*! \addtogroup ZB_AF */
 /*! @{ */
 
@@ -297,6 +297,32 @@ ZB_DECLARE_SIMPLE_DESC(1, 1);   /* General descriptor type */
 ZB_DECLARE_SIMPLE_DESC(7, 8);   /* ZDO descriptor type */
 
 #define ZB_MAX_EP_NUMBER 1      /* max supported EP number, increase if needed */
+
+/** Endpoint description for user applications. */
+typedef struct zb_af_ep_desc_s
+{
+  zb_uint8_t ep_id;               /*!< Endpoint ID */
+  zb_uint16_t profile_id;         /*!< Application profile, which implemented on endpoint */
+  zb_uint8_t cluster_count;       /*!< Number of supported clusters */
+  zb_af_simple_desc_1_1_t *simple_desc; /*!< Simple descriptor */
+  zb_zcl_cluster_t clusters[ZB_ZCL_CLUSTER_NUM];  /*!< Supported clusters list */
+}ZB_PACKED_STRUCT
+zb_af_ep_desc_t;
+
+/**
+  Application Framework Device context containing all endpoints
+ */
+typedef struct zb_af_dev_ctx_s {
+    zb_uint8_t ep_count;
+    zb_af_ep_desc_t *ep_list[ZB_MAX_EP_NUMBER];
+}
+ZB_PACKED_STRUCT
+zb_af_dev_ctx_t;
+
+/**
+   Initialize an endpoint in application
+ */
+void zb_zcl_init_ep(zb_af_ep_desc_t *endpoint);
 
 /* Macro to set node descriptor, 2.3.2.3 Node Descriptor  */
 #define ZB_SET_NODE_DESCRIPTOR(logical_type_p, frequence_band_p, \
