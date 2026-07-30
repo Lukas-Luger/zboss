@@ -45,10 +45,11 @@ void zb_zcl_basic_srv_set_defaults(zb_zcl_basic_srv_attr_t *attrs)
     attrs->software_build_id_len = 0;
 }
 
-void zb_zcl_basic_srv_setup(zb_uint8_t ep, zb_zcl_basic_srv_attr_t *attrs)
+void zb_zcl_basic_srv_setup(zb_zcl_cluster_t *cluster)
 {
-    zb_zcl_cluster_t *cluster = zb_zcl_register_cluster(ep, ZB_BASIC_CLUSTER_ID,
-                                  ZB_ZCL_SERVER_ROLE, NULL, NULL);
+    zb_zcl_reg_cl_handlers(ZB_BASIC_CLUSTER_ID,
+                                  ZB_ZCL_SERVER_ROLE, NULL);
+    zb_zcl_basic_srv_attr_t *attrs = (zb_zcl_basic_srv_attr_t *)cluster->data;
     basic_global_attrs.cluster_revision = ZB_ZCL_DEFAULT_CLUSTER_REVISION();
     basic_global_attrs.reporting_status = ZB_ZCL_ATTR_REPORTING_COMPLETE;
     zb_zcl_add_attribute(cluster, 0xfffd, ZB_ZCL_ATTR_TYPE_U16,         ZB_ZCL_ATTR_ACCESS_READ_ONLY, &(basic_global_attrs.cluster_revision));
@@ -99,4 +100,11 @@ void zb_zcl_basic_srv_setup(zb_uint8_t ep, zb_zcl_basic_srv_attr_t *attrs)
 
     zb_zcl_format_string(attrs->software_build_id, attrs->software_build_id_len);
     zb_zcl_add_attribute(cluster, 0x4000, ZB_ZCL_ATTR_TYPE_CHAR_STRING, ZB_ZCL_ATTR_ACCESS_READ_ONLY, &(attrs->software_build_id));
+}
+
+void zb_zcl_basic_cli_setup(zb_zcl_cluster_t *cluster)
+{
+    (void)cluster;
+    zb_zcl_reg_cl_handlers(ZB_BASIC_CLUSTER_ID,
+                                  ZB_ZCL_CLIENT_ROLE, NULL);
 }

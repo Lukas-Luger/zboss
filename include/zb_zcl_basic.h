@@ -206,5 +206,21 @@ typedef enum zb_zcl_basic_phys_env_e {
 }zb_zcl_basic_phys_env_t;
 
 void zb_zcl_basic_srv_set_defaults(zb_zcl_basic_srv_attr_t *attrs);
-void zb_zcl_basic_srv_setup(zb_uint8_t ep, zb_zcl_basic_srv_attr_t *attrs);
+
+/**
+   Setup Method for Server
+
+   @param cluster - Cluster with values to copy into attribute descriptors
+ */
+void zb_zcl_basic_srv_setup(zb_zcl_cluster_t *cluster);
+#define ZB_BASIC_CLUSTER_ID_SRV_SETUP zb_zcl_basic_srv_setup
+
+/**
+   Setup Method for Client
+
+   @param cluster - Cluster with values to copy into attribute descriptors
+ */
+void zb_zcl_basic_cli_setup(zb_zcl_cluster_t *cluster);
+#define ZB_BASIC_CLUSTER_ID_CLI_SETUP zb_zcl_basic_cli_setup
+
 #endif /* ZB_ZCL_BASIC_H */
