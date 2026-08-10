@@ -172,7 +172,6 @@ static void _submac_task_finished(zb_uint8_t param)
 static void submac_rx_done(ieee802154_submac_t *submac)
 {
     ieee802154_rx_info_t rx_info;
-    zb_uint8_t buf[IEEE802154_FRAME_LEN_MAX];
     TRANS_CTX().b_size = ieee802154_get_frame_length(submac);
     ieee802154_read_frame(submac, TRANS_CTX().buffer,
                                 TRANS_CTX().b_size, &rx_info);
@@ -404,7 +403,7 @@ zb_ret_t zb_transceiver_send_packet(zb_uint8_t header_length, zb_buf_t *buf) ZB_
 
     TRACE_MSG(TRACE_MAC1, "<< zb_transceiver_send_fifo_packet", (FMT__0));
 
-    if (res < 0) {
+    if (res > 0) {
         puts("Error: Frame couldn't be sent");
         return RET_ERROR;
     }
