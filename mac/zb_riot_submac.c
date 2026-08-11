@@ -184,6 +184,7 @@ static void submac_rx_done(ieee802154_submac_t *submac)
     TRANS_CTX().buffer[TRANS_CTX().b_size + 1] = rx_info.rssi;
     TRANS_CTX().b_size += 2;
     /* need to send ack here, zboss uses mac_main_loop (too slow)*/
+#if 0
     if (TRANS_CTX().buffer[0] & 0x20) {
         ieee802154_set_idle(&TRANS_CTX().submac);
         zb_uint8_t ack[3];
@@ -198,6 +199,7 @@ static void submac_rx_done(ieee802154_submac_t *submac)
 
         zb_uint8_t res = ieee802154_send(&TRANS_CTX().submac, &pkt);
     }
+#endif
     ZB_UBEC_SET_RX_DATA_STATUS();
     ZB_SCHEDULE_CALLBACK(_submac_task_finished, 0);
 }
