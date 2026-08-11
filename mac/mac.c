@@ -1014,7 +1014,7 @@ zb_ret_t zb_check_cmd_tx_status()
     return RET_OK;
 #else
     zb_ret_t ret = RET_OK;
-    ZB_WAIT_FOR_TX();
+    //ZB_WAIT_FOR_TX();
     if (ZB_TRANS_CHECK_CHANNEL_ERROR()) {
         ZB_SET_MAC_STATUS(
             ZB_TRANS_CHECK_CHANNEL_BUSY_ERROR() ? MAC_CHANNEL_ACCESS_FAILURE : MAC_NO_ACK);
