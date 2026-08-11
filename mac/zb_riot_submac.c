@@ -209,7 +209,6 @@ static void submac_tx_done(ieee802154_submac_t *submac, int status,
     (void)submac;
     switch (status) {
     case TX_STATUS_SUCCESS:
-        ZB_CLEAR_TX_STATUS();
         ZB_MAC_SET_ACK_OK();
         ZB_MAC_CLEAR_PENDING_DATA();
         break;
@@ -387,6 +386,7 @@ void init_submac(void)
 zb_ret_t zb_transceiver_send_packet(zb_uint8_t header_length, zb_buf_t *buf) ZB_SDCC_REENTRANT
 {
     ZVUNUSED(header_length);
+    ZB_CLEAR_TX_STATUS();
     TRACE_MSG(TRACE_MAC1,
               ">> zb_transceiver_send_packet, buf %p",
               (FMT__P, buf));
@@ -404,10 +404,11 @@ zb_ret_t zb_transceiver_send_packet(zb_uint8_t header_length, zb_buf_t *buf) ZB_
     TRACE_MSG(TRACE_MAC1, "<< zb_transceiver_send_fifo_packet", (FMT__0));
 
     if (res > 0) {
-        puts("Error: Frame couldn't be sent");
+        ZB_SET_TX_CHANNEL_BUSY();
+        printf("Error %d: Frame couldn't be sent. SQN: %d\n", res, ZB_BUF_BEGIN(buf)[2]);
         return RET_ERROR;
     }
-    
+
     return RET_OK;
 }
 
