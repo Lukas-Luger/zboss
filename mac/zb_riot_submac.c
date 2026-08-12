@@ -540,7 +540,7 @@ void zb_transceiver_set_coord_ext_addr(zb_ieee_addr_t coord_addr_long)
 
 void zb_transceiver_set_coord_short_addr(zb_uint16_t coord_addr_short)
 {
-    TRACE_MSG(TRACE_MAC2, ">> zb_transceiver_set_coord_short_addr, addr %d" 
+    TRACE_MSG(TRACE_MAC2, ">> zb_transceiver_set_coord_short_addr, addr %d", 
               (FMT__D, coord_addr_short));
 
     ZVUNUSED(coord_addr_short);

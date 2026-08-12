@@ -405,13 +405,13 @@ void zb_apsme_remove_all_groups_request(zb_uint8_t param) ZB_CALLBACK
 {
     zb_uint8_t status = 0;
     zb_apsme_remove_all_groups_req_t req;
-     zb_apsme_remove_all_groups_req_t *req_ptr = ZB_GET_BUF_PARAM(ZB_BUF_FROM_REF(
+    zb_apsme_remove_all_groups_req_t *req_ptr = ZB_GET_BUF_PARAM(ZB_BUF_FROM_REF(
                                    param), zb_apsme_remove_all_groups_req_t);
     zb_callback_t conf_cb = req_ptr->confirm_cb;
     ZB_MEMCPY(&req, req_ptr, sizeof(req));
     TRACE_MSG(TRACE_APS3,
-              "zb_apsme_remove_all_groups_request group_addr %d endpoint %hd",
-              (FMT__D_H, req.group_address, req.endpoint));
+              "zb_apsme_remove_all_groups_request endpoint %hd",
+              (FMT__D_H, req.endpoint));
 
 
     zb_ushort_t i, j, k;

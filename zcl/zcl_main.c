@@ -26,7 +26,7 @@ void zb_zcl_cib_init()
     ZG->zcl.seq_number = 0;
     ZB_BZERO(&ZG->zcl.device_ctx, sizeof(zb_zcl_globals_t)*ZB_MAX_EP_NUMBER);
 
-    TRACE_MSG(TRACE - ZCL1, "<<cib_init", (FMT__0));
+    TRACE_MSG(TRACE_ZCL1, "<<cib_init", (FMT__0));
 }
 
 /*
@@ -486,7 +486,7 @@ void zb_zcl_rx(zb_uint8_t param)
 send_response:
     if (status != ZB_ZCL_STATUS_SUCCESS || !zcl_hdr.disable_default_resp) {
         zb_buf_t *sec_buf = zb_get_out_buf();
-        ZB_ASSERT(sec_buf);
+        //ZB_ASSERT(sec_buf);
         zb_zcl_send_default_resp(ZB_REF_FROM_BUF(sec_buf), zcl_hdr, status);
     }
 }

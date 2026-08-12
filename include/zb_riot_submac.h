@@ -122,6 +122,8 @@
 /* check TXSR bit 5 - CCAFAIL: Channel busy causes CSMA-CA fails */
 #define ZB_IS_TX_RETRY_COUNT_EXCEEDED() (TRANS_CTX().tx_status & 0xDF)
 
+#define ZB_TRANS_CHECK_TX_RETRY_COUNT_EXCEEDED_ERROR() \
+    ZB_IS_TX_RETRY_COUNT_EXCEEDED()
 #define ZB_TRANS_CHECK_CHANNEL_ERROR() (ZB_IS_TX_CHANNEL_BUSY() || \
                                         ZB_IS_TX_RETRY_COUNT_EXCEEDED())
 

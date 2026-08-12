@@ -370,7 +370,7 @@ static void zdo_parent_annce(zb_uint8_t param) ZB_SDCC_REENTRANT
     resp.status = 0x00;
     
     
-    TRACE_MSG(TRACE_ZDO1, ">> zdo_parent_annce %p", (FMT__P, dt));
+    TRACE_MSG(TRACE_ZDO1, ">> zdo_parent_annce %p", (FMT__P, param));
 
     resp.num_children = 0;
     zb_ushort_t i;

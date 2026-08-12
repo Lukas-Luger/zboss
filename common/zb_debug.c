@@ -54,7 +54,7 @@
 /*! \addtogroup ZB_DEBUG */
 /*! @{ */
 
-#if defined DEBUG || defined USE_ASSERT || defined ZB_PLATFORM_RIOT_ARM
+#if defined DEBUG || defined USE_ASSERT
 
 /**
    Abort execution in system-specific manner.
