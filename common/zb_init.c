@@ -108,6 +108,7 @@ void zb_init() ZB_CALLBACK
 
     zb_sched_init();
     zb_init_buffers();
+    zb_riot_sched_init();
 
 #ifndef ZB8051
 #ifdef ZB_TRANSPORT_LINUX_SPIDEV

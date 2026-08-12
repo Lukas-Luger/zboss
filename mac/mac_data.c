@@ -556,10 +556,6 @@ void zb_handle_mcps_data_req(zb_uint8_t param) ZB_CALLBACK
     zb_mcps_data_req_params_t *data_req_params;
     zb_uint8_t is_unicast;
 
-    if (ZB_BUF_IS_FREE(MAC_CTX().pending_buf)) {
-        zb_free_buf(MAC_CTX().pending_buf);
-    }
-
     MAC_CTX().pending_buf = ZB_BUF_FROM_REF(param);
     TRACE_MSG(TRACE_MAC2, ">> zb_handle_mcps_data_req", (FMT__0));
 

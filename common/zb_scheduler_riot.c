@@ -90,10 +90,28 @@ zb_ret_t zb_schedule_callback(zb_callback_t func, zb_uint8_t param)
     return zb_schedule_alarm(func, param, 0);
 }
 
-zb_ret_t zb_schedule_tx_cb(zb_callback_t func, zb_uint8_t param)
+zb_ret_t zb_schedule_tx_cb(zb_callback_t func,
+                           zb_uint8_t param) ZB_SDCC_REENTRANT
 {
-    //     LOG_DEBUG("0x%lx(%u)\n", (uint32_t)func, param);
-    return zb_schedule_alarm(func, param, 1);
+    zb_ret_t ret = RET_OK;
+    zb_mac_cb_ent_t *ent = ZB_RING_BUFFER_PUT_RESERVE(&ZG->sched.mac_tx_q);
+
+    if (ent) {
+        ent->func = func;
+        ent->param = param;
+        ZB_RING_BUFFER_FLUSH_PUT(&ZG->sched.mac_tx_q);
+        TRACE_MSG(TRACE_COMMON2, "%p scheduled mac cb %p param %hd (in_b %hd)",
+                  (FMT__P_P_H_H, ent, ent->func, ent->param,
+                   (!param ? (zb_uint8_t)-1 : ZB_BUF_FROM_REF(param)->u.hdr.
+                    is_in_buf)));
+        ZB_ASSERT(param <= ZB_IOBUF_POOL_SIZE);
+    }
+    else {
+        TRACE_MSG(TRACE_ERROR, "MAC callbacks rb overflow! param %hd",
+                  (FMT__H, param));
+        ret = RET_OVERFLOW;
+    }
+    return ret;
 }
 
 zb_ret_t zb_schedule_alarm_cancel(zb_callback_t func, zb_uint8_t param)
@@ -191,7 +209,7 @@ static void *_zb_thread(void *arg)
     return NULL;
 }
 
-void zb_sched_init(void)
+void zb_riot_sched_init(void)
 {
     memset(_callback_memarray_buf, 0x00, sizeof(_callback_memarray_buf));
     memarray_init(&_callback_memarray,

@@ -170,6 +170,8 @@ typedef struct zb_sched_globals_s {
  */
 void zb_sched_init() ZB_SDCC_REENTRANT;
 
+void zb_riot_sched_init() ZB_SDCC_REENTRANT;
+
 /**
    Call all callbacks.
    All cooperative multitasking done here.
