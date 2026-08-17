@@ -327,6 +327,7 @@ LOG_INFO("using page %u of internal flash as nonvolatile storage\n",
 
     // uint8_t omg[] = {0x03, 0x08, 0x77, 0xff, 0xff, 0xff, 0xff, 0x07};
     // send_packet(omg, sizeof(omg));
+    ZG->aps.authenticated = 0;
 
     LOG_INFO("starting zigbee stack\n");
 
@@ -382,8 +383,6 @@ LOG_INFO("using page %u of internal flash as nonvolatile storage\n",
     ZB_AIB().aps_designated_coordinator = 0;
     ZB_PIB_RX_ON_WHEN_IDLE() = 0;
 #endif
-
-    ZG->aps.authenticated = 1;
 
     int res = zdo_dev_start();
     DEBUG("zdo_dev_start() returned %i\n", res);

@@ -182,6 +182,7 @@ void zll_net_start_resp_continue(zb_uint8_t param)
     zb_free_buf(buf);
     zll_comm_signal(ZB_ZLL_COMM_REJOIN);
     ZG->nwk.nib.security_level = 5;
+    ZG->aps.authenticated = ZB_TRUE;
 
     zb_buf_t *rejoin_buf = zb_get_out_buf();
     zb_nlme_join_request_t *request = ZB_GET_BUF_PARAM(rejoin_buf, zb_nlme_join_request_t);
@@ -629,6 +630,7 @@ void zll_comm_signal(zb_zll_comm_state_t state)
          * TODO: binding links
          */
         ZB_NIB_SECURITY_LEVEL() = 5;
+        ZG->aps.authenticated = ZB_TRUE;
         BDB_CTX().node_is_on_net = ZB_TRUE;
         BDB_CTX().comm_status = SUCCESS;
         /* save everything now */

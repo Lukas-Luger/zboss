@@ -143,7 +143,7 @@ void zb_apsme_transport_key_indication(zb_uint8_t param) ZB_CALLBACK
             zb_write_security_key();
             if (!ZG->aps.authenticated) {
                 ZG->aps.authenticated = 1;
-
+                ZG->nwk.nib.security_level = 5;
                 ZG->nwk.nib.active_key_seq_number = ind->key.nwk.key_seq_number;
                 ZG->nwk.nib.outgoing_frame_counter = 0;
                 ZG->nwk.nib.active_secur_material_i = i;
@@ -156,6 +156,8 @@ void zb_apsme_transport_key_indication(zb_uint8_t param) ZB_CALLBACK
             else {
                 zb_free_buf(ZB_BUF_FROM_REF(param));
             }
+            zb_write_security_key();
+            zb_save_formdesc_data();
         }
         break;
         default:

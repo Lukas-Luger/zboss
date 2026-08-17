@@ -47,6 +47,8 @@ void set_enc_network_key(zb_uint8_t *enc_network_key)
     aes128d(enc_network_key, exchange_key, network_key);
     zb_secur_setup_preconfigured_key(network_key, 0);
     ZG->nwk.nib.security_level = 5;
+    ZG->aps.authenticated = ZB_TRUE;
+    
 }
 
 /* ----- REQ/RESP HANDLING -------*/
