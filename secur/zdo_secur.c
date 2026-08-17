@@ -140,7 +140,6 @@ void zb_apsme_transport_key_indication(zb_uint8_t param) ZB_CALLBACK
                     TRACE_MSG(TRACE_SECUR1, "switch current key", (FMT__0));
                 }
             }
-            zb_write_security_key();
             if (!ZG->aps.authenticated) {
                 ZG->aps.authenticated = 1;
                 ZG->nwk.nib.security_level = 5;
