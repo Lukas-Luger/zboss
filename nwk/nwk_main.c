@@ -940,11 +940,6 @@ void zb_mcps_data_confirm(zb_uint8_t param) ZB_CALLBACK
      */
     TRACE_MSG(TRACE_NWK1, ">>mcps_data_confirm param %hd handle %hd status %hd",
               (FMT__H_H_H, param, confirm->msdu_handle, buf->u.hdr.status));
-    /* retry on failiure for nwkcUnicastRetries TODO: implement counter!*/
-    if (buf->u.hdr.status != MAC_SUCCESS) {
-        ZB_SCHEDULE_CALLBACK(zb_mac_retry_current, param);
-        return;
-    }
 #ifndef ZB_LIMITED_FEATURES
     if (confirm->msdu_handle == ZB_NWK_INTERNAL_REJOIN_CMD_HANDLE
         && ZG->nwk.handle.state == ZB_NLME_STATE_REJOIN) {

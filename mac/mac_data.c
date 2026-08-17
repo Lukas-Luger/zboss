@@ -652,39 +652,6 @@ send_command:
     TRACE_MSG(TRACE_MAC2, "<< zb_handle_mcps_data_req %i", (FMT__D, ret));
 }
 
-void zb_mac_retry_current(zb_uint8_t param) ZB_CALLBACK
-{
-    zb_buf_t *buf = ZB_BUF_FROM_REF(param);
-    if (ZB_BUF_IS_FREE(buf)) {
-        return;
-    }
-    MAC_CTX().tx_wait_cb = zb_handle_mcps_data_req_continue;
-    MAC_CTX().tx_wait_cb_arg = param;
-    zb_ret_t ret = RET_OK;
-    void *mac_hdr = ZB_BUF_BEGIN(buf);
-    zb_ushort_t hlen = zb_mac_calculate_mhr_length(
-        ZB_FCF_GET_SRC_ADDRESSING_MODE(mac_hdr),
-        ZB_FCF_GET_DST_ADDRESSING_MODE(mac_hdr),
-        ZB_FCF_GET_PANID_COMPRESSION_BIT(mac_hdr));
-    
-    ret = zb_mac_check_security(buf);
-    
-    if (ret) return;
-
-    if (buf->u.hdr.encrypt_type != ZB_SECUR_NO_ENCR) {
-        MAC_ADD_FCS(MAC_CTX().encryption_buf);
-        ret = ZB_TRANS_SEND_COMMAND(hlen, MAC_CTX().encryption_buf);
-    }
-    else
-    {
-        ret = ZB_TRANS_SEND_COMMAND(hlen, buf);
-    }
-
-    if (!ret) {
-        ZB_SET_MAC_STATUS(MAC_SUCCESS);
-    }
-}
-
 void zb_handle_mcps_data_req_continue(zb_uint8_t param) ZB_CALLBACK
 {
     zb_ret_t ret;
