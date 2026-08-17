@@ -53,6 +53,7 @@
 /*! @{ */
 
 #include "zb_zcl.h"
+#include "zb_af_globals.h"
 
 /**
    Global ZCL structure
@@ -60,11 +61,16 @@
 typedef struct zb_zcl_globals_s {
     zb_uint8_t seq_number;                          /*!< ZCL sequence number used when send zcl frames */
 
-    zb_uint8_t cluster_num;                         /*!< Number of registered clusters */
-    zb_zcl_cluster_t cluster[ZB_ZCL_CLUSTER_NUM];   /*!< Cluster array */
+    zb_uint8_t handler_count;                           /*!< Number of registered cluster handlers */
+    zcl_cluster_handlers_t handlers[ZB_ZCL_CLUSTER_NUM];/*!< Cluster handler array */
+    
+    zb_zll_comm_attr_t comm;                        /*!< Commissioning attributes*/
+    zb_af_dev_ctx_t device_ctx;                     /*!< Decive context containing endpoints */
 } zb_zcl_globals_t;
 
 #define ZCL_CTX() ZG->zcl
+
+#define ZLL_COMM() ZG->zcl.comm
 
 /*! @} */
 

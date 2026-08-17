@@ -305,6 +305,7 @@ void zb_free_buf(zb_buf_t *buf);
 
 #define ZB_REF_FROM_BUF(buf) (buf - &ZG->bpool.pool[0])
 
+#define ZB_BUF_IS_FREE(buf) ((buf->u.next >= &ZG->bpool.pool[0] && buf->u.next <= &ZG->bpool.pool[ZB_IOBUF_POOL_SIZE - 1]))
 /**
    Allocate IN buffer. Call callback when buffer is available.
 

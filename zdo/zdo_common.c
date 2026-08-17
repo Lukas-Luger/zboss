@@ -218,7 +218,7 @@ zb_ret_t zdo_af_resp(zb_uint8_t param)
     uint8_t aps_fcf = *(zb_uint8_t *)ZB_BUF_BEGIN(zbbuf);
     if (aps_fcf != ZB_APS_FRAME_INTERPAN) {
         /* get the sequence number from the aps header */
-        zb_buf_cut_left(zbbuf, zb_aps_full_hdr_size(zbbuf) - 1);
+        zb_buf_cut_left(zbbuf, zb_aps_full_hdr_size(ZB_BUF_BEGIN(zbbuf)) - 1);
         tsn = *(zb_uint8_t *)ZB_BUF_BEGIN(zbbuf);
         zb_buf_cut_left(zbbuf, sizeof(tsn));
     }

@@ -340,11 +340,15 @@ void zb_mlme_purge_request(zb_uint8_t param) ZB_CALLBACK
     else {
         ZB_BUF_FROM_REF(param)->u.hdr.status = 0;
         ZB_SCHEDULE_ALARM_CANCEL(zb_mac_pending_data_timeout, i);
+#ifdef ZB_MAC_RIOT
+        ZB_CLEAR_PENDING_BIT(i);
+#else
         ZB_CLEAR_PENDING_QUEUE_SLOT(i);
         if (pending_queue_is_empty()) {
             TRACE_MSG(TRACE_MAC1, "Purge: Clearing pending bit", (FMT__0));
             ZB_CLEAR_PENDING_BIT();
         }
+#endif
     }
     ZB_SCHEDULE_CALLBACK(zb_mlme_purge_confirm, param);
 
@@ -362,11 +366,15 @@ void zb_mac_pending_data_timeout(zb_uint8_t param) ZB_CALLBACK
         MAC_CTX().pending_data_queue[param].pending_data, MAC_TRANSACTION_EXPIRED,
         MAC_CTX().pending_data_queue[param].pending_data);
     /* MAC_CTX().pending_data_queue[param].pending_data = NULL; */
+#ifdef ZB_MAC_RIOT
+    ZB_CLEAR_PENDING_BIT(param);
+#else
     ZB_CLEAR_PENDING_QUEUE_SLOT(param);
     if (pending_queue_is_empty()) {
         TRACE_MSG(TRACE_MAC1, "Clearing pending bit", (FMT__0));
         ZB_CLEAR_PENDING_BIT();
     }
+#endif
 }
 
 /*
@@ -392,7 +400,9 @@ ZB_SDCC_BANKED
                                     (FMT__D, pend_data->dst_addr.addr_short,
                                         ZB_REF_FROM_BUF(pend_data->pending_data)
                                     ));
+#ifndef ZB_MAC_RIOT
     ZB_SET_PENDING_BIT();
+#endif
     /* find free slot */
     for (i = 0; i < ZB_MAC_PENDING_QUEUE_SIZE; i++) {
         if (MAC_CTX().pending_data_queue[i].pending_data == NULL) {
@@ -408,7 +418,9 @@ ZB_SDCC_BANKED
 //         od_hex_dump(ZB_BUF_BEGIN(pend_data->pending_data), ZB_BUF_LEN(pend_data->pending_data), 16);
         ZB_MEMCPY(&MAC_CTX().pending_data_queue[i], pend_data,
                   sizeof(zb_mac_pending_data_t));
-
+#ifdef ZB_MAC_RIOT
+        ZB_SET_PENDING_BIT(i);
+#endif
         /* timeout value = macTransactionPersistenceTime (in unites),
            unite period = aBaseSuperframeDuration
            Our time quant, which ZB_SCHEDULE_ALARM uses, is beacon interval.

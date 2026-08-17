@@ -43,95 +43,96 @@
  * ClarIDy/UBEC/DSR.                                                        *
  *                                                                          *
  ****************************************************************************
-   PURPOSE: Main header for OS and platform depenednt stuff
+   PURPOSE: Zigbee base device behaviour globals definition
  */
 
-#ifndef ZB_OSIF_H
-#define ZB_OSIF_H 1
+#include "zb_types.h"
+#ifndef ZB_BDB_GLOBALS_H
+#define ZB_BDB_GLOBALS_H              1
 
-/*! \addtogroup ZB_OSIF */
+/*! \addtogroup ZB_BDB */
 /*! @{ */
-
-#ifdef __IAR_SYSTEMS_ICC__
-#ifndef ZB_IAR
-#define ZB_IAR
-#endif
-#endif
-
-#ifdef UNIX
-#include "zb_osif_unix.h"
-#elif defined ZB8051 || defined ZB_UZ2410 || defined ZB_CC25XX
-#include "zb_osif_8051.h"
-#else
-#error Port me!
-#endif
-
-#if !defined KEIL
-
-#define MAIN() int main(int argc, char **argv)
-#define FAKE_ARGV
-#define ARGV_UNUSED ZVUNUSED(argc); ZVUNUSED(argv)
-#define MAIN_RETURN(v) return (v)
-
-#else
-
-#define MAIN() void main(void)
-#define FAKE_ARGV char **argv = NULL
-#define ARGV_UNUSED
-#define MAIN_RETURN(v)
-
-#endif  /* KEIL */
-
-#if defined SDCC && defined ZB_BANKED_BUILD
-
-#define  banked
-#define ZB_CB_NAME_MACRO(a) a ## func
-
 /**
-   \par stub is function placed in the common bank which calls real function
-   from anothe bank.
+ * bdbcMaxSameNetworkRetryAttempts
  */
-#define ZB_CB_STUB(name)                                \
-    void ZB_CB_NAME_MACRO(name)(zb_uint8_t param)ZB_SDCC_REENTRANT; \
-    void name(zb_uint8_t param) ZB_SDCC_REENTRANT                    \
-    {                                                       \
-        ZB_CB_NAME_MACRO(name) (param);                          \
-    }
-#else  /* SDCC && ZB_BANKED_BUILD */
-#endif  /* SDCC && ZB_BANKED_BUILD */
+#define BDB_MAX_SAME_NET_RETRIES       (10)
+/**
+ * bdbcMinCommissioningTime 180s
+ */
+#define BDB_MIN_COMM_TIME              (180 * ZB_TIME_ONE_SECOND)
+/**
+ * bdbcRecSameNetworkRetryAttempts (Recommended)
+ */
+#define BDB_REC_SAME_NET_RETRIES       (3)
+/**
+ * bdbcTCLinkKeyExchangeTimeout 5s
+ */
+#define BDB_TC_LINK_KEY_EX_TIMEOUT     (5 * ZB_TIME_ONE_SECOND)
+/**
+ * bdbcTLInterPANTransIdLifetime
+ */
+#define BDB_TL_INTRP_TRANS_ID_LIFETIME (8 * ZB_TIME_ONE_SECOND)
+/**
+ * bdbcTLMinStartupDelayTime
+ */
+#define BDB_TL_MIN_STARTUP_DELAY_TIME  (2 * ZB_TIME_ONE_SECOND)
+/**
+ * bdbcTLPrimaryChannelSet 
+ */
+#define BDB_TL_PRIMARY_CHANNEL_SET     (0x02108800)
+/**
+ * bdbcRxWindowDuration
+ */
+#define BDB_RX_WINDOW_DURATION         (5 * ZB_TIME_ONE_SECOND)
+/**
+ * bdbcTLScanTimeBaseDuration
+ */
+#define BDB_TL_SCAN_TIME_DURATION      (ZB_MILLISECONDS_TO_BEACON_INTERVAL(250))
+/**
+ * bdbcTLSecondaryChannelSet
+ */
+ #define BDB_TL_SECONDARY_CHANNEL_SET  (0x05ef7000)
+/* 
+    bdbdCommissioningStatus
+*/
+typedef enum bdb_comm_status_e {
+    SUCCESS,
+    IN_PROGRESS,
+    NOT_AA_CAPABLE,
+    NO_NETWORK,
+    TARGET_FAILURE,
+    FORMATION_FAILURE,
+    NO_IDENTIFY_QUERY_RESPONSE,
+    BINDING_TABLE_FULL,
+    NO_SCAN_RESPONSE,
+    NOT_PERMITTED,
+    TCLK_EX_FAILURE
+} bdb_comm_status_t;
+/*
+   Global ZCL structure
+ */
+typedef struct zb_bdb_globals_s {
+    zb_uint16_t comm_group_id;              /*!< bdbCommissioningGroupID */
+    zb_uint8_t comm_mode;                   /*!< bdbCommissioningMode */
+    bdb_comm_status_t comm_status;          /*!< bdbCommissioningStatus */
+    zb_ieee_addr_t joining_node;            /*!< bdbJoiningNodeEui64 */
+    zb_uint8_t new_tc_key[ZB_CCM_KEY_SIZE]; /*!< bdbJoiningNodeNewTCLinkKey */
+    zb_bool_t use_install_code;             /*!< bdbJoinUsesInstallCodeKey */
+    zb_uint8_t comm_capability;             /*!< bdbNodeCommissioningCapability*/
+    zb_bool_t node_is_on_net;               /*!< bdbNodeIsOnANetwork */
+    zb_uint8_t node_join_linkkey_type;      /*!< bdbNodeJoinLinkKeyType */
+    zb_uint32_t primary_channel_set;        /*!< bdbPrimaryChannelSet */
+    zb_uint8_t scan_duration;               /*!< bdbScanDuration */
+    zb_uint32_t secondary_channel_set;      /*!< bdbSecondaryChannelSet */
+    zb_uint8_t tc_linkkey_ex_attempts;      /*!< bdbTCLinkKeyExchangeAttempts */
+    zb_uint8_t tc_linkkey_ex_attempts_max;  /*!< bdbTCLinkKeyExchangeAttemptsMax */
+    zb_uint8_t tc_linkkey_ex_method;        /*!< bdbTCLinkKeyExchangeMethod */
+    zb_uint8_t tc_node_join_timeout;        /*!< bdbTrustCenterNodeJoinTimeout (seconds!)*/
+    zb_bool_t tc_require_key_ex;            /*!< bdbTrustCenterRequireKeyExchange */
+} zb_bdb_globals_t;
 
-
-zb_ret_t zb_save_nvram_config();
-
-zb_ret_t zb_config_from_nvram();
-
-void zb_erase_nvram(zb_uint8_t page);
-
-zb_ret_t zb_save_formdesc_data();
-
-zb_ret_t zb_read_formdesc_data();
-
-
-zb_ret_t zb_write_security_key();
-
-zb_ret_t zb_read_security_key();
-
-zb_ret_t zb_write_up_counter();
-
-zb_ret_t zb_read_up_counter();
-
-zb_ret_t zb_reset();
-
-zb_uint8_t zb_read_nvram(zb_uint16_t pos, void *buf, zb_uint16_t len);
-zb_uint8_t zb_write_nvram(zb_uint16_t pos, void *buf, zb_uint16_t len);
-
-/* config section (for nvram routines */
-#define ZB_CONFIG_SIZE 9
-
-#define ZB_CONFIG_PAGE 0
-#define ZB_VOLATILE_PAGE 128
-#define ZB_SCRATCHPAD_PAGE_SIZE 128
+#define BDB_CTX() ZG->bdb
 
 /*! @} */
 
-#endif /* ZB_OSIF_H */
+#endif /* ZB_BDB_GLOBALS_H */

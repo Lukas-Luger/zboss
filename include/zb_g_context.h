@@ -108,6 +108,8 @@ extern ZB_SDCC_XDATA zb_intr_globals_t g_izb;
 #include "zb_mac_globals.h"
 #include "zb_nwk_globals.h"
 #include "zb_aps_globals.h"
+#include "zb_apl_globals.h"
+#include "zb_bdb_globals.h"
 #include "zb_af_globals.h"
 #include "zb_zdo_globals.h"
 #include "zb_zcl_globals.h"
@@ -119,7 +121,7 @@ extern ZB_SDCC_XDATA zb_intr_globals_t g_izb;
 #include "zb_cc25xx.h"
 #endif
 #ifdef RIOT
-#include "zb_mac_riot.h"
+#include "zb_riot_submac.h"
 #endif
 
 #else
@@ -143,6 +145,8 @@ struct zb_globals_s {
     zb_mac_globals_t mac;
     zb_nwk_globals_t nwk;
     zb_aps_globals_t aps;
+    zb_apl_globals_t apl;
+    zb_bdb_globals_t bdb;
     zb_addr_globals_t addr;
     zb_zdo_globals_t zdo;
     zb_zcl_globals_t zcl;

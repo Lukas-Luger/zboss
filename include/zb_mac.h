@@ -61,7 +61,7 @@
 #include "zb_cc25xx.h"
 #endif
 #ifdef RIOT
-#include "zb_mac_riot.h"
+#include "zb_riot_submac.h"
 #endif
 
 
@@ -2286,6 +2286,10 @@ zb_mac_data_req_ctx_t;
  */
 void zb_mac_init();
 
+/**
+  Retry last frame in pending slot
+ */
+void zb_mac_retry_current(zb_uint8_t param) ZB_CALLBACK;
 
 /**
    MCPS-DATA.request. Accepts data request

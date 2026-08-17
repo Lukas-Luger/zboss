@@ -230,7 +230,7 @@ asdf
     #define ZB_TIMER_INSIDE_IDLE
 
     #define ZB_SECURITY
-
+   #define APS_FRAME_SECURITY
     /**
     If defined, switch on traffic dump
     */
@@ -252,7 +252,16 @@ asdf
 //     #define ZB_LINUX_SPIDEV_INTR_TIMEOUT 1
 
     #define ZB_SECURITY
-
+    /**
+    End device timeout period in enum from Table 3-54
+    */
+    #define ZB_ED_TIMEOUT_PERIOD (8)
+    /**
+    End device keepalive period in enum from Table 3-54
+    (manufacturer defined)
+    Recommended: one third of timeout
+    */
+    #define ZB_ED_KEEPALIVE_PERIOD (6)
 
 #elif defined ZB_PLATFORM_8051_SIM
 
@@ -362,7 +371,13 @@ asdf
 
 //#define ZB_TRAFFIC_DUMP_ON
 
-
+#ifdef ZB_ROUTER_ROLE
+/* router supposes end device */
+/**
+    If defined, ZED+ZR role compiled
+ */
+#define ZB_ED_ROLE
+#endif
 #ifndef ZB_ED_ROLE
 /**
    If defined, ZC functionality is compiled
@@ -441,7 +456,7 @@ asdf
    MAC: max time to wait for a response command frame, range 2-64
    Default is 32, 64 set for better compatibility
  */
-#define ZB_MAC_RESPONSE_WAIT_TIME 128
+#define ZB_MAC_RESPONSE_WAIT_TIME 32
 
 /* Make all MAC PIB attributes configurable */
 //#define ZB_CONFIGURABLE_MAC_PIB
@@ -455,7 +470,7 @@ asdf
  */
 #define ZB_MAC_MAX_FRAME_RETRIES 3
 
-#ifdef ZB_ED_ROLE
+#if defined ZB_ED_ROLE && !defined ZB_ROUTER_ROLE
 
 /**
    End device idle time-out
@@ -543,7 +558,7 @@ asdf
  */
 #define ZB_IEEE_ADDR_TABLE_SIZE 101
 
-#ifdef ZB_ED_ROLE
+#if defined ZB_ED_ROLE && !defined ZB_ROUTER_ROLE
 /* Only parent is meangful for ED */
 /**
    NWK: size of the neighbor table
@@ -776,9 +791,9 @@ asdf
 
 /* parameters for security level 5 - the only security level supported */
 /**
-   SECUR: security level. Now fixed to be 5
+   SECUR: security level. Now fixed to be 0
  */
-#define ZB_SECURITY_LEVEL 5
+#define ZB_SECURITY_LEVEL 0
 
 /**
    SECUR: CCM L parameter. Fixed to 2 for security level 5

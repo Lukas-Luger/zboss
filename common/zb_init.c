@@ -54,6 +54,7 @@
 #include "zb_scheduler.h"
 #include "zb_mac_transport.h"
 #include "zb_aps.h"
+#include "zb_zcl.h"
 
 /*! \addtogroup ZB_BASE */
 /*! @{ */
@@ -107,6 +108,7 @@ void zb_init() ZB_CALLBACK
 
     zb_sched_init();
     zb_init_buffers();
+    zb_riot_sched_init();
 
 #ifndef ZB8051
 #ifdef ZB_TRANSPORT_LINUX_SPIDEV
@@ -125,12 +127,14 @@ void zb_init() ZB_CALLBACK
 #ifdef ZB_USE_NVRAM
     zb_config_from_nvram();
     zb_read_up_counter();
+    zb_write_up_counter();
     zb_read_security_key();
     zb_read_formdesc_data();
 #endif
 
     zb_aps_init();
     zb_zdo_init();
+    zb_zcl_init();
 }
 
 

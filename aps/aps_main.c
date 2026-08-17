@@ -442,7 +442,7 @@ static void aps_data_hdr_fill_datareq(zb_uint8_t fc, zb_apsde_data_req_t *req,
         aps_hdr_size -= 1 + 1 + 1; /* no dst_endpoint src_endpoint aps_counter */
     }
 
-    printf("aps_hdr_size: %u\n", aps_hdr_size);
+    // printf("aps_hdr_size: %u\n", aps_hdr_size);
 
 #ifdef ZB_SECURITY
     apsdu->u.hdr.encrypt_type = ZB_SECUR_NO_ENCR;
@@ -552,13 +552,16 @@ void zb_nlde_data_confirm(zb_uint8_t param) ZB_CALLBACK
 
     TRACE_MSG(TRACE_APS2, "+zb_nlde_data_confirm %hd status %hd",
               (FMT__H_H, param, nsdu->u.hdr.status));
-
-    {
+    if (nsdu->u.hdr.status == ZB_NWK_STATUS_INVALID_REQUEST) {
+        /* assumption: we do not have any hdrs built outside of aps */
+        fc_p = ZB_BUF_BEGIN(nsdu);
+    }
+    else {
         zb_nwk_hdr_t *nwk_hdr;
         ZB_MAC_CUT_HDR_WITHOUT_TRAILER(nsdu, nwk_hdr);
         ZVUNUSED(nwk_hdr);
+        ZB_NWK_HDR_CUT(nsdu, fc_p);
     }
-    ZB_NWK_HDR_CUT(nsdu, fc_p);
 
     if (ZB_APS_FC_GET_FRAME_TYPE(*fc_p) == ZB_APS_FRAME_ACK) {
         /* This is APS ACK - free it */
@@ -695,7 +698,8 @@ void zb_nlde_data_indication_continue(zb_uint8_t param) ZB_CALLBACK
 
     /* Detect and reject dup */
 #ifndef ZB_LIMITED_FEATURES
-    if (aps_check_dups(aps_hdr.src_addr, aps_hdr.aps_counter)) {
+    if (aps_check_dups(aps_hdr.src_addr, aps_hdr.aps_counter) &&
+            ZB_APS_FC_GET_FRAME_TYPE(aps_hdr.fc) != ZB_APS_FRAME_INTERPAN) {
         TRACE_MSG(TRACE_APS2, "pkt #%d is a dup - drop",
                   (FMT__D, aps_hdr.aps_counter));
         zb_free_buf(packet);
@@ -758,6 +762,11 @@ void zb_aps_hdr_parse(zb_buf_t *packet, zb_aps_hdr_t *aps_hdr,
         aps_hdr->dst_addr = nwk_hdr->dst_addr;
         /* Remove NWK header from the packet */
         ZB_NWK_HDR_CUT(packet, apshdr);
+        /** TODO
+         * 2.2.4.1.3.2: attempt to map src addr of frame to 64 Bit IEEE using nwkAddrMap
+         * If IEEE ADDR found-> set src addr mode to 0x03 & 64Bit addr to the found one
+         * If not found: set src addr mode to 0x02 & 16 bit addr to current one
+         */
     }
     else {
         /* src and dst addr are not available in this case */

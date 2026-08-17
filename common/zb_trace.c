@@ -55,7 +55,7 @@
 /*! \addtogroup ZB_BASE */
 /*! @{ */
 
-
+#ifndef ZB_PLATFORM_RIOT_ARM
 /**
    \par Trace implementation.
 
@@ -72,7 +72,7 @@ void zb_set_trace_enabled(char val)
 {
     g_trace_enabled = val;
 }
-
+#endif /* ZB_PLATFORM_RIOT_ARM */
 /*! @} */
 
 /****************************************/

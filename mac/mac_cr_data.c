@@ -75,7 +75,7 @@ zb_ret_t pending_queue_is_empty()
     return ret;
 }
 
-#ifdef ZB_COORDINATOR_ROLE
+#if defined ZB_COORDINATOR_ROLE || defined ZB_ROUTER_ROLE
 
 void zb_accept_data_request_cmd(zb_uint8_t param) ZB_CALLBACK
 {
@@ -382,9 +382,9 @@ send_data_resp:
    ret = ZB_TRANS_SEND_COMMAND(mhr_pend_len, b_tmp); TX waiting callback could
    be scheduled before or after sending, because there's no option for
    scheduler_loop, which calls tx-waiting callback, to be called. */
-        if (data_found) {
-            MAC_CTX().tx_wait_cb = zb_handle_data_request_cmd_continue;
-        }
+        //if (data_found) {
+        MAC_CTX().tx_wait_cb = zb_handle_data_request_cmd_continue;
+        //}
         TRACE_MSG(TRACE_MAC2,
                   "<< zb_handle_data_request_cmd ret, continue scheduled",
                   (FMT__0));
@@ -475,12 +475,16 @@ void zb_handle_data_request_cmd_continue(zb_uint8_t param) ZB_CALLBACK
 
             ZB_SCHEDULE_ALARM_CANCEL(zb_mac_pending_data_timeout,
                                      data_found_index);
+#ifdef ZB_MAC_RIOT
+            ZB_CLEAR_PENDING_BIT(data_found_index);
+#else
             ZB_CLEAR_PENDING_QUEUE_SLOT(data_found_index);
 
             if (pending_queue_is_empty()) {
                 TRACE_MSG(TRACE_MAC1, "Clearing pending bit", (FMT__0));
                 ZB_CLEAR_PENDING_BIT();
             }
+#endif
         }
     }
 

@@ -50,12 +50,13 @@
 #include "zb_bank_common.h"
 
 #define RND_BASE ((zb_uint32_t)&g_izb)
+static zb_uint32_t v;
 
 zb_uint16_t zb_random()
 {
-    static zb_uint32_t v = 0;
-
-    v = (zb_uint32_t)(RND_BASE);
+    if (!v) {
+        v = (zb_uint32_t)(RND_BASE);
+    }
     v = 1103515245l * v + 12345;
     return (v & 0xffff);
 }

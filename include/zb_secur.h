@@ -156,6 +156,11 @@ typedef struct zb_secur_ccm_nonce_s {
     zb_uint8_t secur_control;
 } ZB_PACKED_STRUCT zb_secur_ccm_nonce_t;
 
+/**
+   Derived trustcenter link key
+ */
+#define ZB_DEFAULT_TC_LINK_KEY (zb_uint8_t[]){0x4b, 0xab, 0x0f, 0x17, 0x3e, 0x14, \
+                0x34, 0xa2, 0xd5, 0x72, 0xe1, 0xc1, 0xef, 0x47, 0x87, 0x82}
 
 #define ZB_NWK_STD_SECUR_CONTROL \
     (5 /*security level */ | (1 << 3) /* key identifier - NWK key */ | 1 << \
@@ -181,6 +186,12 @@ typedef struct zb_secur_ccm_nonce_s {
     (0 /*security level */ | (0 << 3) /* key identifier */ | 0 /* ext nonce */)
 
 #define ZB_SECUR_AUX_HDR_GET_KEY_TYPE(ctrl) (((ctrl) >> 3) & 0x3)
+
+#define ZB_APS_SECUR_CONTROL_SET_LEVEL(fc, lvl) \
+    (*fc = (*fc & 0xf8) | (lvl & 0x07))
+
+#define ZB_APS_SECUR_CONTROL_GET_LEVEL(fc) \
+    (fc & 0x07)
 
 /**
    CCM* encryption and authentication procedure for Standard security

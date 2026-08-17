@@ -128,7 +128,8 @@ void zb_nwk_nib_init()
 #ifdef  ZB_NWK_MESH_ROUTING
     ZG->nwk.nib.aps_rreq_addr = -1;
 #endif
-
+    ZG->nwk.nib.nwk_parent_information = 0;
+    ZG->nwk.nib.nwk_ed_timeout_default = 8;
     TRACE_MSG(TRACE_NWK1, "<<nib_init", (FMT__0));
 }
 
@@ -267,7 +268,7 @@ void zb_nlde_data_request(zb_uint8_t param)   ZB_CALLBACK
         ZB_SCHEDULE_CALLBACK(zb_mcps_data_request, ZB_REF_FROM_BUF(nsdu));
     }
     else {
-        /* check that we are associated */
+        /* check that we are associated (3.6.2.1; 3.2.1.1.3) */
         if (!ZG->nwk.handle.joined) {
             NWK_CONFIRM_STATUS(nsdu, ZB_NWK_STATUS_INVALID_REQUEST,
                                zb_nlde_data_confirm);
@@ -692,7 +693,7 @@ void nwk_broadcast_transmition(zb_uint8_t param) ZB_CALLBACK
 
             TRACE_MSG(TRACE_NWK2, "unicast transmition", (FMT__0));
 
-            zb_address_short_by_ref(&data_req->dst_addr, nent->addr_ref);
+            zb_address_short_by_ref(&data_req->dst_addr.addr_short, nent->addr_ref);
             TRACE_MSG(TRACE_NWK2, "addr %d", (FMT__D, data_req->dst_addr));
 
             /* unicast packet */
@@ -944,8 +945,12 @@ void zb_mcps_data_confirm(zb_uint8_t param) ZB_CALLBACK
         && ZG->nwk.handle.state == ZB_NLME_STATE_REJOIN) {
         TRACE_MSG(TRACE_NWK1, "schedule zb_nlme_rejoin_response_timeout %d",
                   (FMT__D, ZB_NWK_REJOIN_TIMEOUT));
+        if (ZG->nwk.handle.tmp.rejoin.buf) {
+            zb_free_buf(ZB_BUF_FROM_REF(ZG->nwk.handle.tmp.rejoin.buf));
+        }
         ZB_SCHEDULE_ALARM_CANCEL(zb_nlme_rejoin_response_timeout,
                                  ZB_ALARM_ANY_PARAM);
+        ZG->nwk.handle.tmp.rejoin.buf = param;
         ZB_SCHEDULE_ALARM(zb_nlme_rejoin_response_timeout, param,
                           ZB_NWK_REJOIN_TIMEOUT);
     }
@@ -1137,17 +1142,36 @@ void zb_mcps_data_indication(zb_uint8_t param) ZB_CALLBACK
     ZB_LETOH16(&src_addr, &nwk_hdr->src_addr);
 
     /* See 3.6.5 Skip already precessed broadcast packets and not for us packets */
+    /**
+     * Broadcast communication 3.6.6:
+     * 1) we must be on a network (aka ZG->nwk.handle.joined or bdbNodeIsOnNetwork??)
+     *      for nwkNetworkBroadcastDeliveryTime (aka ZB_NWK_BROADCAST_DELIVERY_TIME())
+     * 2) compare dst-addr with own dev type (e.g: if we are ed, do not accept 0xfffc)
+     * 3) compare src and snum with btt entries
+     * 3.1) if entry exists: may update entry, then drop frame
+     * 3.2) if no entry exists: create new entry (MAY mark it as having delivered the brdcst??)
+     *          indicate to next higher layer via NLDE-DATA.indication
+     * 4) If we are (Router or Coordinator) AND Radius > 0:
+     *      wait for random time (max=nwkcMaxBroadcastJitter) then retransmit packet
+     *    Else: drop packet!
+     * Other conditions:
+     * - End devices whith macRxOnWhenIdle = False: no retransmission and no btt!
+     * - If btt is full and no expired entries: drop packet - no retransmission, no NLDE-DATA.indication
+     * - if (Router or Coordinator) and network is non-beacon-enabled: retransmit frame at most nwkMaxBroadcastRetries times
+     * - If passive ack is not supported: retransmit nwkMaxBroadcastRetries times
+     * - ...
+     */
     if (ZB_NWK_IS_ADDRESS_BROADCAST(dst_addr)) {
         TRACE_MSG(TRACE_NWK3, "broadc addr 0x%x", (FMT__D, dst_addr));
 
         if (!(dst_addr == ZB_NWK_BROADCAST_ALL_DEVICES
               || (dst_addr == ZB_NWK_BROADCAST_RX_ON_WHEN_IDLE
                   && ZB_PIB_RX_ON_WHEN_IDLE())
-#ifdef ZB_ROUTER_ROLE
+#if defined ZB_ROUTER_ROLE || defined ZB_COORDINATOR_ROLE
               || (dst_addr == ZB_NWK_BROADCAST_ROUTER_COORDINATOR &&
-                  (!ZG->nwk.handle.joined_pro))
+                 ZB_NIB_DEVICE_TYPE() != ZB_NWK_DEVICE_TYPE_ED)// (!ZG->nwk.handle.joined_pro))
               || (dst_addr == ZB_NWK_BROADCAST_LOW_POWER_ROUTER &&
-                  (!ZG->nwk.handle.joined_pro))
+                  ZB_NIB_DEVICE_TYPE() != ZB_NWK_DEVICE_TYPE_ED)//(!ZG->nwk.handle.joined_pro))
 #endif
               )
             ) {
@@ -1539,7 +1563,15 @@ void nwk_frame_indication(zb_uint8_t param) ZB_CALLBACK
         }
         else
 #endif  /* ZB_LIMITED_FEATURES */
-        {
+        if (command_id == ZB_NWK_CMD_ED_TIMEOUT_REQUEST) {
+            puts("not supported ed timeout req");
+            zb_free_buf(buf);
+        }
+        else if (command_id == ZB_NWK_CMD_ED_TIMEOUT_RESPONSE) {
+            TRACE_MSG(TRACE_NWK3, "got ed timeout response cmd", (FMT__0));
+            zb_nlme_ed_timeout_response(param);
+        }
+        else {
             TRACE_MSG(TRACE_ERROR, "unknown cmd %hd - drop", (FMT__H,
                                                               command_id));
             zb_free_buf(buf);

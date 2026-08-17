@@ -61,6 +61,8 @@
 
 void zb_zdo_data_indication(zb_uint8_t param) ZB_CALLBACK;
 
+void zb_zcl_rx(zb_uint8_t param) ZB_CALLBACK;
+
 void zb_apsde_data_indication(zb_uint8_t param) ZB_CALLBACK
 {
     zb_buf_t *asdu = (zb_buf_t *)ZB_BUF_FROM_REF(param);
@@ -70,7 +72,10 @@ void zb_apsde_data_indication(zb_uint8_t param) ZB_CALLBACK
     TRACE_MSG(TRACE_APS3, "apsde_data_ind: pkt %p h 0x%hx sz %hd, dst endp %hd",
               (FMT__P_H_H_H, (zb_buf_t *)asdu, asdu->u.hdr.handle,
                ZB_BUF_LEN(asdu), ind->dst_endpoint));
-
+    if(ZB_APS_FC_GET_FRAME_TYPE(ind->fc) == ZB_APS_FRAME_INTERPAN){
+        // not sure how to handle frames propery: when to use ZDO, ZDP, AF or ZCL handling
+        ind->dst_endpoint = -1; //sketchy workaround to omit zdo handling
+    }
     switch (ind->dst_endpoint) {
         case 0:
             /* special case: endpoint 0 - ZDP */
@@ -90,13 +95,9 @@ void zb_apsde_data_indication(zb_uint8_t param) ZB_CALLBACK
             if (ZG->zdo.af_data_cb) {
                 TRACE_MSG(TRACE_ERROR, "APS pkt for ep %hd - call %p",
                           (FMT__H_P, ind->dst_endpoint, ZG->zdo.af_data_cb));
-                zb_schedule_callback(ZG->zdo.af_data_cb, param);
+                ZB_SCHEDULE_CALLBACK(ZG->zdo.af_data_cb, param);
             }
-            else {
-                TRACE_MSG(TRACE_ERROR, "APS pkt for ep %hd - drop",
-                          (FMT__H, ind->dst_endpoint));
-                zb_free_buf(asdu);
-            }
+            ZB_SCHEDULE_CALLBACK(zb_zcl_rx, param);
             break;
     }
 }
@@ -110,7 +111,7 @@ void zb_af_set_data_indication(zb_callback_t cb)
 
 void zb_apsde_data_acknowledged(zb_uint8_t param) ZB_CALLBACK
 {
-    printf("acked\n");
+    // printf("aps acked\n");
     zb_aps_hdr_t aps_hdr;
     zb_buf_t *asdu = (zb_buf_t *)ZB_BUF_FROM_REF(param);
 
@@ -172,9 +173,7 @@ void zb_apsde_data_acknowledged(zb_uint8_t param) ZB_CALLBACK
     else
 #endif  /* ZB_LIMITED_FEATURES2 */
     {
-        if (zdo_af_resp(param) != RET_OK) {
-            zb_free_buf(asdu);
-        }
+        zb_free_buf(asdu);
     }
 
     TRACE_MSG(TRACE_APS3, "<<apsde_data_acked", (FMT__0));

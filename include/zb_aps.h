@@ -155,6 +155,26 @@ typedef struct zb_apsde_data_req_s {
                                      */
 } zb_apsde_data_req_t;
 
+/**
+   APSDE interpan request structure.
+
+   This data structure passed to zb_intrp_data_request() in the packet buffer
+   (at its tail).
+ */
+typedef struct zb_intrp_data_req_params_s {
+    zb_uint8_t src_addr_mode;         /*!< 0x00 no addr;
+                                            0x01 reserved;
+                                            0x02 16bit short addr;
+                                            0x03 64 bit extended addr */
+    zb_uint8_t dst_addr_mode;         /*   0x01 16Bit group addr;
+                                            0x02 16bit NWK addr;
+                                            0x03 64Bit extended addr */
+    union zb_addr_u dst_addr;         /*!< Destination address */
+    zb_uint16_t profileid;            /*!< The identifier of the profile for which this
+                                            frame is intended.  */
+    zb_uint16_t clusterid;            /*!< The identifier of the object for which this
+                                            frame is intended.  */
+} zb_intrp_data_req_params_t;
 
 /**
    APSME binding structure.
@@ -250,6 +270,40 @@ enum zb_apsde_tx_opt_e {
  */
 void zb_apsde_data_request(zb_uint8_t param) ZB_CALLBACK;
 
+/**
+   INTRP-DATA.request primitive
+
+   This function can be called via scheduler, returns immediatly.
+   Later zb_intrp_data_confirm will be called to pass INTRP-DATA.request result up.
+
+   @param apsdu - packet to send (@see zb_buf_t) and parameters at buffer tail
+          \see zb_intrp_data_req_params_t
+
+   @b Example:
+   @code
+   {
+    zb_intrp_data_req_params_t *req;
+    zb_ushort_t i;
+
+    buf = ZB_BUF_FROM_REF(param);
+    ZB_BUF_INITIAL_ALLOC(buf, 10, ptr);
+    for (i = 0 ; i < 10 ; ++i)
+    {
+      ptr[i] = i % 32 + '0';
+    }
+
+    req = ZB_GET_BUF_TAIL(buf, sizeof(zb_intrp_data_req_params_t));
+    intrp->clusterid = 0x1000; //ZLL Commissioning
+    intrp->profileid = 0xc05e; //ZLL
+    intrp->src_addr_mode = ZB_ADDR_64BIT_DEV;
+    intrp->dst_addr_mode = ZB_ADDR_16BIT_DEV_OR_BROADCAST;
+    intrp->dst_addr.addr_short = 0xffff;
+    TRACE_MSG(TRACE_APS3, "Sending apsde_data.request", (FMT__0));
+    ZB_SCHEDULE_CALLBACK(zb_intrp_data_request, ZB_REF_FROM_BUF(buf));
+   }
+   @endcode
+ */
+void zb_intrp_data_request(zb_uint8_t param) ZB_CALLBACK;
 
 /**
    Remove APS header from the packet
@@ -315,6 +369,7 @@ void zb_apsde_data_request(zb_uint8_t param) ZB_CALLBACK;
 typedef struct zb_apsme_add_group_req_s {
     zb_uint16_t group_address;  /*!< The 16-bit address of the group being added.  */
     zb_uint8_t endpoint;        /*!< The endpoint to which the given group is being added.  */
+    zb_callback_t confirm_cb;
 } zb_apsme_add_group_req_t;
 
 
@@ -327,7 +382,54 @@ typedef struct zb_apsme_add_group_conf_s {
     zb_uint8_t status;
 } zb_apsme_add_group_conf_t;
 
+/** 
+   APSME-REMOVE-GROUP.request primitive parameters
+ */
+typedef struct zb_apsme_add_group_req_s zb_apsme_remove_group_req_t;
 
+/**
+   APSME-REMOVE-GROUP.confirm primitive parameters
+ */
+typedef struct zb_apsme_add_group_conf_s zb_apsme_remove_group_conf_t;
+
+/** 
+   APSME-REMOVE-ALL-GROUPS.request primitive parameters
+ */
+typedef struct zb_apsme_remove_all_groups_req_s
+{
+  zb_uint8_t endpoint;          /*!< The endpoint to which the given group is being removed. */
+  zb_callback_t confirm_cb;     /*!< The callback to be called when the operation is completed. */
+} zb_apsme_remove_all_groups_req_t;
+
+/**
+   APSME-REMOVE-ALL-GROUPS.confirm primitive parameters
+ */
+typedef struct zb_apsme_remove_all_groups_conf_s
+{
+  zb_uint8_t endpoint;          /*!< The endpoint which is to be removed from all groups. */
+  zb_ret_t status;              /*!< The status of the request to remove all groups. */
+} zb_apsme_remove_all_groups_conf_t;
+
+/**
+   APSME-GET-GROUP-MEMBERSHIP(?).request primitive parameters
+ */
+typedef struct zb_apsme_get_group_membership_req_s
+{
+    zb_uint8_t n_groups;        /*!< The number of groups */
+    zb_uint16_t *groups;        /*!< Array of group addresses */
+    zb_uint8_t endpoint;        /*!< Endpoint the groups are assigned to */
+    zb_callback_t confirm_cb;
+} zb_apsme_get_group_membership_req_t;
+
+/**
+   APSME-GET-GROUP-MEMBERSHIP(?).confirm primitive parameters
+ */
+typedef struct zb_apsme_get_group_membership_conf_s
+{
+    zb_uint16_t groups[ZB_APS_GROUP_TABLE_SIZE];  /*!< List with group addresses. */
+    zb_ushort_t n_groups;                         /*!< Group addresses amount. */
+    zb_ushort_t capacity;                         /*!< Group table capacity */
+} zb_apsme_get_group_membership_conf_t;
 /*! @} */
 
 
@@ -612,6 +714,15 @@ enum zb_aps_frame_delivery_mode_e {
           0                                                                  \
           )))
 
+
+/**
+   Get APS auxiliary frame header size
+ */
+#define ZB_APS_AUX_HDR_SIZE(fc)                                              \
+    (1 + 4 +            /* secur control field + frame counter */            \
+    ((fc & 0x20) ? sizeof(zb_ieee_addr_t) : 0) + /* extended nonce present*/ \
+    ((((fc >> 3) & 3) == 1) ? 1 : 0)   /* key sequence number present */     \
+    )   
 /**
    Return APS header + APS aux hdr size
  */
@@ -639,6 +750,27 @@ zb_ushort_t zb_aps_full_hdr_size(zb_uint8_t *pkt);
 
  */
 void zb_apsme_add_group_request(zb_uint8_t param) ZB_CALLBACK;
+
+/**
+   APSME-REMOVE-GROUP.request primitive
+
+   @param param - buffer with parameter. \see zb_apsme_remove_group_req_t
+ */
+void zb_apsme_remove_group_request(zb_uint8_t param) ZB_CALLBACK;
+
+/**
+   APSME-REMOVE-ALL-GROUPS.request primitive
+
+   @param param - buffer with parameter. \see zb_apsme_remove_all_groups_req_t
+ */
+void zb_apsme_remove_all_groups_request(zb_uint8_t param) ZB_CALLBACK;
+
+/** 
+   Get Group Membership Command (For Zigbee cluster library).
+
+   @param param - buffer with parameter. \see zb_apsme_get_group_membership_req_t
+  */
+void zb_apsme_get_group_membership_request(zb_uint8_t param) ZB_CALLBACK;
 
 #define ZDO_MGMT_APS_LEAVE_RESP_CLID    0x8034 /* it is from zdo for leave callback*/
 

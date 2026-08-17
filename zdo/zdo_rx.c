@@ -53,14 +53,16 @@
 #include "zb_nwk.h"
 #include "zb_aps.h"
 #include "zb_zdo.h"
+#include "zb_zcl.h"
 #include "zdo_common.h"
 
 #include "zb_bank_8.h"
 /*! \addtogroup ZB_ZDO */
 /*! @{ */
 
-#ifdef ZB_ROUTER_ROLE
 static void zdo_device_annce_srv(zb_uint8_t param, void *dt) ZB_SDCC_REENTRANT;
+#ifdef ZB_ROUTER_ROLE
+static void zdo_parent_annce(zb_uint8_t param) ZB_SDCC_REENTRANT;
 #endif
 
 void zb_zdo_data_indication(zb_uint8_t param) ZB_CALLBACK
@@ -70,9 +72,7 @@ void zb_zdo_data_indication(zb_uint8_t param) ZB_CALLBACK
         (zb_apsde_data_indication_t *)ZB_GET_BUF_PARAM(asdu,
                                                        zb_apsde_data_indication_t);
 
-#ifdef ZB_ROUTER_ROLE
     zb_uint8_t *body;
-#endif
     zb_uint8_t skip_free_buf = 1;
     zb_ret_t ret;
     zb_uint8_t fc;
@@ -81,11 +81,8 @@ void zb_zdo_data_indication(zb_uint8_t param) ZB_CALLBACK
     TRACE_MSG(TRACE_ZDO1, "zdo_data_ind %hd clu 0x%hx",
               (FMT__H_H, param, ind->clusterid));
     fc = *ZB_BUF_BEGIN(asdu); /* APS FC is needed in some response functions */
-#ifdef ZB_ROUTER_ROLE
+
     ZB_APS_HDR_CUT_P(asdu, body);
-#else
-    ZB_APS_HDR_CUT(asdu);
-#endif
 /* seems like switch should be replaced. It's broken somehow */
 #if 0
     switch (ind->clusterid) {
@@ -219,9 +216,8 @@ void zb_zdo_data_indication(zb_uint8_t param) ZB_CALLBACK
 #endif
 
 
-#ifdef ZB_ROUTER_ROLE
-    if ((ind->clusterid == ZDO_DEVICE_ANNCE_CLID) &&
-        (!ZG->nwk.handle.joined_pro)) {
+    if ((ind->clusterid == ZDO_DEVICE_ANNCE_CLID)) {
+        //&& (!ZG->nwk.handle.joined_pro)) {
 //       printf("body:\n");
 //       od_hex_dump(body, 32, 16);
         zdo_device_annce_srv(param, (void *)(body));
@@ -232,9 +228,8 @@ void zb_zdo_data_indication(zb_uint8_t param) ZB_CALLBACK
         skip_free_buf = 0;
     }
     else
-#endif
 #ifndef ZB_LIMITED_FEATURES
-    if ((ind->clusterid == ZDO_NODE_DESC_REQ_CLID) &&
+    if ((ind->clusterid == ZDO_NODE_DESC_REQ_CLID) ||
         (ind->clusterid == ZDO_POWER_DESC_REQ_CLID)) {
         zdo_send_desc_resp(param);
     }
@@ -274,7 +269,7 @@ void zb_zdo_data_indication(zb_uint8_t param) ZB_CALLBACK
     else if (ind->clusterid == ZDO_END_DEVICE_BIND_REQ_CLID) {
         zb_zdo_end_device_bind_handler(param);
     }
-    else if (ind->clusterid == ZDO_MGMT_PERMIT_JOINING_CLID) {
+    else if (ind->clusterid == ZDO_MGMT_PERMIT_JOINING_REQ_CLID) {
 #ifdef ZB_ROUTER_ROLE
         if (!ZG->nwk.handle.joined_pro) {
             zb_zdo_mgmt_permit_joining_handle(param);
@@ -336,35 +331,16 @@ void zb_zdo_data_indication(zb_uint8_t param) ZB_CALLBACK
     else if (ind->clusterid == ZDO_MGMT_NWK_UPDATE_NOTIFY_CLID) {
 
     }
-    else if (ind->clusterid == 0x1000) {
-        zb_uint8_t zll_command = *(ZB_BUF_BEGIN(ZB_BUF_FROM_REF(param)) + 2);
-        TRACE_MSG(TRACE_ZDO1, "received ZLL command: 0x%hx",
-                  (FMT__H, zll_command));
-        switch (zll_command) {
-            case 0x0: /* scan request */
-                zdo_zll_scan_resp(param);
-                break;
-
-            case 0x6: /* identify request */
-                zdo_zll_identify_resp(param);
-                skip_free_buf = 0;
-                break;
-
-            case 0x10: /* network start request */
-                printf("network start request\n");
-                zdo_zll_start_network_resp(param);
-                break;
-
-            case 0x12: /* join router request */
-                printf("join router request\n");
-                zdo_zll_join_router_resp(param);
-                break;
-
-            default:
-                printf("unhandled ZLL command 0x%x\n", zll_command);
-                break;
+    else if (ind->clusterid == ZDO_PARENT_ANNCE_CLID) {
+        if (ZB_AIB().aps_parent_annce_timer) {
+            ZB_GET_OUT_BUF_DELAYED(zdo_schedule_parent_annce);
         }
-
+#ifdef ZB_ROUTER_ROLE
+        /* only routers respond */
+        if (ZB_NIB_DEVICE_TYPE() == ZB_NWK_DEVICE_TYPE_ROUTER) {
+            zdo_parent_annce(param);
+        }
+#endif
     }
     else
 #endif  /* ZB_LIMITED_FEATURES */
@@ -381,8 +357,84 @@ void zb_zdo_data_indication(zb_uint8_t param) ZB_CALLBACK
     }
 }
 
-
 #ifdef ZB_ROUTER_ROLE
+static void zdo_parent_annce(zb_uint8_t param) ZB_SDCC_REENTRANT
+{
+    zb_buf_t *buf = ZB_BUF_FROM_REF(param);
+    zb_mac_mhr_t mac_hdr;
+    zb_parse_mhr(&mac_hdr, buf->buf + buf->u.hdr.mac_hdr_offset);
+    zb_uint16_t source = mac_hdr.src_addr.addr_short;
+    zb_free_buf(buf);
+    buf = zb_get_out_buf();
+    zb_zdo_parent_annce_resp_t resp;
+    resp.status = 0x00;
+    
+    
+    TRACE_MSG(TRACE_ZDO1, ">> zdo_parent_annce %p", (FMT__P, param));
+
+    resp.num_children = 0;
+    zb_ushort_t i;
+    // TODO: add keepalive to neighbors, and check them here
+    zb_neighbor_tbl_ent_t *ent;
+    for (i = 0; i < ZG->nwk.neighbor.base_neighbor_used; i++) {
+        ent = &ZG->nwk.neighbor.base_neighbor[i];
+        if (ent->device_type == ZB_NWK_DEVICE_TYPE_ED) {
+            zb_address_ieee_by_ref(resp.children[resp.num_children], ent->addr_ref);
+            resp.num_children++;
+        }
+    }
+    if (ZG->nwk.neighbor.ext_neighbor_size) {
+        zb_ext_neighbor_tbl_ent_t *ext_ent;
+        zb_bool_t exists;
+        zb_ieee_addr_t addr;
+        for (i = 0; i < ZG->nwk.neighbor.ext_neighbor_used; i++) {
+            ext_ent = &ZG->nwk.neighbor.ext_neighbor[i];
+            if (ext_ent->device_type == ZB_NWK_DEVICE_TYPE_ED) {
+                // avoid duplicates
+                exists = ZB_FALSE;
+                zb_ieee_addr_decompress(addr, &ext_ent->long_addr);
+                for (zb_ushort_t j = 0; j < resp.num_children; j++) {
+                    if (!ZB_IEEE_ADDR_CMP(resp.children[j], addr)) {
+                        exists = ZB_TRUE;
+                        break;
+                    }
+                }
+                if (!exists) {
+                    ZB_IEEE_ADDR_COPY(resp.children[resp.num_children], addr);
+                    resp.num_children++;
+                }
+            }
+        }
+    }
+
+    if (resp.num_children == 0) {
+        zb_free_buf(buf);
+        return;
+    }
+    zb_ushort_t size = sizeof(zb_zdo_parent_annce_resp_t) -  sizeof(zb_ieee_addr_t) * 
+        (ZB_NWK_MAX_CHILDREN - resp.num_children);
+    zb_zdo_parent_annce_resp_t *ptr;
+    ZB_BUF_INITIAL_ALLOC(buf, size, ptr);
+    ZB_MEMCPY(ptr, &resp, size);
+    ZDO_CTX().tsn++;
+    ptr->tsn = ZDO_CTX().tsn;
+
+    zb_apsde_data_req_t *dreq = ZB_GET_BUF_TAIL(ZB_BUF_FROM_REF(
+                                                        param),
+                                                    sizeof(zb_apsde_data_req_t));
+
+    ZB_BZERO(dreq, sizeof(*dreq));
+    /* Unicast to sender. */
+    dreq->dst_addr = source;
+    dreq->addr_mode = ZB_APS_ADDR_MODE_16_ENDP_PRESENT;
+    /* use default radius, max_depth * 2 */
+    dreq->clusterid = ZDO_PARENT_ANNCE_RESP_CLID;
+
+    ZB_SCHEDULE_CALLBACK(zb_apsde_data_request, param);
+    
+}
+#endif /* ROUTER */
+
 static void zdo_device_annce_srv(zb_uint8_t param, void *dt) ZB_SDCC_REENTRANT
 {
     zb_buf_t *buf = ZB_BUF_FROM_REF(param);
@@ -413,6 +465,7 @@ static void zdo_device_annce_srv(zb_uint8_t param, void *dt) ZB_SDCC_REENTRANT
              * packet - this is our sibling */
             ne->relationship = ZB_NWK_RELATIONSHIP_SIBLING;
         }
+#ifdef ZB_ROUTER_ROLE
         if (ne->relationship == ZB_NWK_RELATIONSHIP_CHILD
             || ne->relationship == ZB_NWK_RELATIONSHIP_UNAUTHENTICATED_CHILD
             || ne->relationship == ZB_NWK_RELATIONSHIP_PREVIOUS_CHILD) {
@@ -420,6 +473,7 @@ static void zdo_device_annce_srv(zb_uint8_t param, void *dt) ZB_SDCC_REENTRANT
                 ne->depth = ZG->nwk.nib.depth + 1;
             }
         }
+#endif
         if (ne->device_type == ZB_NWK_DEVICE_TYPE_ED) {
             ne->permit_joining = 0;
         }
@@ -483,6 +537,5 @@ zb_neighbor_tbl_ent_t *zdo_device_info_upd(zb_buf_t *buf,
     return NULL;
 }
 
-#endif
 
 /*! @} */

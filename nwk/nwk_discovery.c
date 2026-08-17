@@ -89,7 +89,7 @@ void zb_nlme_network_discovery_request(zb_uint8_t param) ZB_CALLBACK
         /* start writing to the extended neigbor table: eat some space from the
          * neighbor table */
         /* For ED neighbor table has size 1 for parent entrie only, and ext table has fixed size */
-#ifndef ZB_ED_ROLE
+#if defined ZB_ROUTER_ROLE || defined ZB_COORDINATOR_ROLE
         zb_nwk_exneighbor_start();
 #endif
         /* Don't forget to call zb_nwk_exneighbor_stop() after successful join (not
@@ -210,7 +210,7 @@ void zb_mlme_beacon_notify_indication(zb_uint8_t param) ZB_CALLBACK
             && beacon_payload->protocol_id == 0
             && beacon_payload->protocol_version == ZB_PROTOCOL_VERSION
 /* if we are ed, we could connect to any net */
-#ifndef ZB_ED_ROLE
+#if defined ZB_ROUTER_ROLE || defined ZB_COORDINATOR_ROLE
 #if ZB_STACK_PROFILE == 1
             /* ignore PRO if we are 2007 */
             /* we should not ignore pro, we just need to join and act as end device, no matter, router or ed */
@@ -528,7 +528,7 @@ void zb_mlme_scan_confirm(zb_uint8_t param) ZB_CALLBACK
         ZG->nwk.handle.state = ZB_NLME_STATE_IDLE;
     }
 #endif
-#if defined ZB_COORDINATOR_ROLE || defined ZB_ROUTER_ROLE
+#if defined ZB_COORDINATOR_ROLE
     else if (ZG->nwk.handle.state == ZB_NLME_STATE_FORMATION_ED_SCAN) {
         nwk_formation_ed_scan_confirm((zb_buf_t *)ZB_BUF_FROM_REF(param));
     }

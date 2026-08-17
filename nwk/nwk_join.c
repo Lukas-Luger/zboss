@@ -503,7 +503,7 @@ static void zb_nlme_rejoin(zb_uint8_t param) ZB_SDCC_REENTRANT
             request->capability_information;
 
         /* Extend neighor table. */
-#ifndef ZB_ED_ROLE
+#if defined ZB_ROUTER_ROLE || defined ZB_COORDINATOR_ROLE
         zb_nwk_exneighbor_start();
 #endif
 
@@ -684,9 +684,26 @@ void zb_nlme_rejoin_scan_confirm(zb_uint8_t param) ZB_CALLBACK
                               &addr_ref);
 
             /* add temporary ext entry to base */
-            zb_nwk_neighbor_ext_to_base_tmp(best_parent);
-
+            /* we might want to check if the base neighbor already exists to avoid
+             * wrong default information (i.e. via dev annce)
+             */
+            if (!ZB_NWK_NEIGHBOR_GET_EXISTING(addr_ref)) {
+                zb_nwk_neighbor_ext_to_base_tmp(best_parent);
+            }
             /* join response timer will be started inside confirm callback */
+            /* if we join without RX on when idle, we shall follow up with data req */
+            if (!ZB_MAC_CAP_GET_RX_ON_WHEN_IDLE(ZG->nwk.handle.tmp.rejoin.capability_information)) {
+                ZB_MAC_SET_PENDING_DATA(); // this should be set on ack reception and not here!
+                zb_buf_t *buf2 = zb_get_out_buf();
+                zb_mlme_poll_request_t *req = ZB_GET_BUF_PARAM(buf2, zb_mlme_poll_request_t);
+
+                req->coord_addr_mode = ZB_ADDR_16BIT_DEV_OR_BROADCAST;
+                req->coord_addr.addr_short =
+                    ZG->nwk.handle.tmp.rejoin.parent->short_addr;
+                req->coord_pan_id = ZB_PIB_SHORT_PAN_ID();
+
+                ZB_SCHEDULE_ALARM(zb_handle_poll_request, ZB_REF_FROM_BUF(buf2), 2);
+            }
         }
     }
 
@@ -852,6 +869,10 @@ void zb_nlme_rejoin_response(zb_uint8_t param) ZB_CALLBACK
         }
 
         /* cancel rejoin timeout */
+        if (ZG->nwk.handle.tmp.rejoin.buf) {
+            zb_free_buf(ZB_BUF_FROM_REF(ZG->nwk.handle.tmp.rejoin.buf));
+            ZG->nwk.handle.tmp.rejoin.buf = 0;
+        }
         ZB_SCHEDULE_ALARM_CANCEL(zb_nlme_rejoin_response_timeout,
                                  ZB_ALARM_ANY_PARAM);
     }
@@ -1004,6 +1025,47 @@ void zb_nlme_join_request(zb_uint8_t param) ZB_CALLBACK
     TRACE_MSG(TRACE_NWK1, "<<join_req %d", (FMT__D, ret));
 }
 
+void zb_nlme_direct_join_confirm(zb_uint8_t param) ZB_CALLBACK
+{
+    zb_nlme_direct_join_confirm_t *confirm = ZB_GET_BUF_PARAM((zb_buf_t *)ZB_BUF_FROM_REF(
+                                                                param),
+                                                            zb_nlme_direct_join_confirm_t);
+    TRACE_MSG(TRACE_NWK1, "+direct_join_confirm status %d", (FMT__D, confirm->status));
+    if (ZLL_COMM().state == ZB_ZLL_COMM_INIT_NET) {
+        zll_nwk_direct_join_cb();
+    }
+    zb_free_buf(ZB_BUF_FROM_REF(param));
+
+}
+
+void zb_nlme_direct_join_request(zb_uint8_t param) ZB_CALLBACK
+{
+    zb_nlme_direct_join_request_t *request = ZB_GET_BUF_PARAM((zb_buf_t *)ZB_BUF_FROM_REF(
+                                                                param),
+                                                            zb_nlme_direct_join_request_t);
+    zb_neighbor_tbl_ent_t *nbt;
+    zb_address_ieee_ref_t dev_addr;
+    zb_address_by_ieee(request->device_address, ZB_TRUE, ZB_FALSE, &dev_addr);
+    zb_ret_t ret = zb_nwk_neighbor_get(dev_addr, ZB_TRUE, &nbt);
+    nbt->rx_on_when_idle = (request->capability_information & 0x4) >> 2;
+    nbt->device_type = request->capability_information & 0x3;
+    zb_nlme_direct_join_confirm_t *resp = ZB_GET_BUF_PARAM((zb_buf_t *)ZB_BUF_FROM_REF(
+                                                                param),
+                                                            zb_nlme_direct_join_confirm_t);
+    switch(ret){
+        case RET_OK: 
+            resp->status = ZB_NWK_STATUS_SUCCESS;    
+            break; 
+        case RET_NO_MEMORY:
+            resp->status = ZB_NWK_STATUS_NEIGHBOR_TABLE_FULL;
+            break;
+        default:
+            resp->status = ZB_NWK_STATUS_ALREADY_PRESENT;
+            break;
+    }
+    zb_address_ieee_by_ref(resp->device_address, dev_addr);
+    ZB_SCHEDULE_CALLBACK(zb_nlme_direct_join_confirm, param);
+}
 
 void zb_mlme_comm_status_indication(zb_uint8_t param) ZB_CALLBACK
 {

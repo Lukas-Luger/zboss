@@ -52,6 +52,7 @@
 #include "zb_nwk.h"
 #include "zb_aps.h"
 #include "zb_zdo.h"
+#include "zb_zcl.h"
 #include "zb_secur.h"
 #include "zb_secur_api.h"
 
@@ -62,7 +63,7 @@
 static void send_data();
 #endif
 
-extern od_hex_dump(uint8_t *buf, uint16_t len, uint8_t width);
+//extern od_hex_dump(uint8_t *buf, uint16_t len, uint8_t width);
 
 
 void zdo_send_device_annce(zb_uint8_t param) ZB_CALLBACK;
@@ -200,7 +201,10 @@ zb_ret_t zdo_dev_start() ZB_SDCC_REENTRANT
     else {
 #ifdef ZB_USE_NVRAM
         zb_buf_t *buf = zb_get_out_buf();
-        buf->u.hdr.status = ZB_NWK_STATUS_ALREADY_PRESENT;
+        buf->u.hdr.status = ZB_NWK_STATUS_SUCCESS;
+        ZG->nwk.handle.joined = ZB_TRUE;
+        ZB_GET_OUT_BUF_DELAYED(zdo_send_device_annce);
+        ZB_GET_OUT_BUF_DELAYED(zdo_schedule_parent_annce);
         ZB_SCHEDULE_CALLBACK(zb_zdo_startup_complete, ZB_REF_FROM_BUF(buf));
 #endif
         TRACE_MSG(TRACE_APS1, "already in nw", (FMT__0));
@@ -278,7 +282,7 @@ void zb_nlme_network_formation_confirm(zb_uint8_t param) ZB_CALLBACK
     }
     ZB_SCHEDULE_CALLBACK(zb_nlme_permit_joining_request, param);
 }
-
+#endif  /* ZB_COORDINATOR_ROLE */
 
 void zb_nlme_permit_joining_confirm(zb_uint8_t param) ZB_CALLBACK
 {
@@ -290,10 +294,11 @@ void zb_nlme_permit_joining_confirm(zb_uint8_t param) ZB_CALLBACK
     ZB_BUF_FROM_REF(param)->u.hdr.status = 0;
 
     zb_address_by_short(ZB_PIB_SHORT_ADDRESS(), ZB_TRUE, ZB_FALSE, &addr_ref);
+    ZB_GET_OUT_BUF_DELAYED(zdo_send_device_annce);
+    ZB_GET_OUT_BUF_DELAYED(zdo_schedule_parent_annce);
     ZB_SCHEDULE_CALLBACK(zb_zdo_startup_complete, param);
 
 }
-#endif  /* ZB_COORDINATOR_ROLE */
 
 void zb_nlme_join_indication(zb_uint8_t param) ZB_CALLBACK
 {
@@ -336,7 +341,11 @@ void zb_nlme_network_discovery_confirm(zb_uint8_t param) ZB_CALLBACK
     zb_nlme_network_descriptor_t *dsc;
     zb_ushort_t i;
     zb_nlme_join_request_t *req;
-
+    if (ZLL_COMM().state == ZB_ZLL_COMM_INIT_NET) {
+        /* Continue in ZLL */
+        ZB_SCHEDULE_CALLBACK(zll_nwk_disc_conf_cb, param);
+        return;
+    }
     TRACE_MSG(TRACE_NWK1, "disc st %hd",
               (FMT__H, ((zb_buf_t *)ZB_BUF_FROM_REF(param))->u.hdr.status));
     cnf = (zb_nlme_network_discovery_confirm_t *)ZB_BUF_BEGIN((zb_buf_t *)ZB_BUF_FROM_REF(
@@ -429,16 +438,26 @@ void zdo_join_done(zb_uint8_t param) ZB_CALLBACK
     TRACE_MSG(TRACE_NWK1, ">>join_done %hd", (FMT__H, param));
 
     /* Not sure this is right, but let's send annonce after authentication complete */
-#ifdef ZB_SECURITY
+#if 0 //ZB_SECURITY
     if (ZG->nwk.nib.security_level != 0) {
         zb_free_buf(ZB_BUF_FROM_REF(param));
     }
     else
 #endif
     {
+        /* should also be done prior joining */
         ZB_SCHEDULE_CALLBACK(zdo_send_device_annce, param);
+        /* this is mandatory after reboot/join */
+        ZB_GET_OUT_BUF_DELAYED(zdo_schedule_parent_annce);
     }
 
+    /* inform ZLL */
+    if (ZLL_COMM().state == ZB_ZLL_COMM_REJOIN) {
+        zll_nwk_rejoin_cb();
+    }
+    if (ZLL_COMM().state == ZB_ZLL_COMM_INIT_NET) {
+        zll_nwk_start_router_conf_cb();
+    }
     /* clear poll retry count */
     ZDO_CTX().parent_threshold_retry = 0;
     TRACE_MSG(TRACE_NWK1, "mac_rx_on_when_idle %hd",
@@ -453,7 +472,7 @@ void zdo_join_done(zb_uint8_t param) ZB_CALLBACK
     TRACE_MSG(TRACE_NWK1, "<<join_done", (FMT__0));
 }
 
-#ifndef ZB_ED_ROLE
+#if defined ZB_ROUTER_ROLE || defined ZB_COORDINATOR_ROLE
 void zb_nlme_start_router_confirm(zb_uint8_t param) ZB_CALLBACK
 {
     TRACE_MSG(TRACE_NWK1, ">> start_router_confirm", (FMT__0));
@@ -504,6 +523,9 @@ void zb_nlme_join_confirm(zb_uint8_t param) ZB_CALLBACK
 #endif
         {
             ZB_SCHEDULE_CALLBACK(zdo_join_done, param);
+        }
+        if (ZB_GET_NODE_DESC_LOGICAL_TYPE(ZB_ZDO_NODE_DESC()) == ZB_END_DEVICE) {
+            ZB_GET_OUT_BUF_DELAYED(zb_nlme_ed_timeout_request);
         }
     }
     else if (ZG->zdo.handle.rejoin && ZB_AIB().aps_insecure_join) {
@@ -589,6 +611,90 @@ void zdo_send_device_annce(zb_uint8_t param) ZB_CALLBACK
 #endif
 }
 
+void zdo_send_parent_annce(zb_uint8_t param) ZB_CALLBACK
+{
+    TRACE_MSG(TRACE_ZDO1, "send parent_annce", (FMT__0));
+
+    zb_buf_t *buf = ZB_BUF_FROM_REF(param);
+    ZB_AIB().aps_parent_annce_timer = 0;
+    zb_zdo_parent_annce_t req;
+
+    req.num_children = 0;
+    zb_ushort_t i;
+    // TODO: add keepalive to neighbors, and check them here
+    zb_neighbor_tbl_ent_t *ent;
+    for (i = 0; i < ZG->nwk.neighbor.base_neighbor_used; i++) {
+        ent = &ZG->nwk.neighbor.base_neighbor[i];
+        if (ent->device_type == ZB_NWK_DEVICE_TYPE_ED) {
+            zb_address_ieee_by_ref(req.children[req.num_children], ent->addr_ref);
+            req.num_children++;
+        }
+    }
+    if (ZG->nwk.neighbor.ext_neighbor_size) {
+        zb_ext_neighbor_tbl_ent_t *ext_ent;
+        zb_bool_t exists;
+        zb_ieee_addr_t addr;
+        for (i = 0; i < ZG->nwk.neighbor.ext_neighbor_used; i++) {
+            ext_ent = &ZG->nwk.neighbor.ext_neighbor[i];
+            if (ext_ent->device_type == ZB_NWK_DEVICE_TYPE_ED) {
+                // avoid duplicates
+                exists = ZB_FALSE;
+                zb_ieee_addr_decompress(addr, &ext_ent->long_addr);
+                for (zb_ushort_t j = 0; j < req.num_children; j++) {
+                    if (!ZB_IEEE_ADDR_CMP(req.children[j], addr)) {
+                        exists = ZB_TRUE;
+                        break;
+                    }
+                }
+                if (!exists) {
+                    ZB_IEEE_ADDR_COPY(req.children[req.num_children], addr);
+                    req.num_children++;
+                }
+            }
+        }
+    }
+
+    if (req.num_children == 0) {
+        zb_free_buf(buf);
+        return;
+    }
+    zb_ushort_t size = sizeof(zb_zdo_parent_annce_t) -  sizeof(zb_ieee_addr_t) * 
+        (ZB_NWK_MAX_CHILDREN - req.num_children);
+    zb_zdo_parent_annce_t *ptr;
+    ZB_BUF_INITIAL_ALLOC(buf, size, ptr);
+    ZB_MEMCPY(ptr, &req, size);
+    ZDO_CTX().tsn++;
+    ptr->tsn = ZDO_CTX().tsn;
+
+    zb_apsde_data_req_t *dreq = ZB_GET_BUF_TAIL(ZB_BUF_FROM_REF(
+                                                        param),
+                                                    sizeof(zb_apsde_data_req_t));
+
+    ZB_BZERO(dreq, sizeof(*dreq));
+    /* Boradcast to routers and coordinators. */
+    dreq->dst_addr = ZB_NWK_BROADCAST_ROUTER_COORDINATOR;
+    dreq->addr_mode = ZB_APS_ADDR_MODE_16_ENDP_PRESENT;
+    /* use default radius, max_depth * 2 */
+    dreq->clusterid = ZDO_PARENT_ANNCE_CLID;
+
+    ZB_SCHEDULE_CALLBACK(zb_apsde_data_request, param);
+}
+
+void zdo_schedule_parent_annce(zb_uint8_t param) ZB_CALLBACK
+{
+    if (ZB_AIB().aps_parent_annce_timer) {
+        ZB_SCHEDULE_ALARM_CANCEL(zdo_send_parent_annce, ZB_ALARM_ANY_PARAM);
+        if (ZG->zdo.handle.parent_annce) {
+            zb_free_buf(ZB_BUF_FROM_REF(ZG->zdo.handle.parent_annce));
+        }
+    }
+    do {
+        ZB_AIB().aps_parent_annce_timer = ZB_RANDOM();
+    } while (ZB_AIB().aps_parent_annce_timer >= ZB_APS_PARENT_ANNCE_JITTER_MAX);
+    ZG->zdo.handle.parent_annce = param;
+    ZB_AIB().aps_parent_annce_timer += ZB_APS_PARENT_ANNCE_BASE_TIMER;
+    ZB_SCHEDULE_ALARM(zdo_send_parent_annce, param, ZB_AIB().aps_parent_annce_timer);
+}
 
 #if 0
 /**
@@ -652,7 +758,17 @@ void zb_apsde_data_confirm(zb_uint8_t param) ZB_CALLBACK
                   (FMT__H, buf->u.hdr.status));
         if (!ZG->zdo.handle.started) {
             ZG->zdo.handle.started = 1;
+            ZB_GET_OUT_BUF_DELAYED(zdo_send_device_annce);
+            ZB_GET_OUT_BUF_DELAYED(zdo_schedule_parent_annce);
+            BDB_CTX().node_is_on_net = ZB_TRUE;
+            BDB_CTX().comm_status = SUCCESS;
+            /* save everything now */
+            zb_save_formdesc_data();
+            zb_save_nvram_config();
             ZB_SCHEDULE_CALLBACK(zb_zdo_startup_complete, param);
+        }
+        else {
+            zb_free_buf(buf);
         }
     }
 #if defined ZB_SECURITY && defined ZB_COORDINATOR_ROLE
@@ -815,7 +931,7 @@ void zb_nlme_status_indication(zb_uint8_t param) ZB_CALLBACK
     TRACE_MSG(TRACE_NWK1, "Got nwk status indication: status %hd address %d",
               (FMT__H_D, status->status, status->network_addr));
 
-#ifdef ZB_ED_ROLE
+#if defined ZB_ED_ROLE && !defined ZB_ROUTER_ROLE
     if (status->status == ZB_NWK_COMMAND_STATUS_PARENT_LINK_FAILURE) {
         ZDO_CTX().parent_link_failure++;
     }
@@ -1045,6 +1161,10 @@ void zb_nlme_leave_confirm(zb_uint8_t param) ZB_CALLBACK
     else {
         /* leave after mgmt resp will be sent */
         ZG->nwk.leave_context.leave_after_mgmt_leave_rsp_conf = will_leave;
+    }
+    /* logic above should happen prior to confirm! see 3.2.2.18.3 */
+    if (ZLL_COMM().state == ZB_ZLL_COMM_INIT_NET) {
+        zll_nwk_leave_conf_cb();
     }
 #endif
 }

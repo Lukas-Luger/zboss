@@ -70,7 +70,7 @@ void zb_zdo_start_long_timer(zb_callback_t func, zb_uint8_t param,
 void zb_zdo_check_fails(zb_uint8_t param) ZB_CALLBACK
 {
     ZVUNUSED(param);
-#ifndef ZB_ED_ROLE
+#if defined ZB_ROUTER_ROLE || defined ZB_COORDINATOR_ROLE
     TRACE_MSG(TRACE_MAC2, ">> zb_zdo_check_fails tx total %d fail %d",
               (FMT__D_D, ZB_NIB_NWK_TX_TOTAL(), ZB_NIB_NWK_TX_FAIL()));
 

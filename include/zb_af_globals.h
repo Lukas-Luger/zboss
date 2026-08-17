@@ -51,7 +51,7 @@
 
 #include "zb_mac.h"
 #include "zb_test_profile.h"
-
+#include "zb_zcl.h"
 /*! \addtogroup ZB_AF */
 /*! @{ */
 
@@ -274,13 +274,15 @@ typedef struct zb_af_node_power_desc_s {
     (((desc)->power_desc_flags & ZB_POWER_DESC_CUR_POWER_SOURCE_LEVEL_MASK) >> \
      12)
 
+#define CAT5_NO_EX(a, b, c, d, e) a ## b ## c ## d ## e
+
+#define CAT5(a, b, c, d, e) CAT5_NO_EX(a, b, c, d, e)
 
 /**
    Simple descriptor
  */
 #define ZB_DECLARE_SIMPLE_DESC(in_clusters_count, out_clusters_count)   \
-    typedef struct zb_af_simple_desc_ ## in_clusters_count ## _ ## \
-        out_clusters_count ## _s \
+    typedef struct CAT5(zb_af_simple_desc_, in_clusters_count, _, out_clusters_count, _s) \
     {                                                                     \
         zb_uint8_t endpoint;                                                    /* Endpoint */              \
         zb_uint16_t app_profile_id;                                             /* Application profile identifier */ \
@@ -291,12 +293,53 @@ typedef struct zb_af_node_power_desc_s {
         zb_uint8_t app_output_cluster_count;                                    /* Application output cluster count */ \
         zb_uint16_t app_cluster_list[in_clusters_count + out_clusters_count];   /* Application input and output cluster list */ \
     } ZB_PACKED_STRUCT                                                    \
-    zb_af_simple_desc_ ## in_clusters_count ## _ ## out_clusters_count ## _t
+    CAT5(zb_af_simple_desc_, in_clusters_count, _, out_clusters_count, _t)
 
 ZB_DECLARE_SIMPLE_DESC(1, 1);   /* General descriptor type */
 ZB_DECLARE_SIMPLE_DESC(7, 8);   /* ZDO descriptor type */
 
+#define ZB_SET_SIMPLE_DESC(name, ep_id, profile_id, dev_id, app_ver, in_cnt, out_cnt, ...)  \
+    static CAT5(zb_af_simple_desc_, in_cnt, _, out_cnt, _t)                                 \
+    simple_desc_##name = {                                                                  \
+        ep_id,                                                                              \
+        profile_id,                                                                         \
+        dev_id,                                                                             \
+        app_ver,                                                                            \
+        0,                                                                                  \
+        in_cnt,                                                                             \
+        out_cnt,                                                                            \
+        {                                                                                   \
+            __VA_ARGS__                                                                     \
+        }                                                                                   \
+    }
+
 #define ZB_MAX_EP_NUMBER 1      /* max supported EP number, increase if needed */
+
+/** Endpoint description for user applications. */
+typedef struct zb_af_ep_desc_s
+{
+  zb_uint8_t ep_id;               /*!< Endpoint ID */
+  zb_uint16_t profile_id;         /*!< Application profile, which implemented on endpoint */
+  zb_uint8_t cluster_count;       /*!< Number of supported clusters */
+  zb_af_simple_desc_1_1_t *simple_desc; /*!< Simple descriptor */
+  zb_zcl_cluster_t clusters[ZB_ZCL_CLUSTER_NUM];  /*!< Supported clusters list */
+}ZB_PACKED_STRUCT
+zb_af_ep_desc_t;
+
+/**
+  Application Framework Device context containing all endpoints
+ */
+typedef struct zb_af_dev_ctx_s {
+    zb_uint8_t ep_count;
+    zb_af_ep_desc_t *ep_list[ZB_MAX_EP_NUMBER];
+}
+ZB_PACKED_STRUCT
+zb_af_dev_ctx_t;
+
+/**
+   Initialize an endpoint in application
+ */
+void zb_zcl_init_ep(zb_af_ep_desc_t *endpoint);
 
 /* Macro to set node descriptor, 2.3.2.3 Node Descriptor  */
 #define ZB_SET_NODE_DESCRIPTOR(logical_type_p, frequence_band_p, \

@@ -203,7 +203,7 @@ zb_neighbor_tbl_ent_t;
 
 typedef struct zb_neighbor_tbl_s {
     /* base (run-time) neighbor table */
-    zb_neighbor_tbl_ent_t base_neighbor[ZB_NEIGHBOR_TABLE_SIZE];
+    zb_neighbor_tbl_ent_t base_neighbor[ZB_NEIGHBOR_TABLE_SIZE];            /*!< nwkNeighborTable */
     /* array for addressing neighbor table by network address ref */
     zb_uint8_t addr_to_neighbor[ZB_IEEE_ADDR_TABLE_SIZE];
     /* current neighbor table size, taking into account possible table cut for
@@ -212,8 +212,8 @@ typedef struct zb_neighbor_tbl_s {
     /* number of used neighbor table entries */
     zb_ushort_t base_neighbor_used;
     /* ext neighbor table */
-#ifdef ZB_ED_ROLE
-    zb_ext_neighbor_tbl_ent_t ext_neighbor[ZB_EXT_NEIGHBOR_TABLE_SIZE];
+#if defined ZB_ED_ROLE && !defined ZB_ROUTER_ROLE
+    zb_ext_neighbor_tbl_ent_t ext_neighbor[ZB_EXT_NEIGHBOR_TABLE_SIZE];     /*!< nwkDiscoveryTable */
 #else
     zb_ext_neighbor_tbl_ent_t *ext_neighbor;
 #endif
@@ -256,7 +256,7 @@ zb_neighbor_tbl_t;
  */
 void zb_nwk_neighbor_init() ZB_SDCC_REENTRANT;
 
-#ifndef ZB_ED_ROLE
+#if defined ZB_ROUTER_ROLE || defined ZB_COORDINATOR_ROLE
 /**
    Start work with extended neighbor table: cut space from the base neighbor table
  */

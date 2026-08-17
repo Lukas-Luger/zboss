@@ -100,7 +100,7 @@ void zb_mlme_start_confirm(zb_uint8_t param) ZB_CALLBACK
                                        param), ZB_NWK_STATUS_SUCCESS,
                                    zb_nlme_start_router_confirm);
                 break;
-
+#ifdef ZB_COORDINATOR_ROLE
             case ZB_NLME_STATE_FORMATION:
                 zb_nwk_set_device_type(ZB_NWK_DEVICE_TYPE_COORDINATOR);
                 /* See 3.6.7.
@@ -116,7 +116,7 @@ void zb_mlme_start_confirm(zb_uint8_t param) ZB_CALLBACK
                                        param), ZB_NWK_STATUS_SUCCESS,
                                    zb_nlme_network_formation_confirm);
                 break;
-
+#endif
             case ZB_NLME_STATE_PANID_CONFLICT_RESOLUTION:
                 TRACE_MSG(TRACE_NWK1,
                           "done panid update after panid conflict resolution",

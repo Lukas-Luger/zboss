@@ -57,7 +57,7 @@
 #include "zb_ubec24xx.h"
 #endif
 #ifdef RIOT
-#include "zb_mac_riot.h"
+#include "zb_riot_submac.h"
 #endif
 #ifdef ZB_CC25XX
 #include "zb_cc25xx.h"
@@ -151,7 +151,11 @@ void zb_mac_init() /* __reentrant for sdcc, to save DSEG space */
 #endif
 #ifndef ZB_NS_BUILD
     /* TODO: move HW init to the mcps.start */
+#ifdef RIOT
+    init_submac();
+#else
     init_zu2400();
+#endif
 #endif
     MAC_PIB().mac_dsn = ZB_RANDOM();
     MAC_PIB().mac_bsn = ZB_RANDOM();
@@ -714,10 +718,11 @@ void zb_mlme_command_accept(zb_uint8_t param) ZB_CALLBACK
                                                       7.3.4 Data request command
                                                     | MHR | cmd id |
                                                     */
-#ifdef ZB_COORDINATOR_ROLE
+#if defined ZB_COORDINATOR_ROLE || defined ZB_ROUTER_ROLE
         TRACE_MSG(TRACE_MAC3, "CMD_DATA_REQ", (FMT__0));
         ZB_SCHEDULE_TX_CB(zb_accept_data_request_cmd, param);
 #else
+        zb_free_buf(ZB_BUF_FROM_REF(param));
         TRACE_MSG(TRACE_MAC1, "data req cmd came. not ZC - skip", (FMT__0));
 #endif
     }
@@ -790,6 +795,7 @@ void zb_mlme_command_accept(zb_uint8_t param) ZB_CALLBACK
 #endif
     {
         TRACE_MSG(TRACE_MAC1, "ERROR unsupp cmd %hu", (FMT__H, *cmd_ptr));
+        zb_free_buf(ZB_BUF_FROM_REF(param));
     }
 
     TRACE_MSG(TRACE_MAC2, "<<mlme_cmd_acc", (FMT__0));
@@ -960,6 +966,8 @@ void zb_mac_resp_timeout(zb_uint8_t param) ZB_CALLBACK
                   sizeof(union zb_addr_u));
         data_req_cmd_params.cb_type = MAC_ASS_CONFIRM_CALLBACK;
         ZB_MAC_SET_ASS_REQUEST();
+        /* seems like we do not get acks from riot, this is very sketchy and just for testing purposes */
+        ZB_MAC_SET_PENDING_DATA();
         /* We could avoid checks for tx etc here, 'cause association is a monolithic process */
         ret = zb_mac_get_indirect_data(&data_req_cmd_params);
     }
@@ -1006,7 +1014,7 @@ zb_ret_t zb_check_cmd_tx_status()
     return RET_OK;
 #else
     zb_ret_t ret = RET_OK;
-    ZB_WAIT_FOR_TX();
+    //ZB_WAIT_FOR_TX();
     if (ZB_TRANS_CHECK_CHANNEL_ERROR()) {
         ZB_SET_MAC_STATUS(
             ZB_TRANS_CHECK_CHANNEL_BUSY_ERROR() ? MAC_CHANNEL_ACCESS_FAILURE : MAC_NO_ACK);

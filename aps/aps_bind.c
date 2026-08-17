@@ -320,6 +320,7 @@ void zb_apsme_add_group_request(zb_uint8_t param) ZB_CALLBACK
 
 done:
     {
+        zb_save_formdesc_data();
         zb_apsme_add_group_conf_t *conf = ZB_GET_BUF_PARAM(ZB_BUF_FROM_REF(
                                                                param),
                                                            zb_apsme_add_group_conf_t);
@@ -329,9 +330,161 @@ done:
         /* don not call APSME-ADD-GROUP.confirm via callback. This routine is to be
          * called from zdo_bind_manage.c */
         /* FIXME: implement full scheme with return via callback */
+        /* FIXED?*/
+        ZB_SCHEDULE_CALLBACK(req.confirm_cb, param);
     }
 }
 
+void zb_apsme_remove_group_request(zb_uint8_t param) ZB_CALLBACK
+{
+    zb_uint8_t status = ZB_APS_STATUS_INVALID_GROUP;
+    zb_apsme_remove_group_req_t req;
+
+    ZB_MEMCPY(&req,
+              ZB_GET_BUF_PARAM(ZB_BUF_FROM_REF(
+                                   param), zb_apsme_remove_group_req_t),
+              sizeof(req));
+    TRACE_MSG(TRACE_APS3,
+              "zb_apsme_remove_group_request group_addr %d endpoint %hd",
+              (FMT__D_H, req.group_address, req.endpoint));
+
+    {
+        zb_ushort_t i, j, k;
+
+        for (i = 0; i < ZG->aps.group.n_groups; ++i) {
+            if (ZG->aps.group.groups[i].group_addr == req.group_address) {
+                for (j = 0; j < ZG->aps.group.groups[i].n_endpoints; ++j) {
+                    if (ZG->aps.group.groups[i].endpoints[j] == req.endpoint) {
+                        /* remove endpoint at end */
+                        if (j == (ZG->aps.group.groups[i].n_endpoints - 1)) {
+                            ZG->aps.group.groups[i].endpoints[j] = 0;    
+                        }
+                        /* remove endpoint inbetween */
+                        else {
+                            for (k = j+1; k < ZG->aps.group.groups[i].n_endpoints; ++k) {
+                                ZG->aps.group.groups[i].endpoints[k-1] = ZG->aps.group.groups[i].endpoints[k];
+                            }
+                        }
+                        ZG->aps.group.groups[i].n_endpoints--;
+                        /* delete group if necessary */
+                        if (ZG->aps.group.groups[i].n_endpoints == 0) {
+                            /* remove group at end */
+                            if (i == (ZG->aps.group.n_groups - 1)) {
+                                ZG->aps.group.groups[i].group_addr = 0x0000;
+                            }
+                            /* remove group inbetween */
+                            else {
+                                for (k = i+1; k < ZG->aps.group.n_groups; ++k) {
+                                    ZG->aps.group.groups[k-1] = ZG->aps.group.groups[k];
+                                }
+                            }
+                            ZG->aps.group.n_groups--;
+                        }
+                        status = ZB_APS_STATUS_SUCCESS;
+                        goto done;
+                    }
+                }
+               
+            }
+        }
+    }
+done:
+    {
+        zb_save_formdesc_data();
+        zb_apsme_remove_group_conf_t *conf = ZB_GET_BUF_PARAM(ZB_BUF_FROM_REF(
+                                                               param),
+                                                           zb_apsme_remove_group_conf_t);
+        conf->group_address = req.group_address;
+        conf->endpoint = req.endpoint;
+        conf->status = status;
+        ZB_SCHEDULE_CALLBACK(req.confirm_cb, param);
+    }
+}
+
+void zb_apsme_remove_all_groups_request(zb_uint8_t param) ZB_CALLBACK
+{
+    zb_uint8_t status = 0;
+    zb_apsme_remove_all_groups_req_t req;
+    zb_apsme_remove_all_groups_req_t *req_ptr = ZB_GET_BUF_PARAM(ZB_BUF_FROM_REF(
+                                   param), zb_apsme_remove_all_groups_req_t);
+    zb_callback_t conf_cb = req_ptr->confirm_cb;
+    ZB_MEMCPY(&req, req_ptr, sizeof(req));
+    TRACE_MSG(TRACE_APS3,
+              "zb_apsme_remove_all_groups_request endpoint %hd",
+              (FMT__D_H, req.endpoint));
+
+
+    zb_ushort_t i, j, k;
+    zb_ushort_t group_num = 0;
+
+    for (i = 0; i < ZG->aps.group.n_groups; ++i) {
+        for (j = 0; j < ZG->aps.group.groups[i].n_endpoints; ++j) {
+            if (ZG->aps.group.groups[i].endpoints[j] == req.endpoint) {
+                /* remove group at end */
+                if (i == (ZG->aps.group.n_groups - 1)) {
+                    ZG->aps.group.groups[i].group_addr = 0x0000;
+                }
+                /* remove group inbetween */
+                else {
+                    for (k = i+1; k < ZG->aps.group.n_groups; ++k) {
+                        ZG->aps.group.groups[k-1] = ZG->aps.group.groups[k];
+                    }
+                }
+                group_num++;
+                status = ZB_APS_STATUS_SUCCESS;
+            }
+        }
+    }
+
+    /* subtract at end, to go though the whole list, bc this can hit multiple groups */
+    ZG->aps.group.n_groups -= group_num;
+    zb_save_formdesc_data();
+    zb_apsme_remove_all_groups_conf_t *conf = ZB_GET_BUF_PARAM(ZB_BUF_FROM_REF(
+                                                            param),
+                                                        zb_apsme_remove_all_groups_conf_t);
+    conf->endpoint = req.endpoint;
+    conf->status = status;
+    ZB_SCHEDULE_CALLBACK(conf_cb, param);
+}
+
+void zb_apsme_get_group_membership_request(zb_uint8_t param) ZB_CALLBACK
+{
+    zb_uint8_t status = 0;
+    zb_apsme_get_group_membership_req_t req;
+
+    ZB_MEMCPY(&req,
+              ZB_GET_BUF_PARAM(ZB_BUF_FROM_REF(
+                                   param), zb_apsme_get_group_membership_req_t),
+              sizeof(req));
+    TRACE_MSG(TRACE_APS3,
+              "zb_apsme_get_group_membership_request endpoint %hd",
+              (FMT__D_H, req.endpoint));
+
+    
+    zb_apsme_get_group_membership_conf_t *conf = ZB_GET_BUF_PARAM(ZB_BUF_FROM_REF(
+                                                            param),
+                                                        zb_apsme_get_group_membership_conf_t);
+    conf->n_groups = 0;
+    zb_ushort_t i, j, k;
+
+    for (i = 0; i < ZG->aps.group.n_groups; ++i) {
+        for (k = 0; k < req.n_groups; ++k){
+            if (ZG->aps.group.groups[i].group_addr == req.groups[k]) {
+                for (j = 0; j < ZG->aps.group.groups[i].n_endpoints; ++j) {
+                    if (ZG->aps.group.groups[i].endpoints[j] == req.endpoint) {
+                        conf->groups[conf->n_groups] = req.groups[k];
+                        conf->n_groups++;
+                        status = ZB_APS_STATUS_SUCCESS;
+                    }
+                }
+            
+            }
+        }
+    }
+
+    conf->capacity = ZB_APS_GROUP_TABLE_SIZE - ZG->aps.group.n_groups;
+    ZB_SCHEDULE_CALLBACK(req.confirm_cb, param);
+}
 
 #if 0  /* APS Group management not supported */
 void zb_apsme_add_group_request(ZPAR void *v_grp)

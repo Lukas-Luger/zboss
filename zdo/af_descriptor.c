@@ -81,7 +81,8 @@ void zb_set_node_descriptor(zb_logical_type_t device_type, zb_int8_t power_src,
         ZB_MANUFACTORER_CODE,
         ZB_NSDU_MAX_LEN,
         /* ZB_ASDU_MAX_LEN */ 0,    /* 0 - is described in certification tests */
-        device_type == ZB_COORDINATOR ? ZB_PRIMARY_TRUST_CENTER | ZB_NETWORK_MANAGER : 0,
+        (device_type == ZB_COORDINATOR ? ZB_PRIMARY_TRUST_CENTER | ZB_NETWORK_MANAGER : 0) |
+        (23 & 0x7f) << 9 /* server mask stack compliance revision 23*/,
         /* ZB_ASDU_MAX_LEN */ 0,    /* 0 - is described in certification tests */
         0);
 
@@ -302,7 +303,7 @@ void zb_set_default_ffd_descriptor_values(zb_logical_type_t device_type)
 ZB_SDCC_REENTRANT
 {
     TRACE_MSG(TRACE_ZDO3, "zb_set_default_ffd_descriptor_values", (FMT__0));
-    zb_set_node_descriptor(device_type, 0, 1, 0);
+    zb_set_node_descriptor(device_type, 0, 1, 1);
 
     zb_set_node_power_descriptor(ZB_POWER_MODE_SYNC_ON_WHEN_IDLE,
                                  ZB_POWER_SRC_CONSTATNT | ZB_POWER_SRC_RECHARGEABLE_BATTERY | ZB_POWER_SRC_DISPOSABLE_BATTERY,
@@ -316,7 +317,7 @@ ZB_SDCC_REENTRANT
 void zb_set_default_ed_descriptor_values() ZB_SDCC_REENTRANT
 {
     TRACE_MSG(TRACE_ZDO3, "zb_set_default_ed_descriptor_values", (FMT__0));
-    zb_set_node_descriptor(ZB_END_DEVICE, 0, 1, 0);
+    zb_set_node_descriptor(ZB_END_DEVICE, 0, 1, 1);
     zb_set_node_power_descriptor(ZB_POWER_MODE_SYNC_ON_WHEN_IDLE,
                                  ZB_POWER_SRC_CONSTATNT,
                                  ZB_POWER_SRC_CONSTATNT, ZB_POWER_LEVEL_100);

@@ -113,21 +113,48 @@ void zb_ib_set_defaults(zb_char_t *rx_pipe) ZB_CALLBACK
     TRACE_MSG(TRACE_APS3, "aps_channel_mask 0x%x",
               (FMT__D, ZB_AIB().aps_channel_mask));
 
+    ZB_AIB().aps_parent_annce_timer = 0;
     ZB_AIB().aps_insecure_join = 1;
 
 #ifdef ZB_SECURITY
     ZG->nwk.nib.security_level = ZB_SECURITY_LEVEL;
     ZG->nwk.nib.secure_all_frames = ZB_DEFAULT_SECURE_ALL_FRAMES;
-
-
-#if defined ZB_TC_GENERATES_KEYS && defined ZB_COORDINATOR_ROLE
+    /* see ZCL Spec 13.2.2.2.1 */
+    ZG->nwk.nib.active_key_seq_number = 0; 
+    ZB_IEEE_ADDR_ZERO(ZB_AIB().trust_center_address);
+    /* see ZB 3.0 table 3-62 NIB Attr */
+    ZB_NIB_UPDATE_ID() = 0;
     secur_generate_keys();
-#endif  /* ZB_TC_GENERATES_KEYS */
 
 #endif  /* security */
-
-#ifdef ZB_ROUTER_ROLE
+    /* BDB */
+    BDB_CTX().comm_group_id = 0x0000;
+    BDB_CTX().comm_mode = 0x00;
+    BDB_CTX().comm_status = SUCCESS;
+    ZB_IEEE_ADDR_ZERO(BDB_CTX().joining_node);
+    ZB_BZERO(BDB_CTX().new_tc_key, ZB_CCM_KEY_SIZE);
+    BDB_CTX().use_install_code = ZB_FALSE;
+    BDB_CTX().comm_capability = 0x01;
+    BDB_CTX().node_is_on_net = ZB_FALSE;
+    BDB_CTX().node_join_linkkey_type = 0x00;
+    BDB_CTX().primary_channel_set = BDB_TL_PRIMARY_CHANNEL_SET;
+    BDB_CTX().scan_duration = 0x04;
+    BDB_CTX().secondary_channel_set = BDB_TL_SECONDARY_CHANNEL_SET;
+    BDB_CTX().tc_linkkey_ex_attempts = 0x00;
+    BDB_CTX().tc_linkkey_ex_attempts_max = 0x03;
+    BDB_CTX().tc_linkkey_ex_method = 0x00;
+    BDB_CTX().tc_node_join_timeout = 0x0f;
+    BDB_CTX().tc_require_key_ex = ZB_TRUE;
+    /* APL */
+    ZB_BZERO(&APL_CTX(), sizeof(zb_apl_globals_t));
+    APL_CTX().free_addr_range_begin = 0x0001;
+    APL_CTX().free_addr_range_end = 0xfff7;
+    APL_CTX().free_gr_id_range_begin = 0x0001;
+    APL_CTX().free_gr_id_range_end = 0xfeff;
+    APL_CTX().dev_info_used = 0;
+    ZB_BZERO(&APL_CTX().dev_info_tbl, sizeof(zb_apl_dev_info_ent_t)*ZB_APL_MAX_DEV_ENTRIES);
     MAC_PIB().mac_rx_on_when_idle = 1;
+#ifdef ZB_ROUTER_ROLE
     ZG->nwk.nib.max_children = ZB_DEFAULT_MAX_CHILDREN;
 #endif
     ZB_NIB_DEVICE_TYPE() = ZB_NWK_DEVICE_TYPE_NONE;

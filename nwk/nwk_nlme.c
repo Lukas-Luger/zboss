@@ -186,7 +186,7 @@ void zb_nlme_leave_request(zb_uint8_t param) ZB_CALLBACK
                          ZB_NWK_INTERNAL_LEAVE_CONFIRM_AT_DATA_CONFIRM_HANDLE,
                          zb_uint8_t);
 #ifdef ZB_ROUTER_ROLE
-        {
+        if (nbt) {
             zb_uint16_t child_addr;
             zb_address_short_by_ref(&child_addr, nbt->addr_ref);
             /* if we removed last joined device, we could decrease number of child to */
@@ -665,6 +665,92 @@ void zb_nlme_send_status(zb_uint8_t param) ZB_CALLBACK
 
     TRACE_MSG(TRACE_NWK1, "<< zb_nlme_send_status", (FMT__0));
 }
+
+void zb_nlme_send_link_status(zb_uint8_t param) ZB_CALLBACK
+{
+    zb_buf_t *buf = ZB_BUF_FROM_REF(param);
+
+    TRACE_MSG(TRACE_NWK1, ">> zb_nlme_send_link_status param %hd", (FMT__H, param));
+
+    zb_bool_t secure = (zb_bool_t)(ZG->aps.authenticated &&
+                        ZG->nwk.nib.secure_all_frames && ZG->nwk.nib.security_level);
+
+    nwk_alloc_and_fill_hdr(buf, ZB_NWK_BROADCAST_ROUTER_COORDINATOR,
+                           ZB_PIB_EXTENDED_ADDRESS(), NULL, ZB_FALSE, secure, ZB_TRUE);
+
+    zb_uint8_t *opt = (zb_uint8_t *)nwk_alloc_and_fill_cmd(buf, ZB_NWK_CMD_LINK_STATUS,
+                                                           sizeof(zb_uint8_t));
+    /* TODO: keep track of neighboring link status info */
+    /* this is the first and last frame and we do not have any link status info */
+    *opt = 0 | (1 << 6) | (1 << 5);
+    /* transmit link status packet */
+    ZB_SET_BUF_PARAM(buf, ZB_NWK_INTERNAL_NSDU_HANDLE, zb_uint8_t);
+    ZB_SCHEDULE_CALLBACK(zb_nwk_forward, param);
+
+    TRACE_MSG(TRACE_NWK1, "<< zb_nlme_send_link_status", (FMT__0));
+
+}
 #endif
+void zb_nlme_ed_timeout_request(zb_uint8_t param) ZB_CALLBACK
+{
+    zb_buf_t *buf = ZB_BUF_FROM_REF(param);
+    zb_nwk_ed_timeout_request_t *timeout_req;
+
+    TRACE_MSG(TRACE_NWK1, ">> zb_nlme_ed_timeout_request param %hd", (FMT__H, param));
+
+    zb_bool_t secure = (zb_bool_t)(ZG->aps.authenticated &&
+                        ZG->nwk.nib.secure_all_frames && ZG->nwk.nib.security_level);
+    zb_uint16_t dst_addr;
+    zb_address_short_by_ref(&dst_addr, ZG->nwk.handle.parent);
+    nwk_alloc_and_fill_hdr(buf, dst_addr, NULL, NULL, ZB_FALSE,
+                           secure, ZB_TRUE);
+    timeout_req = (zb_nwk_ed_timeout_request_t *)nwk_alloc_and_fill_cmd(buf,
+                                                                       ZB_NWK_CMD_ED_TIMEOUT_REQUEST,
+                                                                       sizeof(
+                                                                           zb_nwk_ed_timeout_request_t));
+    timeout_req->time = ZB_ED_TIMEOUT_PERIOD;
+    timeout_req->configuration = 0x00; /* reserved for future use */
+    ZB_SET_BUF_PARAM(buf, ZB_NWK_INTERNAL_NSDU_HANDLE, zb_uint8_t);
+    ZB_SCHEDULE_CALLBACK(zb_nwk_forward, param);
+
+    TRACE_MSG(TRACE_NWK1, "<< zb_nlme_ed_timeout_request", (FMT__0));
+}
+
+void zb_nwk_ed_keepalive(zb_uint8_t param)
+{
+    ZVUNUSED(param);
+    TRACE_MSG(TRACE_NWK1, ">>nwk_ed_keepalive %hd", (FMT__H, param));
+    /* currently ed timeout req and power negotiation are unsupported */
+    if (ZB_NWK().nwk_parent_information & 0x1) {
+        ZB_GET_OUT_BUF_DELAYED(zb_poll_request);
+        ZB_SCHEDULE_ALARM(zb_nwk_ed_keepalive, 0, ZB_NWK_ED_TIMEOUT_TO_BEACON_INTERVAL(ZB_ED_KEEPALIVE_PERIOD));
+    }
+    else {
+        puts("unsupported keepalive method requested from parent");
+    }
+    TRACE_MSG(TRACE_NWK1, "<<nwk_ed_keepalive", (FMT__0));
+}
+
+void zb_nlme_ed_timeout_response(zb_uint8_t param) ZB_CALLBACK
+{
+    zb_buf_t *buf = ZB_BUF_FROM_REF(param);
+    zb_nwk_hdr_t *nwhdr = (zb_nwk_hdr_t *)ZB_BUF_BEGIN(buf);
+    zb_nwk_ed_timeout_response_t *timeout_response = (zb_nwk_ed_timeout_response_t *)
+                                                ZB_NWK_CMD_FRAME_GET_CMD_PAYLOAD(
+        buf, ZB_NWK_HDR_SIZE(nwhdr->frame_control));
+    TRACE_MSG(TRACE_NWK1, ">>ed_timeout_response %hd", (FMT__H, param));
+
+    if (timeout_response->status) {
+        TRACE_MSG(TRACE_NWK1, "got timeout resp, state differ - drop", (FMT__0));
+        zb_free_buf(buf);
+        return;
+    }
+
+    ZB_NWK().nwk_parent_information = timeout_response->parent_information;
+    zb_free_buf(buf);
+    ZB_SCHEDULE_ALARM(zb_nwk_ed_keepalive ,0, ZB_NWK_ED_TIMEOUT_TO_BEACON_INTERVAL(ZB_ED_KEEPALIVE_PERIOD));
+    TRACE_MSG(TRACE_NWK1, "<<ed_timeout_response", (FMT__0));
+}
+
 
 /*! @} */

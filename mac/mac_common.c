@@ -59,7 +59,7 @@
 #include "zb_ubec24xx.h"
 #endif
 #ifdef RIOT
-#include "zb_mac_riot.h"
+#include "zb_riot_submac.h"
 #endif
 
 

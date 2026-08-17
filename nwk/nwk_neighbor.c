@@ -56,7 +56,7 @@
 
 #include "zb_bank_4.h"
 
-#ifndef ZB_ED_ROLE
+#if defined ZB_ROUTER_ROLE || defined ZB_COORDINATOR_ROLE
 static void base_neighbor_cleanup();
 #endif
 
@@ -71,12 +71,12 @@ void zb_nwk_neighbor_init() ZB_SDCC_REENTRANT
     ZB_MEMSET(&ZG->nwk.neighbor.addr_to_neighbor[0], -1,
               sizeof(ZG->nwk.neighbor.addr_to_neighbor));
     ZG->nwk.neighbor.base_neighbor_size = ZB_NEIGHBOR_TABLE_SIZE;
-#ifdef ZB_ED_ROLE
+#if defined ZB_ED_ROLE && !defined ZB_ROUTER_ROLE
     ZG->nwk.neighbor.ext_neighbor_size = ZB_EXT_NEIGHBOR_TABLE_SIZE;
 #endif
 }
 
-#ifndef ZB_ED_ROLE
+#if defined ZB_ROUTER_ROLE || defined ZB_COORDINATOR_ROLE
 void zb_nwk_exneighbor_start() ZB_SDCC_REENTRANT
 {
     zb_uint8_t cut;
@@ -364,7 +364,7 @@ void zb_nwk_exneighbor_stop(zb_uint16_t parent_short_addr) ZB_SDCC_REENTRANT
 }
 #endif /* ZB_ED_ROLE */
 
-#ifdef ZB_ED_ROLE
+#if defined ZB_ED_ROLE && !defined ZB_ROUTER_ROLE
 void zb_nwk_exneighbor_stop(zb_uint16_t parent_short_addr) ZB_SDCC_REENTRANT
 {
     zb_address_ieee_ref_t addr_ref;
@@ -565,7 +565,7 @@ zb_ret_t zb_nwk_neighbor_delete(zb_address_ieee_ref_t ieee_ref)
 /**
    Cleanup base heighbor table: remove not useful entries
  */
-#ifndef ZB_ED_ROLE
+#if defined ZB_ROUTER_ROLE || defined ZB_COORDINATOR_ROLE
 static void base_neighbor_cleanup()
 {
     TRACE_MSG(TRACE_NWK1, "base_nb_cl", (FMT__0));
@@ -587,7 +587,7 @@ zb_ret_t zb_nwk_neighbor_get(zb_address_ieee_ref_t addr,
     if (n == (zb_uint8_t)-1) {
         if (create_if_absent) {
             if (ZG->nwk.neighbor.base_neighbor_used ==
-                ZG->nwk.neighbor.base_neighbor_size - 1) {
+                ZG->nwk.neighbor.base_neighbor_size) {
                 ret = RET_NO_MEMORY;
             }
             else {
@@ -634,7 +634,7 @@ ZB_SDCC_REENTRANT
     TRACE_MSG(TRACE_NWK1, ">>nb_ext_to_base_tmp %p", (FMT__P, ext_ent));
 
     /* TODO: check if it's ok */
-#ifdef ZB_ED_ROLE
+#if defined ZB_ED_ROLE && !defined ZB_ROUTER_ROLE
     ZG->nwk.neighbor.base_neighbor_used = 0;
 #else
     if (ZG->nwk.neighbor.base_neighbor_used >=
@@ -647,7 +647,7 @@ ZB_SDCC_REENTRANT
         zb_ieee_addr_t long_address;
         zb_address_ieee_ref_t addr_ref;
 
-#ifdef ZB_ED_ROLE
+#if defined ZB_ED_ROLE && !defined ZB_ROUTER_ROLE
         zb_neighbor_tbl_ent_t *ent = &ZG->nwk.neighbor.base_neighbor[0];
 #else
         zb_neighbor_tbl_ent_t *ent =
@@ -695,13 +695,13 @@ ZB_SDCC_REENTRANT
     zb_address_ieee_ref_t addr_ref;
 
     if (zb_address_by_short(short_addr, ZB_FALSE, ZB_FALSE, &addr_ref) == RET_OK
-#ifndef ZB_ED_ROLE
+#if defined ZB_ROUTER_ROLE || defined ZB_COORDINATOR_ROLE
         && zb_nwk_neighbor_get(addr_ref, ZB_FALSE, nbt) == RET_OK
 #else
         && ZG->nwk.neighbor.base_neighbor[0].addr_ref == addr_ref
 #endif
         ) {
-#ifdef ZB_ED_ROLE
+#if defined ZB_ED_ROLE && !defined ZB_ROUTER_ROLE
         *nbt = &ZG->nwk.neighbor.base_neighbor[0];
 #endif
         return RET_OK;
@@ -715,13 +715,13 @@ zb_ret_t zb_nwk_neighbor_get_by_ieee(zb_ieee_addr_t long_addr,
     zb_address_ieee_ref_t addr_ref;
 
     if (zb_address_by_ieee(long_addr, ZB_FALSE, ZB_FALSE, &addr_ref) == RET_OK
-#ifndef ZB_ED_ROLE
+#if defined ZB_ROUTER_ROLE || defined ZB_COORDINATOR_ROLE
         && zb_nwk_neighbor_get(addr_ref, ZB_FALSE, nbt) == RET_OK
 #else
         && ZG->nwk.neighbor.base_neighbor[0].addr_ref == addr_ref
 #endif
         ) {
-#ifdef ZB_ED_ROLE
+#if defined ZB_ED_ROLE && !defined ZB_ROUTER_ROLE
         *nbt = &ZG->nwk.neighbor.base_neighbor[0];
 #endif
         return RET_OK;
@@ -735,7 +735,7 @@ zb_ret_t zb_nwk_neighbor_get_by_ieee(zb_ieee_addr_t long_addr,
 void zb_nwk_neighbor_incoming_frame_counter_clock(zb_uint8_t key_seq_number)
 {
     if (ZG->nwk.neighbor.base_neighbor_size) {
-#ifndef ZB_ED_ROLE
+#if defined ZB_ROUTER_ROLE || defined ZB_COORDINATOR_ROLE
         zb_short_t i = ZG->nwk.neighbor.incoming_frame_counter_clock =
                            (ZG->nwk.neighbor.incoming_frame_counter_clock + 1) %
                            ZG->nwk.neighbor.base_neighbor_size;
@@ -758,7 +758,7 @@ void zb_nwk_neighbor_incoming_frame_counter_clock(zb_uint8_t key_seq_number)
 
 #endif
 
-#ifndef ZB_ED_ROLE
+#if defined ZB_ROUTER_ROLE || defined ZB_COORDINATOR_ROLE
 zb_ushort_t zb_nwk_neighbor_next_rx_on_i(zb_ushort_t i)
 {
     while (i < ZG->nwk.neighbor.base_neighbor_used

@@ -140,10 +140,10 @@ void zb_apsme_transport_key_indication(zb_uint8_t param) ZB_CALLBACK
                     TRACE_MSG(TRACE_SECUR1, "switch current key", (FMT__0));
                 }
             }
-
+            zb_write_security_key();
             if (!ZG->aps.authenticated) {
                 ZG->aps.authenticated = 1;
-
+                ZG->nwk.nib.security_level = 5;
                 ZG->nwk.nib.active_key_seq_number = ind->key.nwk.key_seq_number;
                 ZG->nwk.nib.outgoing_frame_counter = 0;
                 ZG->nwk.nib.active_secur_material_i = i;
@@ -156,6 +156,8 @@ void zb_apsme_transport_key_indication(zb_uint8_t param) ZB_CALLBACK
             else {
                 zb_free_buf(ZB_BUF_FROM_REF(param));
             }
+            zb_write_security_key();
+            zb_save_formdesc_data();
         }
         break;
         default:
@@ -188,31 +190,6 @@ void secur_tc_init()
     /* TC is always authenticated */
     ZG->aps.authenticated = 1;
 }
-
-#ifdef ZB_TC_GENERATES_KEYS
-static void secur_generate_key(zb_uint8_t i, zb_uint_t key_seq)
-{
-    zb_ushort_t j;
-
-    for (j = 0; j < ZB_CCM_KEY_SIZE; ++j) {
-        ZG->nwk.nib.secur_material_set[i].key[j] = (ZB_RANDOM() >> 4) & 0xff;
-    }
-    ZG->nwk.nib.secur_material_set[i].key_seq_number = key_seq;
-}
-
-
-void secur_generate_keys()
-{
-    zb_ushort_t i;
-
-    for (i = 0; i < ZB_SECUR_N_SECUR_MATERIAL; ++i) {
-        /* active_key_seq_number, active_secur_material_i set to 0 by global init -
-           not need to init it here */
-        secur_generate_key(i, i);
-    }
-}
-#endif
-
 
 #endif  /* ZB_COORDINATOR_ROLE */
 
@@ -337,10 +314,13 @@ void zb_secur_send_nwk_key_switch(zb_uint8_t param) ZB_CALLBACK
                   "send key switch to #%hd unicast to all devices from n.t.",
                   (FMT__D, ZG->nwk.nib.active_key_seq_number));
         ZG->aps.tmp.neighbor_table_iterator = zb_nwk_neighbor_next_rx_on_i(0);
+#ifdef ZB_COORDINATOR_ROLE
         if (ZG->aps.tmp.neighbor_table_iterator != (zb_ushort_t) ~0) {
             secur_send_key_sw_next(param);
         }
-        else {
+        else 
+#endif
+        {
             TRACE_MSG(TRACE_SECUR3, "have nobody to send to", (FMT__0));
             zb_free_buf(ZB_BUF_FROM_REF(param));
         }
@@ -387,7 +367,30 @@ void secur_send_key_sw_next(zb_uint8_t param) ZB_CALLBACK
         zb_get_out_buf_delayed(secur_send_key_sw_next);
     }
 }
-#endif
+#endif /* ZB_ROUTER_ROLE */
+
+static void secur_generate_key(zb_uint8_t i, zb_uint_t key_seq)
+{
+    zb_ushort_t j;
+
+    for (j = 0; j < ZB_CCM_KEY_SIZE; ++j) {
+        ZG->nwk.nib.secur_material_set[i].key[j] = (ZB_RANDOM() >> 4) & 0xff;
+    }
+    ZG->nwk.nib.secur_material_set[i].key_seq_number = key_seq;
+}
+
+
+void secur_generate_keys()
+{
+    zb_ushort_t i;
+
+    for (i = 0; i < ZB_SECUR_N_SECUR_MATERIAL; ++i) {
+        /* active_key_seq_number, active_secur_material_i set to 0 by global init -
+           not need to init it here */
+        secur_generate_key(i, i);
+    }
+
+}
 
 void secur_nwk_key_switch(zb_uint8_t key_number)
 {
