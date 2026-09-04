@@ -402,7 +402,7 @@ void zb_nlme_network_discovery_confirm(zb_uint8_t param) ZB_CALLBACK
             if ((ZB_NIB_DEVICE_TYPE() == ZB_NWK_DEVICE_TYPE_NONE
                  || ZB_NIB_DEVICE_TYPE() == ZB_NWK_DEVICE_TYPE_ROUTER)
 #ifdef ZB_PRO_COMPATIBLE
-                && (dsc->stack_profile == 1)
+                && (dsc->stack_profile > 0)
 #endif
                 ) {
                 ZB_MAC_CAP_SET_ROUTER_CAPS(req->capability_information); /* join as router */
